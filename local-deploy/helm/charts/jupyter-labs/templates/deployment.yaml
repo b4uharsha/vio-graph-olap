@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jupyter-labs.fullname" . }}
+  labels:
+    {{- include "jupyter-labs.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "jupyter-labs.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "jupyter-labs.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "jupyter-labs.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.notebookSync.enabled }}
+      initContainers:
+        - name: fetch-notebooks
+          image: {{ .Values.notebookSync.image.repository }}:{{ .Values.notebookSync.image.tag }}
+          imagePullPolicy: {{ .Values.notebookSync.image.pullPolicy | default "IfNotPresent" }}
+          volumeMounts:
+            - name: notebook-sync-data
+              mountPath: /notebooks
+            - name: git-token
+              mountPath: /etc/git-secret
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            - name: notebooks
+              mountPath: /work
+              subPath: work
+            {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          env:
+            - name: JUPYTER_ENABLE_LAB
+              value: {{ .Values.env.jupyterEnableLab | quote }}
+            - name: JUPYTER_TOKEN
+              value: {{ .Values.env.jupyterToken | quote }}
+            - name: CONTROL_PLANE_URL
+              value: {{ .Values.env.controlPlaneUrl | quote }}
+            - name: E2E_TEST_USERNAME
+              value: {{ .Values.env.e2eTestUsername | quote }}
+            - name: GRANT_SUDO
+              value: {{ .Values.env.grantSudo | quote }}
+            - name: GRAPH_OLAP_IN_CLUSTER_MODE
+              value: {{ .Values.env.graphOlapInClusterMode | quote }}
+            - name: GRAPH_OLAP_NAMESPACE
+              value: {{ .Values.env.graphOlapNamespace | quote }}
+          livenessProbe:
+            httpGet:
+              path: {{ trimSuffix "/" (.Values.jupyterConfig.baseUrl | default "/jupyter") }}/api
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: {{ trimSuffix "/" (.Values.jupyterConfig.baseUrl | default "/jupyter") }}/api
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: notebooks
+              mountPath: /home/jovyan/work
+            {{- if .Values.notebookSync.enabled }}
+            - name: notebook-sync-data
+              mountPath: /home/jovyan/work/notebooks
+            {{- end }}
+            {{- if .Values.jupyterConfig.enabled }}
+            - name: jupyter-config
+              mountPath: /home/jovyan/.jupyter/jupyter_notebook_config.py
+              subPath: jupyter_notebook_config.py
+            {{- end }}
+      volumes:
+        - name: notebooks
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "jupyter-labs.fullname" . }}-pvc
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.notebookSync.enabled }}
+        - name: notebook-sync-data
+          emptyDir: {}
+        - name: git-token
+          secret:
+            secretName: {{ .Values.notebookSync.gitTokenSecret }}
+        {{- end }}
+        {{- if .Values.jupyterConfig.enabled }}
+        - name: jupyter-config
+          configMap:
+            name: {{ include "jupyter-labs.fullname" . }}-config
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

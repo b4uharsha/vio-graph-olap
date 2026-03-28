@@ -1,0 +1,52 @@
+# Dockerfile for running export-worker Cloud Functions locally
+# Used for E2E testing with functions-framework
+#
+# BUILD FROM MONOREPO ROOT:
+#   docker build -t export-worker:test -f export-worker/Dockerfile.test .
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install pip and build tools
+RUN pip install --no-cache-dir --upgrade pip hatchling
+
+# Copy graph-olap-schemas from monorepo (local dependency)
+COPY graph-olap-schemas/ ./graph-olap-schemas/
+
+# Install graph-olap-schemas first
+RUN pip install --no-cache-dir ./graph-olap-schemas
+
+# Install functions-framework and other dependencies
+RUN pip install --no-cache-dir \
+    functions-framework>=3.5.0 \
+    cloudevents>=1.10.0 \
+    google-cloud-storage>=2.14.0 \
+    google-cloud-tasks>=2.16.0 \
+    google-cloud-pubsub>=2.19.0 \
+    google-auth>=2.27.0 \
+    httpx>=0.27.0 \
+    tenacity>=8.2.0 \
+    structlog>=24.1.0 \
+    pydantic>=2.6.0 \
+    pydantic-settings>=2.1.0 \
+    pyarrow>=15.0.0 \
+    trino>=0.328.0
+
+# Copy export-worker source
+COPY export-worker/src/export_worker /app/export_worker
+
+# Set Python path
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Default port
+EXPOSE 8080
+
+# Default command - override in docker-compose
+CMD ["functions-framework", "--target=submit_exports", "--port=8080"]

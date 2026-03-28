@@ -1,0 +1,170 @@
+{{- if .Values.oauth2Proxy.enabled }}
+# =============================================================================
+# OAuth2 Proxy - JWT Validation
+# =============================================================================
+# JWT token validation proxy for API authentication.
+# Local: Simple JWT validation against Auth0 (creates inline secret)
+# GKE: Full OAuth2 proxy with session management (uses existingSecret from Terraform)
+{{- if not .Values.oauth2Proxy.existingSecret }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth2-proxy-secrets
+  labels:
+    app: oauth2-proxy
+    component: auth
+    {{- include "graph-olap.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  cookie-secret: {{ .Values.oauth2Proxy.cookieSecret | quote }}
+  {{- if .Values.oauth2Proxy.clientId }}
+  client-id: {{ .Values.oauth2Proxy.clientId | quote }}
+  {{- end }}
+  {{- if .Values.oauth2Proxy.clientSecret }}
+  client-secret: {{ .Values.oauth2Proxy.clientSecret | quote }}
+  {{- end }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oauth2-proxy
+  labels:
+    app: oauth2-proxy
+    component: auth
+    {{- include "graph-olap.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.oauth2Proxy.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: oauth2-proxy
+  template:
+    metadata:
+      labels:
+        app: oauth2-proxy
+    spec:
+      containers:
+        - name: oauth2-proxy
+          image: {{ .Values.oauth2Proxy.image.repository }}:{{ .Values.oauth2Proxy.image.tag }}
+          imagePullPolicy: {{ .Values.oauth2Proxy.image.pullPolicy }}
+          args:
+            - --http-address=0.0.0.0:4180
+            {{- if .Values.oauth2Proxy.config }}
+            {{- with .Values.oauth2Proxy.config }}
+            {{- if .upstream }}
+            - --upstream={{ .upstream }}
+            {{- end }}
+            {{- if .provider }}
+            - --provider={{ .provider }}
+            {{- end }}
+            {{- if .oidcIssuerUrl }}
+            - --oidc-issuer-url={{ .oidcIssuerUrl }}
+            - --oidc-jwks-url={{ .oidcIssuerUrl }}.well-known/jwks.json
+            {{- end }}
+            {{- if .oidcExtraAudience }}
+            - --oidc-extra-audience={{ .oidcExtraAudience }}
+            {{- end }}
+            {{- if .oidcEmailClaim }}
+            - --oidc-email-claim={{ .oidcEmailClaim }}
+            {{- end }}
+            {{- if .emailDomain }}
+            - --email-domain={{ .emailDomain }}
+            {{- end }}
+            {{- if .authenticatedEmailsFile }}
+            - --authenticated-emails-file={{ .authenticatedEmailsFile }}
+            {{- end }}
+            {{- if .cookieSecure }}
+            - --cookie-secure={{ .cookieSecure }}
+            {{- end }}
+            {{- if .cookieSameSite }}
+            - --cookie-samesite={{ .cookieSameSite }}
+            {{- end }}
+            {{- if .cookieDomain }}
+            - --cookie-domain={{ .cookieDomain }}
+            {{- end }}
+            {{- if .cookieCsrfPerRequest }}
+            - --cookie-csrf-per-request={{ .cookieCsrfPerRequest }}
+            {{- end }}
+            {{- if .cookieCsrfExpire }}
+            - --cookie-csrf-expire={{ .cookieCsrfExpire }}
+            {{- end }}
+            {{- if .whitelistDomain }}
+            - --whitelist-domain={{ .whitelistDomain }}
+            {{- end }}
+            {{- if .setXAuthRequest }}
+            - --set-xauthrequest={{ .setXAuthRequest }}
+            {{- end }}
+            {{- if .passAccessToken }}
+            - --pass-access-token={{ .passAccessToken }}
+            {{- end }}
+            {{- if .skipProviderButton }}
+            - --skip-provider-button={{ .skipProviderButton }}
+            {{- end }}
+            {{- if .skipJwtBearerTokens }}
+            - --skip-jwt-bearer-tokens={{ .skipJwtBearerTokens }}
+            {{- end }}
+            {{- if .skipAuthPreflight }}
+            - --skip-auth-preflight={{ .skipAuthPreflight }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- range .Values.oauth2Proxy.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          env:
+            {{- $secretName := .Values.oauth2Proxy.existingSecret | default "oauth2-proxy-secrets" }}
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: cookie-secret
+            - name: OAUTH2_PROXY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: client-id
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: client-secret
+            {{- with .Values.oauth2Proxy.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - containerPort: 4180
+              name: http
+          {{- with .Values.oauth2Proxy.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 4180
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.oauth2Proxy.resources | nindent 12 }}
+      {{- with .Values.oauth2Proxy.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oauth2-proxy
+  labels:
+    app: oauth2-proxy
+    {{- include "graph-olap.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: oauth2-proxy
+  ports:
+    - port: 80
+      targetPort: 4180
+      name: http
+  type: ClusterIP
+{{- end }}

@@ -1,0 +1,138 @@
+/* Layout customizations for vertical navigation */
+
+/* ============================================
+   TOC Toggle - Hideable Table of Contents
+   ============================================ */
+
+/* Toggle button */
+.toc-toggle {
+  position: fixed;
+  top: 5rem;
+  right: 13rem;
+  z-index: 100;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 2px solid var(--md-primary-fg-color);
+  border-radius: 50%;
+  background: var(--md-default-bg-color);
+  color: var(--md-primary-fg-color);
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity 0.2s, transform 0.2s, right 0.3s ease, background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.toc-toggle:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.toc-toggle svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: currentColor;
+}
+
+/* When TOC is hidden, move button to edge */
+.toc-hidden .toc-toggle {
+  right: 1rem;
+}
+
+/* Hide toggle on small screens where TOC is already hidden */
+@media screen and (max-width: 60em) {
+  .toc-toggle {
+    display: none;
+  }
+}
+
+/* TOC sidebar hiding */
+.toc-hidden .md-sidebar--secondary {
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.md-sidebar--secondary {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Expand content when TOC is hidden */
+@media screen and (min-width: 76.25em) {
+  .toc-hidden .md-content {
+    margin-right: 0;
+  }
+
+  .md-content {
+    transition: margin-right 0.3s ease;
+  }
+}
+
+/* ============================================
+   Original Layout Styles
+   ============================================ */
+
+/* Ensure sidebar navigation is always visible on larger screens */
+@media screen and (min-width: 76.25em) {
+  .md-sidebar--primary {
+    display: block;
+  }
+}
+
+/* Navigation section headers - make them stand out */
+.md-nav--primary > .md-nav__list > .md-nav__item > .md-nav__link,
+.md-nav--primary > .md-nav__list > .md-nav__item > label.md-nav__link {
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--md-primary-fg-color);
+  padding: 0.6rem 0.6rem;
+  margin-top: 0.8rem;
+  border-left: 3px solid var(--md-primary-fg-color);
+  background: rgba(var(--md-primary-fg-color--light), 0.1);
+}
+
+/* First nav item doesn't need top margin */
+.md-nav--primary > .md-nav__list > .md-nav__item:first-child > .md-nav__link,
+.md-nav--primary > .md-nav__list > .md-nav__item:first-child > label.md-nav__link {
+  margin-top: 0;
+}
+
+/* Nested navigation items - normal weight */
+.md-nav--primary .md-nav--secondary .md-nav__link,
+.md-nav__item--nested .md-nav .md-nav__link {
+  font-weight: 400;
+  font-size: 0.75rem;
+  text-transform: none;
+  letter-spacing: normal;
+  border-left: none;
+  background: transparent;
+  padding: 0.4rem 0.6rem;
+  margin-top: 0;
+}
+
+/* Improve navigation section spacing */
+.md-nav__item--nested > .md-nav {
+  margin-left: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* Active section highlight */
+.md-nav__item--active > .md-nav__link {
+  color: var(--md-primary-fg-color);
+  font-weight: 600;
+}
+
+/* Better visual hierarchy for navigation title */
+.md-nav--primary .md-nav__title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--md-primary-fg-color);
+  margin-bottom: 0.5rem;
+}

@@ -1,0 +1,23 @@
+[project]
+name = "lib-auth"
+version = "1.0.0"
+description = "Shared JWT authentication utilities for graph-olap services"
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+[tool.setuptools.package-dir]
+lib_auth = "src"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]

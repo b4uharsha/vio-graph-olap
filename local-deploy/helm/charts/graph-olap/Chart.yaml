@@ -1,0 +1,51 @@
+apiVersion: v2
+name: graph-olap
+description: Graph OLAP Platform - Umbrella Chart for Application Stack
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+maintainers:
+  - name: Graph OLAP Team
+
+keywords:
+  - graph-olap
+  - umbrella
+  - platform
+
+home: https://github.com/graph-olap/graph-olap
+sources:
+  - https://github.com/graph-olap/graph-olap
+
+# Dependencies - application components only
+# Infrastructure (ingress, cert-manager, oauth2-proxy) deployed separately via Terraform
+dependencies:
+  # Control Plane - FastAPI backend (required)
+  - name: control-plane
+    version: "1.x.x"
+    repository: "file://../control-plane"
+    condition: control-plane.enabled
+
+  # Export Worker - KEDA-scaled job processor (required)
+  - name: export-worker
+    version: "1.x.x"
+    repository: "file://../export-worker"
+    condition: export-worker.enabled
+
+  # System - Namespaces, quotas, network policies (optional)
+  - name: system
+    version: "1.x.x"
+    repository: "file://../system"
+    condition: system.enabled
+
+  # Observability - GMP PodMonitoring, alerts (optional)
+  - name: observability
+    version: "1.x.x"
+    repository: "file://../observability"
+    condition: observability.enabled
+
+  # Documentation - AstroJS Starlight docs site (optional)
+  - name: documentation
+    version: "1.x.x"
+    repository: "file://../documentation"
+    condition: documentation.enabled

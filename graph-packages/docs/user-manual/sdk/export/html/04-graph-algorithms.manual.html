@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>04-graph-algorithms.manual</title>
+
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+
+  <style>
+    :root {
+      --max-width: 900px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+      --color-text: #24292f;
+      --color-bg: #ffffff;
+      --color-border: #d0d7de;
+      --color-link: #0969da;
+      --color-code-bg: #f6f8fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 2em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    p {
+      margin: 1em 0;
+    }
+
+    pre {
+      background: var(--color-code-bg);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      line-height: 1.45;
+    }
+
+    pre.mermaid {
+      background: transparent;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+    }
+
+    :not(pre) > code {
+      background: var(--color-code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 0 1em;
+      border-left: 4px solid var(--color-border);
+      color: #57606a;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+
+    th, td {
+      border: 1px solid var(--color-border);
+      padding: 0.5em 1em;
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-code-bg);
+      font-weight: 600;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a.image-link {
+      display: block;
+      cursor: zoom-in;
+    }
+
+    a.image-link:hover img {
+      opacity: 0.9;
+      outline: 2px solid var(--color-link);
+      outline-offset: 2px;
+    }
+
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    li {
+      margin: 0.25em 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 2em 0;
+    }
+
+    details {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      background: var(--color-code-bg);
+      border-radius: 6px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .container {
+        max-width: none;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="graph-algorithms">Graph Algorithms</h1>
+<p>This manual covers the graph algorithm capabilities of the Graph OLAP SDK, including
+native Ryugraph algorithms and NetworkX integration for advanced analytics.</p>
+<h2 id="1-algorithm-overview">1. Algorithm Overview</h2>
+<p>The Graph OLAP Platform provides different algorithm systems depending on the database
+backend:</p>
+<p><strong>Ryugraph Instances:</strong></p>
+<ol>
+<li><strong>Native Ryugraph Algorithms</strong> (<code>conn.algo</code>) - High-performance algorithms that run
+directly in the database engine using the KuzuDB algo extension</li>
+<li><strong>NetworkX Algorithms</strong> (<code>conn.networkx</code>) - Access to 100+ algorithms from the
+NetworkX library via dynamic introspection</li>
+</ol>
+<p><strong>FalkorDB Instances:</strong></p>
+<ol>
+<li><strong>Native FalkorDB Algorithms</strong> (<code>conn.algo</code>) - Algorithms via Cypher procedures
+(<code>CALL algo.xxx()</code>). Available algorithms: <code>pagerank</code>, <code>betweenness</code>, <code>wcc</code>, <code>cdlp</code></li>
+</ol>
+<blockquote>
+<p><strong>Important:</strong> FalkorDB does <strong>not</strong> support NetworkX integration. Only native Cypher
+procedures are available. Ryugraph supports both native algorithms and the full
+NetworkX library (100+ algorithms).</p>
+</blockquote>
+<h3 id="execution-model">Execution Model</h3>
+<p>All algorithms follow an asynchronous execution model:</p>
+<ol>
+<li><strong>Lock Acquisition</strong> - The instance acquires an exclusive lock</li>
+<li><strong>Algorithm Execution</strong> - The algorithm runs against the graph data</li>
+<li><strong>Result Writeback</strong> - Results are written to node/edge properties</li>
+<li><strong>Lock Release</strong> - The lock is released for other operations</li>
+</ol>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Synchronous (default) - blocks until completion</span>
+<span class="hljs-built_in">exec</span> = conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)
+
+<span class="hljs-comment"># Asynchronous - returns immediately, poll for status</span>
+<span class="hljs-built_in">exec</span> = conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>, wait=<span class="hljs-literal">False</span>)
+<span class="hljs-keyword">while</span> <span class="hljs-built_in">exec</span>.status == <span class="hljs-string">&quot;running&quot;</span>:
+    time.sleep(<span class="hljs-number">2</span>)
+    <span class="hljs-built_in">exec</span> = conn.algo.status(<span class="hljs-built_in">exec</span>.execution_id)</code></pre>
+<h3 id="result-storage">Result Storage</h3>
+<p>Algorithm results are stored as node properties and can be queried using Cypher:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Run PageRank and store in &#x27;importance&#x27; property</span>
+conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;importance&quot;</span>)
+
+<span class="hljs-comment"># Query results using Cypher</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    WHERE c.importance &gt; 0.01
+    RETURN c.name, c.importance
+    ORDER BY c.importance DESC
+    LIMIT 10
+&quot;&quot;&quot;</span>)</code></pre>
+<h3 id="lock-mechanism">Lock Mechanism</h3>
+<p>Only one algorithm can run at a time per instance:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">try</span>:
+    conn.algo.louvain(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;community&quot;</span>)
+<span class="hljs-keyword">except</span> ResourceLockedError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance locked by <span class="hljs-subst">{e.holder_username}</span> running <span class="hljs-subst">{e.algorithm_name}</span>&quot;</span>)</code></pre>
+<hr>
+<h2 id="2-native-ryugraph-algorithms-connalgo">2. Native Ryugraph Algorithms (conn.algo)</h2>
+<p>Native algorithms run directly in the Ryugraph/KuzuDB engine using the algo
+extension, optimized for performance.</p>
+<h3 id="algorithm-discovery">Algorithm Discovery</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># List all available native algorithms</span>
+algos = conn.algo.algorithms()
+<span class="hljs-keyword">for</span> algo <span class="hljs-keyword">in</span> algos:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;<span class="hljs-subst">{algo[<span class="hljs-string">&#x27;name&#x27;</span>]}</span>: <span class="hljs-subst">{algo[<span class="hljs-string">&#x27;description&#x27;</span>]}</span>&quot;</span>)
+
+<span class="hljs-comment"># Filter by category</span>
+centrality_algos = conn.algo.algorithms(category=<span class="hljs-string">&quot;centrality&quot;</span>)
+community_algos = conn.algo.algorithms(category=<span class="hljs-string">&quot;community&quot;</span>)
+
+<span class="hljs-comment"># Get detailed information about an algorithm</span>
+info = conn.algo.algorithm_info(<span class="hljs-string">&quot;pagerank&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Parameters: <span class="hljs-subst">{info[<span class="hljs-string">&#x27;parameters&#x27;</span>]}</span>&quot;</span>)</code></pre>
+<h3 id="generic-execution">Generic Execution</h3>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.run(
+    <span class="hljs-string">&quot;pagerank&quot;</span>,
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;pr_score&quot;</span>,
+    edge_type=<span class="hljs-string">&quot;KNOWS&quot;</span>,
+    params={<span class="hljs-string">&quot;damping_factor&quot;</span>: <span class="hljs-number">0.85</span>, <span class="hljs-string">&quot;max_iterations&quot;</span>: <span class="hljs-number">100</span>},
+    timeout=<span class="hljs-number">300</span>,
+    wait=<span class="hljs-literal">True</span>
+)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Nodes updated: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.nodes_updated}</span>, Duration: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.duration_ms}</span>ms&quot;</span>)</code></pre>
+<h3 id="pagerank">PageRank</h3>
+<p>Computes node importance based on link structure:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.pagerank(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;pr_score&quot;</span>,
+    edge_type=<span class="hljs-string">&quot;TRANSACTS_WITH&quot;</span>,
+    damping=<span class="hljs-number">0.85</span>,
+    max_iterations=<span class="hljs-number">100</span>,
+    tolerance=<span class="hljs-number">1e-6</span>
+)</code></pre>
+<p><strong>Use Cases:</strong> Identifying influencers, ranking entities, fraud detection</p>
+<h3 id="weakly-connected-components-wcc">Weakly Connected Components (WCC)</h3>
+<p>Finds groups of connected nodes (treating edges as undirected):</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.connected_components(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;component_id&quot;</span>,
+    edge_type=<span class="hljs-string">&quot;KNOWS&quot;</span>
+)
+<span class="hljs-comment"># Alternative shorthand</span>
+<span class="hljs-built_in">exec</span> = conn.algo.wcc(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;component_id&quot;</span>)</code></pre>
+<p><strong>Use Cases:</strong> Finding isolated segments, network segmentation</p>
+<h3 id="strongly-connected-components-scc">Strongly Connected Components (SCC)</h3>
+<p>Finds groups where every pair is mutually reachable:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.scc(
+    node_label=<span class="hljs-string">&quot;Account&quot;</span>,
+    property_name=<span class="hljs-string">&quot;scc_id&quot;</span>,
+    edge_type=<span class="hljs-string">&quot;TRANSFERS_TO&quot;</span>
+)
+
+<span class="hljs-comment"># Kosaraju variant (better for sparse graphs)</span>
+<span class="hljs-built_in">exec</span> = conn.algo.scc_kosaraju(<span class="hljs-string">&quot;Account&quot;</span>, <span class="hljs-string">&quot;scc_id&quot;</span>, edge_type=<span class="hljs-string">&quot;TRANSFERS_TO&quot;</span>)</code></pre>
+<p><strong>Use Cases:</strong> Detecting circular patterns, finding tightly coupled entities</p>
+<h3 id="louvain-community-detection">Louvain Community Detection</h3>
+<p>Hierarchical clustering that maximizes modularity:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.louvain(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;community_id&quot;</span>,
+    edge_type=<span class="hljs-string">&quot;KNOWS&quot;</span>,
+    resolution=<span class="hljs-number">1.0</span>  <span class="hljs-comment"># Higher = more communities</span>
+)</code></pre>
+<p><strong>Use Cases:</strong> Customer segmentation, fraud ring detection</p>
+<h3 id="k-core-decomposition">K-Core Decomposition</h3>
+<p>Finds nodes connected to at least k other nodes:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.kcore(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;k_degree&quot;</span>,
+    edge_type=<span class="hljs-string">&quot;KNOWS&quot;</span>
+)</code></pre>
+<p><strong>Use Cases:</strong> Cohesive group detection, network resilience analysis</p>
+<h3 id="label-propagation">Label Propagation</h3>
+<p>Fast community detection via neighbor label adoption:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.label_propagation(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;label&quot;</span>,
+    edge_type=<span class="hljs-string">&quot;KNOWS&quot;</span>,
+    max_iterations=<span class="hljs-number">100</span>
+)</code></pre>
+<h3 id="triangle-count">Triangle Count</h3>
+<p>Counts triangles each node participates in:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.triangle_count(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;triangles&quot;</span>,
+    edge_type=<span class="hljs-string">&quot;KNOWS&quot;</span>
+)</code></pre>
+<p><strong>Use Cases:</strong> Measuring clustering, identifying tight neighborhoods</p>
+<h3 id="shortest-path">Shortest Path</h3>
+<p>Find the shortest path between two nodes:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.shortest_path(
+    source_id=<span class="hljs-string">&quot;customer_001&quot;</span>,
+    target_id=<span class="hljs-string">&quot;customer_050&quot;</span>,
+    relationship_types=[<span class="hljs-string">&quot;KNOWS&quot;</span>, <span class="hljs-string">&quot;WORKS_WITH&quot;</span>],
+    max_depth=<span class="hljs-number">6</span>
+)
+
+<span class="hljs-keyword">if</span> <span class="hljs-built_in">exec</span>.result <span class="hljs-keyword">and</span> <span class="hljs-built_in">exec</span>.result.get(<span class="hljs-string">&quot;found&quot;</span>):
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Path: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.result[<span class="hljs-string">&#x27;path&#x27;</span>]}</span>, Length: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.result[<span class="hljs-string">&#x27;length&#x27;</span>]}</span>&quot;</span>)</code></pre>
+<hr>
+<h2 id="3-networkx-algorithms-connnetworkx">3. NetworkX Algorithms (conn.networkx)</h2>
+<blockquote>
+<p><strong>Note:</strong> NetworkX algorithms are only available for Ryugraph instances. FalkorDB
+instances use native Cypher procedures instead. See <a href="#4-falkordb-algorithms-connalgo-1">Section 4: FalkorDB
+Algorithms</a> for FalkorDB-specific documentation.</p>
+</blockquote>
+<p>Access to 100+ algorithms from NetworkX through dynamic introspection.</p>
+<h3 id="how-networkx-integration-works">How NetworkX Integration Works</h3>
+<ol>
+<li>Graph data is extracted from Ryugraph to NetworkX format</li>
+<li>The algorithm runs in NetworkX (Python)</li>
+<li>Results are written back to Ryugraph node properties</li>
+</ol>
+<h3 id="algorithm-discovery-1">Algorithm Discovery</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># List all available NetworkX algorithms</span>
+algos = conn.networkx.algorithms()
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Found <span class="hljs-subst">{<span class="hljs-built_in">len</span>(algos)}</span> algorithms&quot;</span>)
+
+<span class="hljs-comment"># Filter by category</span>
+centrality = conn.networkx.algorithms(category=<span class="hljs-string">&quot;centrality&quot;</span>)
+community = conn.networkx.algorithms(category=<span class="hljs-string">&quot;community&quot;</span>)
+clustering = conn.networkx.algorithms(category=<span class="hljs-string">&quot;clustering&quot;</span>)
+
+<span class="hljs-comment"># Get detailed algorithm information</span>
+info = conn.networkx.algorithm_info(<span class="hljs-string">&quot;betweenness_centrality&quot;</span>)</code></pre>
+<h3 id="generic-execution-1">Generic Execution</h3>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.networkx.run(
+    <span class="hljs-string">&quot;katz_centrality&quot;</span>,
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;katz_score&quot;</span>,
+    params={<span class="hljs-string">&quot;alpha&quot;</span>: <span class="hljs-number">0.1</span>, <span class="hljs-string">&quot;beta&quot;</span>: <span class="hljs-number">1.0</span>},
+    timeout=<span class="hljs-number">300</span>
+)</code></pre>
+<h3 id="centrality-algorithms">Centrality Algorithms</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Degree Centrality - connection count</span>
+<span class="hljs-built_in">exec</span> = conn.networkx.degree_centrality(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;degree_cent&quot;</span>)
+
+<span class="hljs-comment"># Betweenness Centrality - network brokers</span>
+<span class="hljs-built_in">exec</span> = conn.networkx.betweenness_centrality(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;betweenness&quot;</span>)
+<span class="hljs-built_in">exec</span> = conn.networkx.betweenness_centrality(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;betw_approx&quot;</span>, k=<span class="hljs-number">100</span>)  <span class="hljs-comment"># Approximate</span>
+
+<span class="hljs-comment"># Closeness Centrality - network position</span>
+<span class="hljs-built_in">exec</span> = conn.networkx.closeness_centrality(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;closeness&quot;</span>)
+
+<span class="hljs-comment"># Eigenvector Centrality - influence</span>
+<span class="hljs-built_in">exec</span> = conn.networkx.eigenvector_centrality(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;eigenvector&quot;</span>, max_iter=<span class="hljs-number">100</span>)</code></pre>
+<h3 id="clustering-coefficient">Clustering Coefficient</h3>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.networkx.clustering_coefficient(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;clustering&quot;</span>)</code></pre>
+<h3 id="advanced-algorithms-via-run">Advanced Algorithms via run()</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Katz Centrality</span>
+<span class="hljs-built_in">exec</span> = conn.networkx.run(<span class="hljs-string">&quot;katz_centrality&quot;</span>, <span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;katz&quot;</span>, params={<span class="hljs-string">&quot;alpha&quot;</span>: <span class="hljs-number">0.1</span>})
+
+<span class="hljs-comment"># Harmonic Centrality</span>
+<span class="hljs-built_in">exec</span> = conn.networkx.run(<span class="hljs-string">&quot;harmonic_centrality&quot;</span>, <span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;harmonic&quot;</span>)
+
+<span class="hljs-comment"># Load Centrality</span>
+<span class="hljs-built_in">exec</span> = conn.networkx.run(<span class="hljs-string">&quot;load_centrality&quot;</span>, <span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;load&quot;</span>)</code></pre>
+<hr>
+<h2 id="4-falkordb-algorithms-connalgo">4. FalkorDB Algorithms (conn.algo)</h2>
+<p>FalkorDB provides native graph algorithms via Cypher procedures. Unlike Ryugraph,
+FalkorDB does <strong>not</strong> support NetworkX integration. All algorithms execute
+asynchronously with status polling, using the same <code>conn.algo</code> interface.</p>
+<h3 id="available-algorithms">Available Algorithms</h3>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Method</th>
+<th>Cypher Procedure</th>
+<th>Category</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PageRank</td>
+<td><code>pagerank()</code></td>
+<td><code>pagerank.stream</code></td>
+<td>Centrality</td>
+<td>Node importance based on incoming links</td>
+</tr>
+<tr>
+<td>Betweenness</td>
+<td><code>betweenness()</code></td>
+<td><code>algo.betweenness</code></td>
+<td>Centrality</td>
+<td>Bridge node identification</td>
+</tr>
+<tr>
+<td>WCC</td>
+<td><code>wcc()</code></td>
+<td><code>algo.WCC</code></td>
+<td>Community</td>
+<td>Weakly connected component IDs</td>
+</tr>
+<tr>
+<td>CDLP</td>
+<td><code>cdlp()</code></td>
+<td><code>algo.labelPropagation</code></td>
+<td>Community</td>
+<td>Community detection via label propagation</td>
+</tr>
+</tbody></table>
+<h3 id="algorithm-discovery-2">Algorithm Discovery</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># List all available FalkorDB algorithms</span>
+algos = conn.algo.algorithms()
+<span class="hljs-keyword">for</span> algo <span class="hljs-keyword">in</span> algos:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;<span class="hljs-subst">{algo[<span class="hljs-string">&#x27;name&#x27;</span>]}</span>: <span class="hljs-subst">{algo[<span class="hljs-string">&#x27;description&#x27;</span>]}</span>&quot;</span>)
+
+<span class="hljs-comment"># Get detailed information about an algorithm</span>
+info = conn.algo.algorithm_info(<span class="hljs-string">&quot;pagerank&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Cypher procedure: <span class="hljs-subst">{info[<span class="hljs-string">&#x27;cypher_procedure&#x27;</span>]}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Parameters: <span class="hljs-subst">{info[<span class="hljs-string">&#x27;parameters&#x27;</span>]}</span>&quot;</span>)</code></pre>
+<h3 id="pagerank-1">PageRank</h3>
+<p>Computes node importance based on link structure:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.pagerank(
+    result_property=<span class="hljs-string">&quot;pr_score&quot;</span>,
+    node_labels=[<span class="hljs-string">&quot;Customer&quot;</span>],
+    relationship_types=[<span class="hljs-string">&quot;TRANSACTS_WITH&quot;</span>],
+    timeout_ms=<span class="hljs-number">300000</span>
+)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Nodes updated: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.nodes_updated}</span>&quot;</span>)</code></pre>
+<h3 id="betweenness-centrality">Betweenness Centrality</h3>
+<p>Identifies bridge nodes that control information flow:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.betweenness(
+    result_property=<span class="hljs-string">&quot;betweenness_score&quot;</span>,
+    node_labels=[<span class="hljs-string">&quot;Customer&quot;</span>],
+    relationship_types=[<span class="hljs-string">&quot;KNOWS&quot;</span>],
+    timeout_ms=<span class="hljs-number">3600000</span>  <span class="hljs-comment"># 1 hour - O(V*E) complexity</span>
+)</code></pre>
+<h3 id="weakly-connected-components-wcc-1">Weakly Connected Components (WCC)</h3>
+<p>Finds groups of connected nodes (treating edges as undirected):</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.wcc(
+    result_property=<span class="hljs-string">&quot;component_id&quot;</span>,
+    node_labels=[<span class="hljs-string">&quot;Customer&quot;</span>],
+    relationship_types=[<span class="hljs-string">&quot;KNOWS&quot;</span>]
+)</code></pre>
+<h3 id="community-detection-label-propagation-cdlp">Community Detection Label Propagation (CDLP)</h3>
+<p>Fast community detection via neighbor label adoption:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.cdlp(
+    result_property=<span class="hljs-string">&quot;community_id&quot;</span>,
+    node_labels=[<span class="hljs-string">&quot;Customer&quot;</span>],
+    relationship_types=[<span class="hljs-string">&quot;KNOWS&quot;</span>],
+    max_iterations=<span class="hljs-number">10</span>
+)</code></pre>
+<h3 id="pathfinding-synchronous">Pathfinding (Synchronous)</h3>
+<p>FalkorDB pathfinding algorithms run synchronously via Cypher queries (no async
+execution needed):</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Breadth-First Search</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH path = algo.BFS((a:Person {id: &#x27;A&#x27;}), (b:Person {id: &#x27;B&#x27;}))
+    RETURN path
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-comment"># Shortest Path</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH path = algo.shortestPath((a:Person {id: &#x27;A&#x27;}), (b:Person {id: &#x27;B&#x27;}))
+    RETURN path
+&quot;&quot;&quot;</span>)</code></pre>
+<h3 id="result-storage-1">Result Storage</h3>
+<p>Algorithm results are written to node properties and can be queried using Cypher:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Run PageRank</span>
+conn.algo.pagerank(result_property=<span class="hljs-string">&quot;importance&quot;</span>, node_labels=[<span class="hljs-string">&quot;Customer&quot;</span>])
+
+<span class="hljs-comment"># Query results</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    WHERE c.importance &gt; 0.01
+    RETURN c.name, c.importance
+    ORDER BY c.importance DESC
+    LIMIT 10
+&quot;&quot;&quot;</span>)</code></pre>
+<hr>
+<h2 id="5-algorithm-results">5. Algorithm Results</h2>
+<h3 id="algorithmexecution-object">AlgorithmExecution Object</h3>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)
+
+<span class="hljs-comment"># Execution metadata</span>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Execution ID: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.execution_id}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Algorithm: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.algorithm}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Type: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.algorithm_type}</span>&quot;</span>)  <span class="hljs-comment"># &quot;native&quot; or &quot;networkx&quot;</span>
+
+<span class="hljs-comment"># Status tracking</span>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Status: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.status}</span>&quot;</span>)  <span class="hljs-comment"># pending, running, completed, failed, cancelled</span>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Started: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.started_at}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Completed: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.completed_at}</span>&quot;</span>)
+
+<span class="hljs-comment"># Results</span>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Nodes Updated: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.nodes_updated}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Duration: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.duration_ms}</span>ms&quot;</span>)
+
+<span class="hljs-comment"># Error information</span>
+<span class="hljs-keyword">if</span> <span class="hljs-built_in">exec</span>.status == <span class="hljs-string">&quot;failed&quot;</span>:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Error: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.error_message}</span>&quot;</span>)</code></pre>
+<h3 id="status-values">Status Values</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pending</code></td>
+<td>Queued, not yet started</td>
+</tr>
+<tr>
+<td><code>running</code></td>
+<td>Currently executing</td>
+</tr>
+<tr>
+<td><code>completed</code></td>
+<td>Successfully finished</td>
+</tr>
+<tr>
+<td><code>failed</code></td>
+<td>Execution failed</td>
+</tr>
+<tr>
+<td><code>cancelled</code></td>
+<td>Cancelled by user</td>
+</tr>
+</tbody></table>
+<h3 id="polling-for-completion">Polling for Completion</h3>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.louvain(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;community&quot;</span>, wait=<span class="hljs-literal">False</span>)
+
+<span class="hljs-keyword">while</span> <span class="hljs-built_in">exec</span>.status <span class="hljs-keyword">in</span> (<span class="hljs-string">&quot;pending&quot;</span>, <span class="hljs-string">&quot;running&quot;</span>):
+    time.sleep(<span class="hljs-number">2</span>)
+    response = conn._client.get(<span class="hljs-string">f&quot;/algo/status/<span class="hljs-subst">{<span class="hljs-built_in">exec</span>.execution_id}</span>&quot;</span>)
+    <span class="hljs-built_in">exec</span> = AlgorithmExecution.from_api_response(response.json())
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Completed: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.nodes_updated}</span> nodes in <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.duration_ms}</span>ms&quot;</span>)</code></pre>
+<h3 id="querying-results-via-cypher">Querying Results via Cypher</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># After running community detection</span>
+conn.algo.louvain(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;community_id&quot;</span>)
+
+<span class="hljs-comment"># Query community membership</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    RETURN c.community_id, count(*) AS members
+    ORDER BY members DESC
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-comment"># Combine multiple algorithm results</span>
+conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;importance&quot;</span>)
+
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    RETURN c.community_id, avg(c.importance) AS avg_importance
+    ORDER BY avg_importance DESC
+&quot;&quot;&quot;</span>)</code></pre>
+<hr>
+<h2 id="6-algorithm-quick-reference">6. Algorithm Quick Reference</h2>
+<h3 id="ryugraph-native-algorithms-connalgo">Ryugraph Native Algorithms (conn.algo)</h3>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Category</th>
+<th>Method</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PageRank</td>
+<td>Centrality</td>
+<td><code>pagerank()</code></td>
+<td>Node importance</td>
+</tr>
+<tr>
+<td>WCC</td>
+<td>Community</td>
+<td><code>connected_components()</code></td>
+<td>Connected groups</td>
+</tr>
+<tr>
+<td>SCC</td>
+<td>Community</td>
+<td><code>scc()</code></td>
+<td>Strongly connected groups</td>
+</tr>
+<tr>
+<td>SCC Kosaraju</td>
+<td>Community</td>
+<td><code>scc_kosaraju()</code></td>
+<td>SCC for sparse graphs</td>
+</tr>
+<tr>
+<td>Louvain</td>
+<td>Community</td>
+<td><code>louvain()</code></td>
+<td>Community detection</td>
+</tr>
+<tr>
+<td>K-Core</td>
+<td>Community</td>
+<td><code>kcore()</code></td>
+<td>Cohesive groups</td>
+</tr>
+<tr>
+<td>Label Propagation</td>
+<td>Community</td>
+<td><code>label_propagation()</code></td>
+<td>Fast communities</td>
+</tr>
+<tr>
+<td>Triangle Count</td>
+<td>Community</td>
+<td><code>triangle_count()</code></td>
+<td>Clustering measurement</td>
+</tr>
+<tr>
+<td>Shortest Path</td>
+<td>Pathfinding</td>
+<td><code>shortest_path()</code></td>
+<td>Path finding</td>
+</tr>
+</tbody></table>
+<h3 id="falkordb-native-algorithms-connalgo">FalkorDB Native Algorithms (conn.algo)</h3>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Category</th>
+<th>Method</th>
+<th>Cypher Procedure</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PageRank</td>
+<td>Centrality</td>
+<td><code>pagerank()</code></td>
+<td><code>pagerank.stream</code></td>
+<td>Node importance</td>
+</tr>
+<tr>
+<td>Betweenness</td>
+<td>Centrality</td>
+<td><code>betweenness()</code></td>
+<td><code>algo.betweenness</code></td>
+<td>Network brokers</td>
+</tr>
+<tr>
+<td>WCC</td>
+<td>Community</td>
+<td><code>wcc()</code></td>
+<td><code>algo.WCC</code></td>
+<td>Connected groups</td>
+</tr>
+<tr>
+<td>CDLP</td>
+<td>Community</td>
+<td><code>cdlp()</code></td>
+<td><code>algo.labelPropagation</code></td>
+<td>Fast communities</td>
+</tr>
+<tr>
+<td>BFS</td>
+<td>Pathfinding</td>
+<td>Cypher query</td>
+<td><code>algo.BFS</code></td>
+<td>Path finding</td>
+</tr>
+<tr>
+<td>Shortest Path</td>
+<td>Pathfinding</td>
+<td>Cypher query</td>
+<td><code>algo.shortestPath</code></td>
+<td>Path finding</td>
+</tr>
+</tbody></table>
+<h3 id="networkx-algorithms-connnetworkx---ryugraph-only">NetworkX Algorithms (conn.networkx) - Ryugraph Only</h3>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Category</th>
+<th>Method</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Degree Centrality</td>
+<td>Centrality</td>
+<td><code>degree_centrality()</code></td>
+<td>Connection count</td>
+</tr>
+<tr>
+<td>Betweenness Centrality</td>
+<td>Centrality</td>
+<td><code>betweenness_centrality()</code></td>
+<td>Network brokers</td>
+</tr>
+<tr>
+<td>Closeness Centrality</td>
+<td>Centrality</td>
+<td><code>closeness_centrality()</code></td>
+<td>Network position</td>
+</tr>
+<tr>
+<td>Eigenvector Centrality</td>
+<td>Centrality</td>
+<td><code>eigenvector_centrality()</code></td>
+<td>Influence</td>
+</tr>
+<tr>
+<td>Clustering Coefficient</td>
+<td>Clustering</td>
+<td><code>clustering_coefficient()</code></td>
+<td>Local clustering</td>
+</tr>
+<tr>
+<td>Katz Centrality</td>
+<td>Centrality</td>
+<td><code>run(&quot;katz_centrality&quot;)</code></td>
+<td>Influence with decay</td>
+</tr>
+</tbody></table>
+<h3 id="parameter-reference">Parameter Reference</h3>
+<p><strong>Ryugraph PageRank:</strong> <code>damping</code> (0.85), <code>max_iterations</code> (100), <code>tolerance</code> (1e-6)</p>
+<p><strong>Louvain:</strong> <code>resolution</code> (1.0), <code>max_phases</code> (20), <code>max_iterations</code> (20)</p>
+<p><strong>WCC/SCC:</strong> <code>max_iterations</code> (100)</p>
+<p><strong>FalkorDB CDLP:</strong> <code>max_iterations</code> (10)</p>
+<hr>
+<h2 id="7-practical-examples">7. Practical Examples</h2>
+<h3 id="customer-influence-analysis">Customer Influence Analysis</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Calculate multiple centrality measures</span>
+conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pagerank&quot;</span>, edge_type=<span class="hljs-string">&quot;TRANSACTS_WITH&quot;</span>)
+conn.networkx.betweenness_centrality(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;betweenness&quot;</span>)
+conn.networkx.eigenvector_centrality(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;eigenvector&quot;</span>)
+
+<span class="hljs-comment"># Find influential customers</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    WHERE c.pagerank &gt; 0.01 AND c.betweenness &gt; 0.05
+    RETURN c.name, c.pagerank, c.betweenness, c.eigenvector
+    ORDER BY c.pagerank DESC
+    LIMIT 20
+&quot;&quot;&quot;</span>)</code></pre>
+<h3 id="fraud-ring-detection">Fraud Ring Detection</h3>
+<pre><code class="hljs language-python">conn.algo.louvain(<span class="hljs-string">&quot;Account&quot;</span>, <span class="hljs-string">&quot;community_id&quot;</span>, edge_type=<span class="hljs-string">&quot;TRANSFERS_TO&quot;</span>)
+conn.algo.scc(<span class="hljs-string">&quot;Account&quot;</span>, <span class="hljs-string">&quot;scc_id&quot;</span>, edge_type=<span class="hljs-string">&quot;TRANSFERS_TO&quot;</span>)
+
+<span class="hljs-comment"># Find suspicious circular patterns</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (a:Account)
+    WITH a.community_id AS community, a.scc_id AS scc, count(*) AS ring_size
+    WHERE ring_size &gt;= 3
+    RETURN community, scc, ring_size
+    ORDER BY ring_size DESC
+&quot;&quot;&quot;</span>)</code></pre>
+<h3 id="network-segmentation">Network Segmentation</h3>
+<pre><code class="hljs language-python">conn.algo.connected_components(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;segment_id&quot;</span>)
+
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    RETURN c.segment_id, count(*) AS customers, sum(c.total_balance) AS total_balance
+    ORDER BY total_balance DESC
+&quot;&quot;&quot;</span>)</code></pre>
+<h3 id="combined-analysis-pipeline">Combined Analysis Pipeline</h3>
+<pre><code class="hljs language-python">algorithms = [
+    (<span class="hljs-string">&quot;pagerank&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>, {<span class="hljs-string">&quot;damping&quot;</span>: <span class="hljs-number">0.85</span>}),
+    (<span class="hljs-string">&quot;louvain&quot;</span>, <span class="hljs-string">&quot;community_id&quot;</span>, {<span class="hljs-string">&quot;resolution&quot;</span>: <span class="hljs-number">1.0</span>}),
+    (<span class="hljs-string">&quot;wcc&quot;</span>, <span class="hljs-string">&quot;component_id&quot;</span>, {}),
+]
+
+<span class="hljs-keyword">for</span> algo_name, prop_name, params <span class="hljs-keyword">in</span> algorithms:
+    <span class="hljs-built_in">exec</span> = conn.algo.run(algo_name, <span class="hljs-string">&quot;Customer&quot;</span>, prop_name, edge_type=<span class="hljs-string">&quot;KNOWS&quot;</span>, params=params)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;<span class="hljs-subst">{algo_name}</span>: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.nodes_updated}</span> nodes in <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.duration_ms}</span>ms&quot;</span>)
+
+<span class="hljs-comment"># Summary</span>
+summary = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    RETURN count(*) AS total, count(DISTINCT c.community_id) AS communities
+&quot;&quot;&quot;</span>)</code></pre>
+<hr>
+<h2 id="8-performance-considerations">8. Performance Considerations</h2>
+<h3 id="native-vs-networkx">Native vs NetworkX</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Native</th>
+<th>NetworkX</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Performance</td>
+<td>Fast (in-DB)</td>
+<td>Slower (data transfer)</td>
+</tr>
+<tr>
+<td>Algorithms</td>
+<td>8 core</td>
+<td>100+ algorithms</td>
+</tr>
+<tr>
+<td>Large Graphs</td>
+<td>Recommended</td>
+<td>Use subgraph filtering</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>Low overhead</td>
+<td>Requires graph in memory</td>
+</tr>
+</tbody></table>
+<h3 id="best-practices">Best Practices</h3>
+<ol>
+<li><strong>Use native algorithms when available</strong> - Much faster for large graphs</li>
+<li><strong>Set appropriate timeouts</strong> - Prevent resource exhaustion</li>
+<li><strong>Filter with subgraphs</strong> - For NetworkX on large graphs</li>
+<li><strong>Clean up properties</strong> - Remove unused result properties</li>
+</ol>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Remove old algorithm properties</span>
+conn.query(<span class="hljs-string">&quot;MATCH (c:Customer) REMOVE c.old_pagerank, c.old_community&quot;</span>)</code></pre>
+<hr>
+<h2 id="9-troubleshooting">9. Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<p><strong>ResourceLockedError:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
+    <span class="hljs-keyword">try</span>:
+        conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr&quot;</span>)
+        <span class="hljs-keyword">break</span>
+    <span class="hljs-keyword">except</span> ResourceLockedError:
+        time.sleep(<span class="hljs-number">5</span>)</code></pre>
+<p><strong>AlgorithmTimeoutError:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">exec</span> = conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr&quot;</span>, timeout=<span class="hljs-number">600</span>)  <span class="hljs-comment"># 10 minutes</span></code></pre>
+<p><strong>AlgorithmNotFoundError:</strong></p>
+<pre><code class="hljs language-python">native = conn.algo.algorithms()
+networkx = conn.networkx.algorithms()
+<span class="hljs-built_in">print</span>([a[<span class="hljs-string">&#x27;name&#x27;</span>] <span class="hljs-keyword">for</span> a <span class="hljs-keyword">in</span> native])</code></pre>
+<h3 id="debugging">Debugging</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Verify results were written</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    WHERE c.pr_score IS NOT NULL
+    RETURN count(*) AS nodes_with_results
+&quot;&quot;&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Nodes with results: <span class="hljs-subst">{result.scalar()}</span>&quot;</span>)
+
+<span class="hljs-comment"># Check for NULL values (algorithm may not cover all nodes)</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    WHERE c.pr_score IS NULL
+    RETURN count(*) AS nodes_without_results
+&quot;&quot;&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Nodes without results: <span class="hljs-subst">{result.scalar()}</span>&quot;</span>)
+
+<span class="hljs-comment"># Inspect schema after algorithm execution</span>
+schema = conn.schema()
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Customer properties: <span class="hljs-subst">{schema.node_labels.get(<span class="hljs-string">&#x27;Customer&#x27;</span>, [])}</span>&quot;</span>)</code></pre>
+<h3 id="error-handling-best-practices">Error Handling Best Practices</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> (
+    AlgorithmFailedError,
+    AlgorithmTimeoutError,
+    AlgorithmNotFoundError,
+    ResourceLockedError
+)
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">run_algorithm_safely</span>(<span class="hljs-params">conn, algo_func, *args, max_retries=<span class="hljs-number">3</span>, **kwargs</span>):
+    <span class="hljs-string">&quot;&quot;&quot;Run algorithm with retry logic and proper error handling.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">for</span> attempt <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(max_retries):
+        <span class="hljs-keyword">try</span>:
+            <span class="hljs-keyword">return</span> algo_func(*args, **kwargs)
+        <span class="hljs-keyword">except</span> ResourceLockedError <span class="hljs-keyword">as</span> e:
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Attempt <span class="hljs-subst">{attempt + <span class="hljs-number">1</span>}</span>: Instance locked by <span class="hljs-subst">{e.holder_username}</span>&quot;</span>)
+            <span class="hljs-keyword">if</span> attempt &lt; max_retries - <span class="hljs-number">1</span>:
+                time.sleep(<span class="hljs-number">10</span>)
+            <span class="hljs-keyword">else</span>:
+                <span class="hljs-keyword">raise</span>
+        <span class="hljs-keyword">except</span> AlgorithmTimeoutError:
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Attempt <span class="hljs-subst">{attempt + <span class="hljs-number">1</span>}</span>: Timeout, retrying with longer timeout&quot;</span>)
+            kwargs[<span class="hljs-string">&#x27;timeout&#x27;</span>] = kwargs.get(<span class="hljs-string">&#x27;timeout&#x27;</span>, <span class="hljs-number">300</span>) * <span class="hljs-number">2</span>
+        <span class="hljs-keyword">except</span> AlgorithmFailedError <span class="hljs-keyword">as</span> e:
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Algorithm failed: <span class="hljs-subst">{e}</span>&quot;</span>)
+            <span class="hljs-keyword">raise</span>
+
+<span class="hljs-comment"># Usage</span>
+<span class="hljs-built_in">exec</span> = run_algorithm_safely(
+    conn, conn.algo.pagerank,
+    <span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>,
+    edge_type=<span class="hljs-string">&quot;KNOWS&quot;</span>
+)</code></pre>
+<hr>
+<h2 id="10-algorithm-categories-explained">10. Algorithm Categories Explained</h2>
+<h3 id="centrality-algorithms-1">Centrality Algorithms</h3>
+<p>Centrality algorithms measure the importance or influence of nodes in a graph.
+Different centrality measures capture different aspects of importance:</p>
+<table>
+<thead>
+<tr>
+<th>Measure</th>
+<th>What it Captures</th>
+<th>When to Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PageRank</td>
+<td>Overall importance via link structure</td>
+<td>Web ranking, influence analysis</td>
+</tr>
+<tr>
+<td>Degree</td>
+<td>Number of direct connections</td>
+<td>Activity level, popularity</td>
+</tr>
+<tr>
+<td>Betweenness</td>
+<td>Control over information flow</td>
+<td>Identifying brokers, bottlenecks</td>
+</tr>
+<tr>
+<td>Closeness</td>
+<td>Average distance to all nodes</td>
+<td>Speed of information spread</td>
+</tr>
+<tr>
+<td>Eigenvector</td>
+<td>Connections to important nodes</td>
+<td>Influence in social networks</td>
+</tr>
+</tbody></table>
+<h3 id="community-detection-algorithms">Community Detection Algorithms</h3>
+<p>Community detection identifies groups of nodes that are more densely connected
+to each other than to the rest of the graph:</p>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Approach</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Louvain</td>
+<td>Modularity optimization</td>
+<td>General purpose, scalable</td>
+</tr>
+<tr>
+<td>Label Propagation</td>
+<td>Neighbor consensus</td>
+<td>Fast, near-linear time</td>
+</tr>
+<tr>
+<td>WCC</td>
+<td>Reachability</td>
+<td>Finding disconnected subgraphs</td>
+</tr>
+<tr>
+<td>SCC</td>
+<td>Mutual reachability</td>
+<td>Detecting cycles, rings</td>
+</tr>
+<tr>
+<td>K-Core</td>
+<td>Degree constraints</td>
+<td>Finding cohesive cores</td>
+</tr>
+</tbody></table>
+<h3 id="pathfinding-algorithms">Pathfinding Algorithms</h3>
+<p>Pathfinding algorithms find routes or measure distances between nodes:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Single shortest path</span>
+<span class="hljs-built_in">exec</span> = conn.algo.shortest_path(<span class="hljs-string">&quot;node_a&quot;</span>, <span class="hljs-string">&quot;node_b&quot;</span>)
+
+<span class="hljs-comment"># For all-pairs analysis, use NetworkX</span>
+<span class="hljs-built_in">exec</span> = conn.networkx.run(<span class="hljs-string">&quot;all_pairs_shortest_path_length&quot;</span>, <span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;distances&quot;</span>)</code></pre>
+<hr>
+<h2 id="11-integration-with-dataframes">11. Integration with DataFrames</h2>
+<p>Algorithm results stored in node properties can be easily exported to DataFrames
+for further analysis:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Run algorithms</span>
+conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;importance&quot;</span>)
+conn.algo.louvain(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;community&quot;</span>)
+conn.networkx.betweenness_centrality(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;betweenness&quot;</span>)
+
+<span class="hljs-comment"># Export to Polars DataFrame</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    RETURN
+        c.customer_id AS id,
+        c.name AS name,
+        c.importance AS pagerank,
+        c.community AS community,
+        c.betweenness AS betweenness
+&quot;&quot;&quot;</span>)
+
+df = result.to_polars()
+
+<span class="hljs-comment"># Analyze in Polars</span>
+community_stats = df.group_by(<span class="hljs-string">&quot;community&quot;</span>).agg([
+    pl.col(<span class="hljs-string">&quot;pagerank&quot;</span>).mean().alias(<span class="hljs-string">&quot;avg_pagerank&quot;</span>),
+    pl.col(<span class="hljs-string">&quot;pagerank&quot;</span>).<span class="hljs-built_in">max</span>().alias(<span class="hljs-string">&quot;max_pagerank&quot;</span>),
+    pl.col(<span class="hljs-string">&quot;betweenness&quot;</span>).mean().alias(<span class="hljs-string">&quot;avg_betweenness&quot;</span>),
+    pl.count().alias(<span class="hljs-string">&quot;members&quot;</span>)
+]).sort(<span class="hljs-string">&quot;avg_pagerank&quot;</span>, descending=<span class="hljs-literal">True</span>)
+
+<span class="hljs-built_in">print</span>(community_stats)
+
+<span class="hljs-comment"># Export to CSV for reporting</span>
+result.to_csv(<span class="hljs-string">&quot;/tmp/customer_analysis.csv&quot;</span>)
+
+<span class="hljs-comment"># Export to Parquet for data pipelines</span>
+result.to_parquet(<span class="hljs-string">&quot;/tmp/customer_analysis.parquet&quot;</span>)</code></pre>
+<hr>
+<h2 id="12-batch-algorithm-execution">12. Batch Algorithm Execution</h2>
+<p>For running multiple algorithms efficiently, batch them together:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">run_full_analysis</span>(<span class="hljs-params">conn, node_label: <span class="hljs-built_in">str</span>, edge_type: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">dict</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Run comprehensive graph analysis and return summary.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">import</span> time
+
+    results = {}
+    start = time.time()
+
+    <span class="hljs-comment"># Define algorithms to run</span>
+    algorithms = [
+        (<span class="hljs-string">&quot;pagerank&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>, {<span class="hljs-string">&quot;damping&quot;</span>: <span class="hljs-number">0.85</span>}),
+        (<span class="hljs-string">&quot;louvain&quot;</span>, <span class="hljs-string">&quot;community_id&quot;</span>, {}),
+        (<span class="hljs-string">&quot;wcc&quot;</span>, <span class="hljs-string">&quot;component_id&quot;</span>, {}),
+        (<span class="hljs-string">&quot;kcore&quot;</span>, <span class="hljs-string">&quot;k_degree&quot;</span>, {}),
+    ]
+
+    <span class="hljs-keyword">for</span> algo_name, prop_name, params <span class="hljs-keyword">in</span> algorithms:
+        algo_start = time.time()
+        <span class="hljs-keyword">try</span>:
+            <span class="hljs-built_in">exec</span> = conn.algo.run(
+                algo_name,
+                node_label=node_label,
+                property_name=prop_name,
+                edge_type=edge_type,
+                params=params
+            )
+            results[algo_name] = {
+                <span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;success&quot;</span>,
+                <span class="hljs-string">&quot;nodes_updated&quot;</span>: <span class="hljs-built_in">exec</span>.nodes_updated,
+                <span class="hljs-string">&quot;duration_ms&quot;</span>: <span class="hljs-built_in">exec</span>.duration_ms
+            }
+        <span class="hljs-keyword">except</span> Exception <span class="hljs-keyword">as</span> e:
+            results[algo_name] = {
+                <span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;failed&quot;</span>,
+                <span class="hljs-string">&quot;error&quot;</span>: <span class="hljs-built_in">str</span>(e)
+            }
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  <span class="hljs-subst">{algo_name}</span>: <span class="hljs-subst">{time.time() - algo_start:<span class="hljs-number">.1</span>f}</span>s&quot;</span>)
+
+    results[<span class="hljs-string">&quot;total_time_seconds&quot;</span>] = time.time() - start
+    <span class="hljs-keyword">return</span> results
+
+<span class="hljs-comment"># Usage</span>
+analysis = run_full_analysis(conn, <span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;KNOWS&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Analysis completed in <span class="hljs-subst">{analysis[<span class="hljs-string">&#x27;total_time_seconds&#x27;</span>]:<span class="hljs-number">.1</span>f}</span>s&quot;</span>)</code></pre>
+
+  </div>
+
+  <!-- Mermaid with ELK layout support -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+
+    // Register ELK layout engine
+    mermaid.registerLayoutLoaders(elkLayouts);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+    
+  </script>
+</body>
+</html>

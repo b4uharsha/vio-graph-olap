@@ -1,0 +1,18 @@
+dependencies:
+- name: control-plane
+  repository: file://../control-plane
+  version: 1.0.0
+- name: export-worker
+  repository: file://../export-worker
+  version: 1.0.0
+- name: system
+  repository: file://../system
+  version: 1.0.0
+- name: observability
+  repository: file://../observability
+  version: 1.0.0
+- name: documentation
+  repository: file://../documentation
+  version: 1.0.0
+digest: sha256:ebc77d2a8d01d95d691aadd2d2306beb83e3cc3f19fb57adabb5b8ca55180d9c
+generated: "2026-01-15T10:22:56.080494Z"

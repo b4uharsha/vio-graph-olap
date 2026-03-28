@@ -1,0 +1,27 @@
+{
+  "name": "@graph-olap/schemas",
+  "version": "1.0.0",
+  "description": "TypeScript types for Graph OLAP Platform, generated from Pydantic schemas",
+  "type": "module",
+  "main": "generated/typescript/index.ts",
+  "types": "generated/typescript/index.ts",
+  "scripts": {
+    "generate": "python scripts/generate_typescript.py",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf generated/typescript/*"
+  },
+  "devDependencies": {
+    "json-schema-to-typescript": "^15.0.4",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "generated/typescript/**/*.ts"
+  ],
+  "keywords": [
+    "graph-olap",
+    "typescript",
+    "types",
+    "schemas"
+  ],
+  "license": "MIT"
+}

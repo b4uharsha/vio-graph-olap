@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gke-configuration.reference</title>
+
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+
+  <style>
+    :root {
+      --max-width: 900px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+      --color-text: #24292f;
+      --color-bg: #ffffff;
+      --color-border: #d0d7de;
+      --color-link: #0969da;
+      --color-code-bg: #f6f8fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 2em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    p {
+      margin: 1em 0;
+    }
+
+    pre {
+      background: var(--color-code-bg);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      line-height: 1.45;
+    }
+
+    pre.mermaid {
+      background: transparent;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+    }
+
+    :not(pre) > code {
+      background: var(--color-code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 0 1em;
+      border-left: 4px solid var(--color-border);
+      color: #57606a;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+
+    th, td {
+      border: 1px solid var(--color-border);
+      padding: 0.5em 1em;
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-code-bg);
+      font-weight: 600;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a.image-link {
+      display: block;
+      cursor: zoom-in;
+    }
+
+    a.image-link:hover img {
+      opacity: 0.9;
+      outline: 2px solid var(--color-link);
+      outline-offset: 2px;
+    }
+
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    li {
+      margin: 0.25em 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 2em 0;
+    }
+
+    details {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      background: var(--color-code-bg);
+      border-radius: 6px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .container {
+        max-width: none;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="gke-configuration-reference">GKE Configuration Reference</h1>
+<p>This document captures Google Kubernetes Engine (GKE) configuration patterns, best practices, and recommendations for the Graph OLAP Platform.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Read these documents first:</p>
+<ul>
+<li><a href="../foundation/architectural.guardrails.html">architectural.guardrails.md</a> - Platform technology choices</li>
+<li><a href="../system-design/system.architecture.design.html">system.architecture.design.md</a> - Overall architecture</li>
+</ul>
+<h2 id="related-documents">Related Documents</h2>
+<ul>
+<li><a href="./ryugraph-performance.reference.html">ryugraph-performance.reference.md</a> - Pod memory configuration for RyuGraph</li>
+<li><a href="../component-designs/ryugraph-wrapper.design.html">ryugraph-wrapper.design.md</a> - Wrapper pod specifications</li>
+</ul>
+<hr>
+<h2 id="cluster-mode-selection">Cluster Mode Selection</h2>
+<h3 id="standard-vs-autopilot">Standard vs Autopilot</h3>
+<p>From <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/choose-cluster-mode">GKE modes of operation</a>:</p>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Standard</th>
+<th>Autopilot</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Node management</td>
+<td>Manual</td>
+<td>Fully managed</td>
+</tr>
+<tr>
+<td>Pricing</td>
+<td>Per node (VM)</td>
+<td>Per pod (resources)</td>
+</tr>
+<tr>
+<td>Max pods/node</td>
+<td>256</td>
+<td>32</td>
+</tr>
+<tr>
+<td>Privileged containers</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Custom node configs</td>
+<td>Yes</td>
+<td>Limited</td>
+</tr>
+<tr>
+<td>Stateful workloads</td>
+<td><strong>Recommended</strong></td>
+<td>Possible</td>
+</tr>
+<tr>
+<td>Control</td>
+<td>Full</td>
+<td>Limited</td>
+</tr>
+</tbody></table>
+<h3 id="recommendation-gke-standard">Recommendation: GKE Standard</h3>
+<p>For the Graph OLAP Platform, <strong>GKE Standard</strong> is recommended because:</p>
+<ol>
+<li><strong>Stateful workloads</strong>: RyuGraph instances are stateful with persistent volumes</li>
+<li><strong>Custom node pools</strong>: Need memory-optimized nodes (n2-highmem) with taints</li>
+<li><strong>Pod density control</strong>: Graph instances need guaranteed resources</li>
+<li><strong>Privileged operations</strong>: May need host-level access for debugging</li>
+</ol>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Cluster creation</span>
+<span class="hljs-string">gcloud</span> <span class="hljs-string">container</span> <span class="hljs-string">clusters</span> <span class="hljs-string">create</span> <span class="hljs-string">graph-olap-cluster</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--mode=standard</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--region=us-central1</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--release-channel=regular</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--enable-ip-alias</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--enable-private-nodes</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--master-ipv4-cidr=172.16.0.0/28</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--workload-pool=PROJECT_ID.svc.id.goog</span></code></pre>
+<hr>
+<h2 id="networking">Networking</h2>
+<h3 id="vpc-native-clusters">VPC-Native Clusters</h3>
+<p>From <a href="https://cloud.google.com/kubernetes-engine/docs/best-practices/networking">GKE networking best practices</a>:</p>
+<p>VPC-native clusters are <strong>required</strong> and provide:</p>
+<ul>
+<li>Pod-level firewall rules</li>
+<li>Direct VPC routing (no tunneling)</li>
+<li>Better performance</li>
+<li>Required for private clusters and Shared VPC</li>
+</ul>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># VPC-native configuration</span>
+<span class="hljs-string">gcloud</span> <span class="hljs-string">container</span> <span class="hljs-string">clusters</span> <span class="hljs-string">create</span> <span class="hljs-string">graph-olap-cluster</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--enable-ip-alias</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--cluster-ipv4-cidr=/17</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--services-ipv4-cidr=/22</span></code></pre>
+<h3 id="ip-address-planning">IP Address Planning</h3>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>CIDR</th>
+<th>Addresses</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Nodes</td>
+<td>/24</td>
+<td>254</td>
+<td>One per node</td>
+</tr>
+<tr>
+<td>Pods</td>
+<td>/17</td>
+<td>32,768</td>
+<td>~110 per node default</td>
+</tr>
+<tr>
+<td>Services</td>
+<td>/22</td>
+<td>1,024</td>
+<td>Cluster-wide</td>
+</tr>
+<tr>
+<td>Master</td>
+<td>/28</td>
+<td>16</td>
+<td>Control plane</td>
+</tr>
+</tbody></table>
+<p><strong>Scaling consideration</strong>: Each new node requires its own IP + pod IP range. Plan for maximum cluster size.</p>
+<h3 id="private-clusters">Private Clusters</h3>
+<p>From <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/private-cluster-concept">GKE private clusters</a>:</p>
+<p>Private clusters provide:</p>
+<ul>
+<li>No public IPs on nodes</li>
+<li>Control plane accessible via private endpoint</li>
+<li>Reduced attack surface</li>
+</ul>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Private cluster configuration</span>
+<span class="hljs-string">gcloud</span> <span class="hljs-string">container</span> <span class="hljs-string">clusters</span> <span class="hljs-string">create</span> <span class="hljs-string">graph-olap-cluster</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--enable-private-nodes</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--enable-private-endpoint</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--master-ipv4-cidr=172.16.0.0/28</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--enable-master-authorized-networks</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--master-authorized-networks=10.0.0.0/8</span></code></pre>
+<p><strong>Required for private clusters:</strong></p>
+<ul>
+<li>Cloud NAT for outbound internet access</li>
+<li>Private Google Access for GCP APIs</li>
+<li>VPN/Interconnect for on-premises access</li>
+</ul>
+<h3 id="cloud-nat-configuration">Cloud NAT Configuration</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Cloud NAT for private cluster egress</span>
+<span class="hljs-string">gcloud</span> <span class="hljs-string">compute</span> <span class="hljs-string">routers</span> <span class="hljs-string">create</span> <span class="hljs-string">graph-olap-router</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--network=default</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--region=us-central1</span>
+
+<span class="hljs-string">gcloud</span> <span class="hljs-string">compute</span> <span class="hljs-string">routers</span> <span class="hljs-string">nats</span> <span class="hljs-string">create</span> <span class="hljs-string">graph-olap-nat</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--router=graph-olap-router</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--region=us-central1</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--nat-all-subnet-ip-ranges</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--auto-allocate-nat-external-ips</span></code></pre>
+<hr>
+<h2 id="ingress-and-load-balancing">Ingress and Load Balancing</h2>
+<h3 id="load-balancer-types">Load Balancer Types</h3>
+<p>From <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/about-load-balancing">GKE load balancing</a>:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Use Case</th>
+<th>Annotation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>External HTTP(S)</td>
+<td>Public web traffic</td>
+<td><code>kubernetes.io/ingress.class: &quot;gce&quot;</code></td>
+</tr>
+<tr>
+<td>Internal HTTP(S)</td>
+<td>Internal services</td>
+<td><code>kubernetes.io/ingress.class: &quot;gce-internal&quot;</code></td>
+</tr>
+<tr>
+<td>External TCP/UDP</td>
+<td>Non-HTTP public</td>
+<td><code>cloud.google.com/load-balancer-type: &quot;External&quot;</code></td>
+</tr>
+<tr>
+<td>Internal TCP/UDP</td>
+<td>Non-HTTP internal</td>
+<td><code>cloud.google.com/load-balancer-type: &quot;Internal&quot;</code></td>
+</tr>
+</tbody></table>
+<h3 id="recommended-gateway-api">Recommended: Gateway API</h3>
+<p>From <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/gateway-api">GKE Gateway</a>:</p>
+<p>Gateway API is recommended for new deployments over Ingress:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Gateway for internal load balancing</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">gateway.networking.k8s.io/v1beta1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Gateway</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">graph-olap-gateway</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">gatewayClassName:</span> <span class="hljs-string">gke-l7-rilb</span>  <span class="hljs-comment"># Regional internal LB</span>
+  <span class="hljs-attr">listeners:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">https</span>
+      <span class="hljs-attr">protocol:</span> <span class="hljs-string">HTTPS</span>
+      <span class="hljs-attr">port:</span> <span class="hljs-number">443</span>
+      <span class="hljs-attr">tls:</span>
+        <span class="hljs-attr">mode:</span> <span class="hljs-string">Terminate</span>
+        <span class="hljs-attr">certificateRefs:</span>
+          <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">graph-olap-cert</span></code></pre>
+<h3 id="control-plane-ingress-configuration">Control Plane Ingress Configuration</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Internal Ingress for Control Plane</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">networking.k8s.io/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Ingress</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">control-plane-ingress</span>
+  <span class="hljs-attr">annotations:</span>
+    <span class="hljs-attr">kubernetes.io/ingress.class:</span> <span class="hljs-string">&quot;gce-internal&quot;</span>
+    <span class="hljs-attr">kubernetes.io/ingress.regional-static-ip-name:</span> <span class="hljs-string">&quot;control-plane-ip&quot;</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">tls:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">hosts:</span>
+        <span class="hljs-bullet">-</span> <span class="hljs-string">control-plane.internal</span>
+      <span class="hljs-attr">secretName:</span> <span class="hljs-string">control-plane-tls</span>
+  <span class="hljs-attr">rules:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">host:</span> <span class="hljs-string">control-plane.internal</span>
+      <span class="hljs-attr">http:</span>
+        <span class="hljs-attr">paths:</span>
+          <span class="hljs-bullet">-</span> <span class="hljs-attr">path:</span> <span class="hljs-string">/*</span>
+            <span class="hljs-attr">pathType:</span> <span class="hljs-string">ImplementationSpecific</span>
+            <span class="hljs-attr">backend:</span>
+              <span class="hljs-attr">service:</span>
+                <span class="hljs-attr">name:</span> <span class="hljs-string">control-plane</span>
+                <span class="hljs-attr">port:</span>
+                  <span class="hljs-attr">number:</span> <span class="hljs-number">8000</span></code></pre>
+<h3 id="graph-instance-routing">Graph Instance Routing</h3>
+<p>Graph instances are routed via path-based ingress:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Dynamic path routing for instances</span>
+<span class="hljs-comment"># Added by Control Plane when instance is created</span>
+<span class="hljs-bullet">-</span> <span class="hljs-attr">path:</span> <span class="hljs-string">/{instance_id}/*</span>
+  <span class="hljs-attr">pathType:</span> <span class="hljs-string">ImplementationSpecific</span>
+  <span class="hljs-attr">backend:</span>
+    <span class="hljs-attr">service:</span>
+      <span class="hljs-attr">name:</span> <span class="hljs-string">graph-svc-{instance_id}</span>
+      <span class="hljs-attr">port:</span>
+        <span class="hljs-attr">number:</span> <span class="hljs-number">8000</span></code></pre>
+<hr>
+<h2 id="node-pools">Node Pools</h2>
+<h3 id="node-pool-strategy">Node Pool Strategy</h3>
+<table>
+<thead>
+<tr>
+<th>Pool</th>
+<th>Purpose</th>
+<th>Machine Type</th>
+<th>Taints</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>default-pool</code></td>
+<td>System workloads</td>
+<td>e2-standard-4</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>control-plane-pool</code></td>
+<td>Control Plane</td>
+<td>e2-standard-4</td>
+<td><code>workload=control-plane:NoSchedule</code></td>
+</tr>
+<tr>
+<td><code>graph-instances-pool</code></td>
+<td>RyuGraph pods</td>
+<td>n2-highmem-4</td>
+<td><code>workload=graph-instance:NoSchedule</code></td>
+</tr>
+</tbody></table>
+<h3 id="graph-instances-node-pool">Graph Instances Node Pool</h3>
+<p>From <a href="./ryugraph-performance.reference.html#gke-node-pool-configuration">ryugraph-performance.reference.md</a>:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Terraform configuration</span>
+<span class="hljs-string">resource</span> <span class="hljs-string">&quot;google_container_node_pool&quot;</span> <span class="hljs-string">&quot;graph_instances&quot;</span> {
+  <span class="hljs-string">name</span>       <span class="hljs-string">=</span> <span class="hljs-string">&quot;graph-instances&quot;</span>
+  <span class="hljs-string">cluster</span>    <span class="hljs-string">=</span> <span class="hljs-string">google_container_cluster.primary.name</span>
+  <span class="hljs-string">location</span>   <span class="hljs-string">=</span> <span class="hljs-string">&quot;us-central1&quot;</span>
+
+  <span class="hljs-string">initial_node_count</span> <span class="hljs-string">=</span> <span class="hljs-number">1</span>
+
+  <span class="hljs-string">autoscaling</span> {
+    <span class="hljs-string">min_node_count</span> <span class="hljs-string">=</span> <span class="hljs-number">0</span>
+    <span class="hljs-string">max_node_count</span> <span class="hljs-string">=</span> <span class="hljs-number">10</span>
+  }
+
+  <span class="hljs-string">node_config</span> {
+    <span class="hljs-string">machine_type</span> <span class="hljs-string">=</span> <span class="hljs-string">&quot;n2-highmem-4&quot;</span>  <span class="hljs-comment"># 4 vCPU, 32GB RAM</span>
+    <span class="hljs-string">disk_size_gb</span> <span class="hljs-string">=</span> <span class="hljs-number">100</span>
+    <span class="hljs-string">disk_type</span>    <span class="hljs-string">=</span> <span class="hljs-string">&quot;pd-ssd&quot;</span>
+
+    <span class="hljs-comment"># Workload Identity</span>
+    <span class="hljs-string">workload_metadata_config</span> {
+      <span class="hljs-string">mode</span> <span class="hljs-string">=</span> <span class="hljs-string">&quot;GKE_METADATA&quot;</span>
+    }
+
+    <span class="hljs-comment"># Isolate graph workloads</span>
+    <span class="hljs-string">taint</span> {
+      <span class="hljs-string">key</span>    <span class="hljs-string">=</span> <span class="hljs-string">&quot;workload&quot;</span>
+      <span class="hljs-string">value</span>  <span class="hljs-string">=</span> <span class="hljs-string">&quot;graph-instance&quot;</span>
+      <span class="hljs-string">effect</span> <span class="hljs-string">=</span> <span class="hljs-string">&quot;NO_SCHEDULE&quot;</span>
+    }
+
+    <span class="hljs-string">labels</span> <span class="hljs-string">=</span> {
+      <span class="hljs-string">&quot;workload-type&quot;</span> <span class="hljs-string">=</span> <span class="hljs-string">&quot;graph-instance&quot;</span>
+    }
+
+    <span class="hljs-string">oauth_scopes</span> <span class="hljs-string">=</span> [
+      <span class="hljs-string">&quot;https://www.googleapis.com/auth/cloud-platform&quot;</span>
+    ]
+  }
+
+  <span class="hljs-string">management</span> {
+    <span class="hljs-string">auto_repair</span>  <span class="hljs-string">=</span> <span class="hljs-literal">true</span>
+    <span class="hljs-string">auto_upgrade</span> <span class="hljs-string">=</span> <span class="hljs-literal">true</span>
+  }
+}</code></pre>
+<h3 id="machine-type-selection">Machine Type Selection</h3>
+<table>
+<thead>
+<tr>
+<th>Machine Type</th>
+<th>vCPU</th>
+<th>Memory</th>
+<th>Memory/CPU</th>
+<th>Monthly Cost*</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>e2-standard-4</td>
+<td>4</td>
+<td>16 GB</td>
+<td>4 GB</td>
+<td>~$97</td>
+<td>General workloads</td>
+</tr>
+<tr>
+<td>e2-highmem-4</td>
+<td>4</td>
+<td>32 GB</td>
+<td>8 GB</td>
+<td>~$135</td>
+<td>Memory-intensive</td>
+</tr>
+<tr>
+<td><strong>n2-highmem-4</strong></td>
+<td>4</td>
+<td>32 GB</td>
+<td>8 GB</td>
+<td>~$156</td>
+<td><strong>Graph instances</strong></td>
+</tr>
+<tr>
+<td>n2-highmem-8</td>
+<td>8</td>
+<td>64 GB</td>
+<td>8 GB</td>
+<td>~$312</td>
+<td>Large graphs</td>
+</tr>
+</tbody></table>
+<p>*Approximate us-central1 pricing, on-demand</p>
+<p><strong>n2-highmem-4</strong> recommended for graph instances due to:</p>
+<ul>
+<li>Higher memory bandwidth than e2 series</li>
+<li>Better single-thread performance</li>
+<li>Consistent performance (no CPU bursting)</li>
+</ul>
+<h3 id="node-auto-provisioning-optional">Node Auto-Provisioning (Optional)</h3>
+<p>From <a href="https://docs.cloud.google.com/kubernetes-engine/docs/how-to/node-auto-provisioning">GKE node auto-provisioning</a>:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Enable NAP for automatic node pool creation</span>
+<span class="hljs-string">gcloud</span> <span class="hljs-string">container</span> <span class="hljs-string">clusters</span> <span class="hljs-string">update</span> <span class="hljs-string">graph-olap-cluster</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--enable-autoprovisioning</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--min-cpu=0</span> <span class="hljs-string">--max-cpu=100</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--min-memory=0</span> <span class="hljs-string">--max-memory=1000</span> <span class="hljs-string">\</span>
+  <span class="hljs-string">--autoprovisioning-scopes=https://www.googleapis.com/auth/cloud-platform</span></code></pre>
+<hr>
+<h2 id="workload-identity">Workload Identity</h2>
+<h3 id="overview">Overview</h3>
+<p>From <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity">Workload Identity Federation for GKE</a>:</p>
+<p>Workload Identity allows Kubernetes service accounts to act as IAM service accounts, eliminating the need for service account keys.</p>
+<pre><code class="hljs">┌─────────────────────────────────────────────────────────────┐
+│                        GKE Cluster                          │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                     Pod                              │   │
+│  │  K8s SA: graph-wrapper                               │   │
+│  │     │                                                │   │
+│  │     ▼                                                │   │
+│  │  GKE Metadata Server                                 │   │
+│  │     │                                                │   │
+│  └─────┼────────────────────────────────────────────────┘   │
+│        │                                                    │
+│        ▼                                                    │
+│  Workload Identity Pool                                     │
+│  PROJECT_ID.svc.id.goog                                     │
+└────────┼────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      IAM                                    │
+│  GCP SA: graph-wrapper@PROJECT_ID.iam.gserviceaccount.com   │
+│  Roles: storage.objectViewer, logging.logWriter             │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+<h3 id="configuration">Configuration</h3>
+<p><strong>Step 1: Enable on cluster</strong></p>
+<pre><code class="hljs language-bash">gcloud container clusters update graph-olap-cluster \
+  --workload-pool=PROJECT_ID.svc.id.goog</code></pre>
+<p><strong>Step 2: Create GCP service account</strong></p>
+<pre><code class="hljs language-bash">gcloud iam service-accounts create graph-wrapper \
+  --display-name=<span class="hljs-string">&quot;Graph Wrapper Service Account&quot;</span>
+
+<span class="hljs-comment"># Grant permissions</span>
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member=<span class="hljs-string">&quot;serviceAccount:graph-wrapper@PROJECT_ID.iam.gserviceaccount.com&quot;</span> \
+  --role=<span class="hljs-string">&quot;roles/storage.objectViewer&quot;</span></code></pre>
+<p><strong>Step 3: Create Kubernetes service account</strong></p>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">ServiceAccount</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">graph-wrapper</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">graph-olap</span>
+  <span class="hljs-attr">annotations:</span>
+    <span class="hljs-attr">iam.gke.io/gcp-service-account:</span> <span class="hljs-string">graph-wrapper@PROJECT_ID.iam.gserviceaccount.com</span></code></pre>
+<p><strong>Step 4: Bind accounts</strong></p>
+<pre><code class="hljs language-bash">gcloud iam service-accounts add-iam-policy-binding \
+  graph-wrapper@PROJECT_ID.iam.gserviceaccount.com \
+  --role=<span class="hljs-string">&quot;roles/iam.workloadIdentityUser&quot;</span> \
+  --member=<span class="hljs-string">&quot;serviceAccount:PROJECT_ID.svc.id.goog[graph-olap/graph-wrapper]&quot;</span></code></pre>
+<h3 id="service-accounts-summary">Service Accounts Summary</h3>
+<table>
+<thead>
+<tr>
+<th>K8s Service Account</th>
+<th>GCP Service Account</th>
+<th>Roles</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>control-plane</code></td>
+<td><code>control-plane@PROJECT.iam</code></td>
+<td><code>cloudsql.client</code>, <code>pubsub.publisher</code>, <code>storage.admin</code></td>
+</tr>
+<tr>
+<td><code>graph-wrapper</code></td>
+<td><code>graph-wrapper@PROJECT.iam</code></td>
+<td><code>storage.objectViewer</code>, <code>logging.logWriter</code></td>
+</tr>
+<tr>
+<td><code>export-worker</code></td>
+<td><code>export-worker@PROJECT.iam</code></td>
+<td><code>storage.objectAdmin</code>, <code>cloudtasks.enqueuer</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="storage">Storage</h2>
+<h3 id="storageclass-configuration">StorageClass Configuration</h3>
+<p>From <a href="https://docs.cloud.google.com/kubernetes-engine/docs/concepts/persistent-volumes">GKE persistent volumes</a>:</p>
+<p><strong>Default StorageClasses (GKE 1.24+):</strong></p>
+<table>
+<thead>
+<tr>
+<th>StorageClass</th>
+<th>Disk Type</th>
+<th>Replication</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>standard-rwo</code></td>
+<td>pd-balanced</td>
+<td>Zonal</td>
+<td>General workloads</td>
+</tr>
+<tr>
+<td><code>premium-rwo</code></td>
+<td>pd-ssd</td>
+<td>Zonal</td>
+<td>High IOPS</td>
+</tr>
+<tr>
+<td><code>standard-rwx</code></td>
+<td>Filestore</td>
+<td>Regional</td>
+<td>Shared access</td>
+</tr>
+</tbody></table>
+<h3 id="custom-storageclass-for-graph-instances">Custom StorageClass for Graph Instances</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">storage.k8s.io/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">StorageClass</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">graph-instance-ssd</span>
+<span class="hljs-attr">provisioner:</span> <span class="hljs-string">pd.csi.storage.gke.io</span>
+<span class="hljs-attr">parameters:</span>
+  <span class="hljs-attr">type:</span> <span class="hljs-string">pd-ssd</span>
+  <span class="hljs-attr">replication-type:</span> <span class="hljs-string">none</span>  <span class="hljs-comment"># Zonal (single-zone)</span>
+<span class="hljs-attr">volumeBindingMode:</span> <span class="hljs-string">WaitForFirstConsumer</span>
+<span class="hljs-attr">allowVolumeExpansion:</span> <span class="hljs-literal">true</span>
+<span class="hljs-attr">reclaimPolicy:</span> <span class="hljs-string">Delete</span></code></pre>
+<h3 id="persistentvolumeclaim-for-graph-instance">PersistentVolumeClaim for Graph Instance</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">PersistentVolumeClaim</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">graph-instance-{instance_id}-pvc</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">graph-olap</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">accessModes:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">ReadWriteOnce</span>
+  <span class="hljs-attr">storageClassName:</span> <span class="hljs-string">graph-instance-ssd</span>
+  <span class="hljs-attr">resources:</span>
+    <span class="hljs-attr">requests:</span>
+      <span class="hljs-attr">storage:</span> <span class="hljs-string">50Gi</span>  <span class="hljs-comment"># Adjust based on graph size</span></code></pre>
+<h3 id="storage-sizing-guidelines">Storage Sizing Guidelines</h3>
+<table>
+<thead>
+<tr>
+<th>Graph Size (edges)</th>
+<th>Recommended PVC</th>
+<th>Disk Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&lt; 1M</td>
+<td>10Gi</td>
+<td>pd-balanced</td>
+</tr>
+<tr>
+<td>1M - 10M</td>
+<td>50Gi</td>
+<td>pd-ssd</td>
+</tr>
+<tr>
+<td>10M - 100M</td>
+<td>100Gi</td>
+<td>pd-ssd</td>
+</tr>
+<tr>
+<td>&gt; 100M</td>
+<td>200Gi+</td>
+<td>pd-ssd</td>
+</tr>
+</tbody></table>
+<p><strong>Note</strong>: RyuGraph uses disk for buffer pool spilling. Larger disks provide better I/O performance.</p>
+<hr>
+<h2 id="resource-management">Resource Management</h2>
+<h3 id="namespace-resource-quotas">Namespace Resource Quotas</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">ResourceQuota</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">graph-olap-quota</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">graph-olap</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">hard:</span>
+    <span class="hljs-attr">requests.cpu:</span> <span class="hljs-string">&quot;100&quot;</span>
+    <span class="hljs-attr">requests.memory:</span> <span class="hljs-string">&quot;200Gi&quot;</span>
+    <span class="hljs-attr">limits.cpu:</span> <span class="hljs-string">&quot;200&quot;</span>
+    <span class="hljs-attr">limits.memory:</span> <span class="hljs-string">&quot;400Gi&quot;</span>
+    <span class="hljs-attr">persistentvolumeclaims:</span> <span class="hljs-string">&quot;50&quot;</span>
+    <span class="hljs-attr">pods:</span> <span class="hljs-string">&quot;100&quot;</span></code></pre>
+<h3 id="limitrange-for-defaults">LimitRange for Defaults</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">LimitRange</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">graph-olap-limits</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">graph-olap</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">limits:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">type:</span> <span class="hljs-string">Container</span>
+      <span class="hljs-attr">default:</span>
+        <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;1000m&quot;</span>
+        <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;4Gi&quot;</span>
+      <span class="hljs-attr">defaultRequest:</span>
+        <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;500m&quot;</span>
+        <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;2Gi&quot;</span>
+      <span class="hljs-attr">max:</span>
+        <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;4000m&quot;</span>
+        <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;16Gi&quot;</span>
+      <span class="hljs-attr">min:</span>
+        <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;100m&quot;</span>
+        <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;256Mi&quot;</span></code></pre>
+<h3 id="pod-resource-configuration">Pod Resource Configuration</h3>
+<p>See <a href="./ryugraph-performance.reference.html#kubernetes-memory-configuration">ryugraph-performance.reference.md</a> for detailed pod resource recommendations.</p>
+<p><strong>Summary:</strong></p>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Graph Instance Pod</span>
+<span class="hljs-attr">resources:</span>
+  <span class="hljs-attr">requests:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;3Gi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;1000m&quot;</span>
+  <span class="hljs-attr">limits:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;8Gi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;2000m&quot;</span>
+
+<span class="hljs-comment"># Control Plane Pod</span>
+<span class="hljs-attr">resources:</span>
+  <span class="hljs-attr">requests:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;512Mi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;250m&quot;</span>
+  <span class="hljs-attr">limits:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;2Gi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;1000m&quot;</span></code></pre>
+<hr>
+<h2 id="observability">Observability</h2>
+<h3 id="gke-monitoring-integration">GKE Monitoring Integration</h3>
+<p>From <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/observability">GKE observability</a>:</p>
+<p>Enable all observability features:</p>
+<pre><code class="hljs language-bash">gcloud container clusters update graph-olap-cluster \
+  --enable-managed-prometheus \
+  --logging=SYSTEM,WORKLOAD \
+  --monitoring=SYSTEM,WORKLOAD</code></pre>
+<h3 id="managed-prometheus">Managed Prometheus</h3>
+<p>From <a href="https://docs.cloud.google.com/stackdriver/docs/managed-prometheus">Google Cloud Managed Service for Prometheus</a>:</p>
+<p>Managed Prometheus is enabled by default on GKE. Configure scraping with PodMonitoring:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">monitoring.googleapis.com/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">PodMonitoring</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">control-plane-metrics</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">graph-olap</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">selector:</span>
+    <span class="hljs-attr">matchLabels:</span>
+      <span class="hljs-attr">app:</span> <span class="hljs-string">control-plane</span>
+  <span class="hljs-attr">endpoints:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">port:</span> <span class="hljs-string">metrics</span>
+      <span class="hljs-attr">interval:</span> <span class="hljs-string">30s</span>
+      <span class="hljs-attr">path:</span> <span class="hljs-string">/metrics</span></code></pre>
+<h3 id="key-metrics-to-monitor">Key Metrics to Monitor</h3>
+<p><strong>Cluster Level:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Query</th>
+<th>Alert Threshold</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Node CPU</td>
+<td><code>avg(rate(node_cpu_seconds_total{mode!=&quot;idle&quot;}[5m]))</code></td>
+<td>&gt; 80%</td>
+</tr>
+<tr>
+<td>Node Memory</td>
+<td><code>node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes</code></td>
+<td>&lt; 20%</td>
+</tr>
+<tr>
+<td>Pod Restarts</td>
+<td><code>increase(kube_pod_container_status_restarts_total[1h])</code></td>
+<td>&gt; 5</td>
+</tr>
+</tbody></table>
+<p><strong>Application Level:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Query</th>
+<th>Alert Threshold</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Request Latency</td>
+<td><code>histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))</code></td>
+<td>&gt; 2s</td>
+</tr>
+<tr>
+<td>Error Rate</td>
+<td><code>rate(http_requests_total{status=~&quot;5..&quot;}[5m]) / rate(http_requests_total[5m])</code></td>
+<td>&gt; 1%</td>
+</tr>
+<tr>
+<td>Graph Load Time</td>
+<td><code>graph_load_duration_seconds</code></td>
+<td>&gt; 300s</td>
+</tr>
+</tbody></table>
+<h3 id="logging-configuration">Logging Configuration</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Structured logging configuration</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">ConfigMap</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">logging-config</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">graph-olap</span>
+<span class="hljs-attr">data:</span>
+  <span class="hljs-attr">LOG_FORMAT:</span> <span class="hljs-string">json</span>
+  <span class="hljs-attr">LOG_LEVEL:</span> <span class="hljs-string">INFO</span></code></pre>
+<p>All application logs automatically flow to Cloud Logging when using structured JSON format.</p>
+<hr>
+<h2 id="cost-optimization">Cost Optimization</h2>
+<h3 id="discount-strategies">Discount Strategies</h3>
+<p>From <a href="https://cloud.google.com/blog/products/containers-kubernetes/maximizing-gke-discounts-kubernetes-cost-optimization-strategies">GKE cost optimization</a>:</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Discount</th>
+<th>Commitment</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>On-demand</td>
+<td>0%</td>
+<td>None</td>
+<td>Variable workloads</td>
+</tr>
+<tr>
+<td>Spot VMs</td>
+<td>60-91%</td>
+<td>None</td>
+<td>Fault-tolerant batch</td>
+</tr>
+<tr>
+<td>CUD 1-year</td>
+<td>28-37%</td>
+<td>1 year</td>
+<td>Steady baseline</td>
+</tr>
+<tr>
+<td>CUD 3-year</td>
+<td>46-70%</td>
+<td>3 years</td>
+<td>Long-term stable</td>
+</tr>
+</tbody></table>
+<h3 id="recommended-approach">Recommended Approach</h3>
+<pre><code class="hljs">┌─────────────────────────────────────────────────────────────┐
+│                    Cost Optimization Strategy               │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────────┐                                        │
+│  │   Control Plane │  On-demand (always running, small)     │
+│  └─────────────────┘                                        │
+│                                                             │
+│  ┌─────────────────┐                                        │
+│  │  Graph Instances│  CUD 1-year (predictable baseline)     │
+│  │    (baseline)   │  + On-demand (burst capacity)          │
+│  └─────────────────┘                                        │
+│                                                             │
+│  ┌─────────────────┐                                        │
+│  │  Export Workers │  Spot VMs (fault-tolerant, short-lived)│
+│  └─────────────────┘                                        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+<h3 id="spot-vms-for-export-workers">Spot VMs for Export Workers</h3>
+<p>Export Submitter and Poller Cloud Functions already provide cost efficiency through serverless pricing. For any batch processing workloads:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Spot VM node pool for batch jobs</span>
+<span class="hljs-string">node_config</span> {
+  <span class="hljs-string">spot</span> <span class="hljs-string">=</span> <span class="hljs-literal">true</span>
+
+  <span class="hljs-string">taint</span> {
+    <span class="hljs-string">key</span>    <span class="hljs-string">=</span> <span class="hljs-string">&quot;cloud.google.com/gke-spot&quot;</span>
+    <span class="hljs-string">value</span>  <span class="hljs-string">=</span> <span class="hljs-string">&quot;true&quot;</span>
+    <span class="hljs-string">effect</span> <span class="hljs-string">=</span> <span class="hljs-string">&quot;NO_SCHEDULE&quot;</span>
+  }
+}</code></pre>
+<h3 id="right-sizing-with-vpa">Right-Sizing with VPA</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">autoscaling.k8s.io/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">VerticalPodAutoscaler</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">control-plane-vpa</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">graph-olap</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">targetRef:</span>
+    <span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span>
+    <span class="hljs-attr">kind:</span> <span class="hljs-string">Deployment</span>
+    <span class="hljs-attr">name:</span> <span class="hljs-string">control-plane</span>
+  <span class="hljs-attr">updatePolicy:</span>
+    <span class="hljs-attr">updateMode:</span> <span class="hljs-string">&quot;Off&quot;</span>  <span class="hljs-comment"># Recommendation only</span>
+  <span class="hljs-attr">resourcePolicy:</span>
+    <span class="hljs-attr">containerPolicies:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">containerName:</span> <span class="hljs-string">&quot;*&quot;</span>
+        <span class="hljs-attr">minAllowed:</span>
+          <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;100m&quot;</span>
+          <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;256Mi&quot;</span>
+        <span class="hljs-attr">maxAllowed:</span>
+          <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;2000m&quot;</span>
+          <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;4Gi&quot;</span></code></pre>
+<hr>
+<h2 id="security">Security</h2>
+<h3 id="security-best-practices">Security Best Practices</h3>
+<p>From <a href="https://www.stackrox.io/blog/gke-security-best-practices-designing-secure-clusters/">GKE security best practices</a>:</p>
+<p><strong>Cluster Level:</strong></p>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Use private clusters (no public node IPs)</li>
+<li><input checked="" disabled="" type="checkbox"> Enable Workload Identity (no service account keys)</li>
+<li><input checked="" disabled="" type="checkbox"> Enable Binary Authorization (optional, for image signing)</li>
+<li><input checked="" disabled="" type="checkbox"> Use VPC-native networking</li>
+<li><input checked="" disabled="" type="checkbox"> Enable master authorized networks</li>
+</ul>
+<p><strong>Workload Level:</strong></p>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Run as non-root user</li>
+<li><input checked="" disabled="" type="checkbox"> Use read-only root filesystem where possible</li>
+<li><input checked="" disabled="" type="checkbox"> Drop all capabilities, add only required</li>
+<li><input checked="" disabled="" type="checkbox"> Use network policies</li>
+</ul>
+<h3 id="pod-security-standards">Pod Security Standards</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">graph-instance-{id}</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">securityContext:</span>
+    <span class="hljs-attr">runAsNonRoot:</span> <span class="hljs-literal">true</span>
+    <span class="hljs-attr">runAsUser:</span> <span class="hljs-number">1000</span>
+    <span class="hljs-attr">fsGroup:</span> <span class="hljs-number">1000</span>
+    <span class="hljs-attr">seccompProfile:</span>
+      <span class="hljs-attr">type:</span> <span class="hljs-string">RuntimeDefault</span>
+  <span class="hljs-attr">containers:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">wrapper</span>
+      <span class="hljs-attr">securityContext:</span>
+        <span class="hljs-attr">allowPrivilegeEscalation:</span> <span class="hljs-literal">false</span>
+        <span class="hljs-attr">readOnlyRootFilesystem:</span> <span class="hljs-literal">false</span>  <span class="hljs-comment"># RyuGraph needs write access</span>
+        <span class="hljs-attr">capabilities:</span>
+          <span class="hljs-attr">drop:</span>
+            <span class="hljs-bullet">-</span> <span class="hljs-string">ALL</span></code></pre>
+<h3 id="network-policies">Network Policies</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">networking.k8s.io/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">NetworkPolicy</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">graph-instance-policy</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">graph-olap</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">podSelector:</span>
+    <span class="hljs-attr">matchLabels:</span>
+      <span class="hljs-attr">app:</span> <span class="hljs-string">graph-instance</span>
+  <span class="hljs-attr">policyTypes:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">Ingress</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">Egress</span>
+  <span class="hljs-attr">ingress:</span>
+    <span class="hljs-comment"># Allow from ingress controller</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">from:</span>
+        <span class="hljs-bullet">-</span> <span class="hljs-attr">namespaceSelector:</span>
+            <span class="hljs-attr">matchLabels:</span>
+              <span class="hljs-attr">name:</span> <span class="hljs-string">ingress-nginx</span>
+      <span class="hljs-attr">ports:</span>
+        <span class="hljs-bullet">-</span> <span class="hljs-attr">port:</span> <span class="hljs-number">8000</span>
+    <span class="hljs-comment"># Allow from control plane</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">from:</span>
+        <span class="hljs-bullet">-</span> <span class="hljs-attr">podSelector:</span>
+            <span class="hljs-attr">matchLabels:</span>
+              <span class="hljs-attr">app:</span> <span class="hljs-string">control-plane</span>
+      <span class="hljs-attr">ports:</span>
+        <span class="hljs-bullet">-</span> <span class="hljs-attr">port:</span> <span class="hljs-number">8000</span>
+  <span class="hljs-attr">egress:</span>
+    <span class="hljs-comment"># Allow to GCS (via Private Google Access)</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">to:</span>
+        <span class="hljs-bullet">-</span> <span class="hljs-attr">ipBlock:</span>
+            <span class="hljs-attr">cidr:</span> <span class="hljs-number">199.36</span><span class="hljs-number">.153</span><span class="hljs-number">.8</span><span class="hljs-string">/30</span>  <span class="hljs-comment"># restricted.googleapis.com</span>
+      <span class="hljs-attr">ports:</span>
+        <span class="hljs-bullet">-</span> <span class="hljs-attr">port:</span> <span class="hljs-number">443</span>
+    <span class="hljs-comment"># Allow DNS</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">to:</span>
+        <span class="hljs-bullet">-</span> <span class="hljs-attr">namespaceSelector:</span> {}
+          <span class="hljs-attr">podSelector:</span>
+            <span class="hljs-attr">matchLabels:</span>
+              <span class="hljs-attr">k8s-app:</span> <span class="hljs-string">kube-dns</span>
+      <span class="hljs-attr">ports:</span>
+        <span class="hljs-bullet">-</span> <span class="hljs-attr">port:</span> <span class="hljs-number">53</span>
+          <span class="hljs-attr">protocol:</span> <span class="hljs-string">UDP</span></code></pre>
+<hr>
+<h2 id="cluster-maintenance">Cluster Maintenance</h2>
+<h3 id="release-channels">Release Channels</h3>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Updates</th>
+<th>Stability</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Rapid</td>
+<td>Frequent</td>
+<td>Lower</td>
+<td>Development</td>
+</tr>
+<tr>
+<td>Regular</td>
+<td>Monthly</td>
+<td>Balanced</td>
+<td><strong>Production</strong></td>
+</tr>
+<tr>
+<td>Stable</td>
+<td>Quarterly</td>
+<td>Highest</td>
+<td>Regulated environments</td>
+</tr>
+</tbody></table>
+<pre><code class="hljs language-bash">gcloud container clusters update graph-olap-cluster \
+  --release-channel=regular</code></pre>
+<h3 id="maintenance-windows">Maintenance Windows</h3>
+<pre><code class="hljs language-bash">gcloud container clusters update graph-olap-cluster \
+  --maintenance-window-start=2024-01-01T02:00:00Z \
+  --maintenance-window-end=2024-01-01T06:00:00Z \
+  --maintenance-window-recurrence=<span class="hljs-string">&quot;FREQ=WEEKLY;BYDAY=SA,SU&quot;</span></code></pre>
+<h3 id="pod-disruption-budgets">Pod Disruption Budgets</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">policy/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">PodDisruptionBudget</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">control-plane-pdb</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">graph-olap</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">minAvailable:</span> <span class="hljs-number">1</span>
+  <span class="hljs-attr">selector:</span>
+    <span class="hljs-attr">matchLabels:</span>
+      <span class="hljs-attr">app:</span> <span class="hljs-string">control-plane</span></code></pre>
+<hr>
+<h2 id="quick-reference">Quick Reference</h2>
+<h3 id="essential-commands">Essential Commands</h3>
+<pre><code class="hljs language-bash"><span class="hljs-comment"># Get cluster credentials</span>
+gcloud container clusters get-credentials graph-olap-cluster --region us-central1
+
+<span class="hljs-comment"># Check node allocatable resources</span>
+kubectl get nodes -o custom-columns=\
+NAME:.metadata.name,\
+CPU:.status.allocatable.cpu,\
+MEMORY:.status.allocatable.memory
+
+<span class="hljs-comment"># Check pod resource usage</span>
+kubectl top pods -n graph-olap
+
+<span class="hljs-comment"># Check node pool status</span>
+gcloud container node-pools list --cluster graph-olap-cluster
+
+<span class="hljs-comment"># Scale node pool</span>
+gcloud container clusters resize graph-olap-cluster \
+  --node-pool graph-instances \
+  --num-nodes 5</code></pre>
+<h3 id="environment-configuration">Environment Configuration</h3>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Cluster</th>
+<th>Node Pool Min/Max</th>
+<th>CUD</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Development</td>
+<td>Standard, public</td>
+<td>0-3</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Staging</td>
+<td>Standard, private</td>
+<td>1-5</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Production</td>
+<td>Standard, private</td>
+<td>2-10</td>
+<td>1-year</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="references">References</h2>
+<h3 id="google-cloud-documentation">Google Cloud Documentation</h3>
+<ul>
+<li><a href="https://cloud.google.com/kubernetes-engine/docs/best-practices/networking">GKE Best Practices - Networking</a></li>
+<li><a href="https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity">Workload Identity Federation</a></li>
+<li><a href="https://docs.cloud.google.com/kubernetes-engine/docs/concepts/persistent-volumes">GKE Persistent Volumes</a></li>
+<li><a href="https://cloud.google.com/kubernetes-engine/docs/concepts/observability">GKE Observability</a></li>
+<li><a href="https://docs.cloud.google.com/stackdriver/docs/managed-prometheus">Managed Service for Prometheus</a></li>
+<li><a href="https://cloud.google.com/blog/products/containers-kubernetes/maximizing-gke-discounts-kubernetes-cost-optimization-strategies">GKE Cost Optimization</a></li>
+</ul>
+<h3 id="feature-comparison">Feature Comparison</h3>
+<ul>
+<li><a href="https://docs.cloud.google.com/kubernetes-engine/docs/resources/autopilot-standard-feature-comparison">Autopilot vs Standard</a></li>
+<li><a href="https://cloud.google.com/kubernetes-engine/docs/concepts/node-pools">Node Pool Configuration</a></li>
+<li><a href="https://docs.cloud.google.com/kubernetes-engine/docs/concepts/about-load-balancing">Load Balancing Options</a></li>
+</ul>
+
+  </div>
+
+  <!-- Mermaid with ELK layout support -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+
+    // Register ELK layout engine
+    mermaid.registerLayoutLoaders(elkLayouts);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+    
+  </script>
+</body>
+</html>

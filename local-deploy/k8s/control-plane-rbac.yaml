@@ -1,0 +1,34 @@
+# RBAC for control-plane service account.
+# The control-plane manages graph instance pods, services, and ingresses
+# in the same namespace. These permissions are not in the Helm chart and
+# must be applied separately for local development.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: control-plane
+  namespace: graph-olap-local
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: control-plane
+  namespace: graph-olap-local
+subjects:
+  - kind: ServiceAccount
+    name: control-plane
+    namespace: graph-olap-local
+roleRef:
+  kind: Role
+  name: control-plane
+  apiGroup: rbac.authorization.k8s.io

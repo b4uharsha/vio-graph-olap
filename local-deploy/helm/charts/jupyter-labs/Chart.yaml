@@ -1,0 +1,21 @@
+apiVersion: v2
+name: jupyter-labs
+description: Jupyter Labs for e2e test notebook development and execution
+type: application
+version: 1.0.0
+appVersion: "4.0.0"
+keywords:
+  - graph-olap
+  - jupyter
+  - notebooks
+  - data-science
+  - e2e-testing
+maintainers:
+  - name: DevOps Team
+home: https://github.com/graph-olap/graph-olap
+sources:
+  - https://github.com/graph-olap/graph-olap
+dependencies:
+  - name: common
+    version: "1.x.x"
+    repository: "file://../common"

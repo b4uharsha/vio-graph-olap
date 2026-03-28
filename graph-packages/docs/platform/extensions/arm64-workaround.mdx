@@ -1,0 +1,125 @@
+---
+title: ARM64 Extension Workaround
+description: Workaround for Ryugraph extension server ARM64 binary packaging issue
+---
+
+## Known Issue: ARM64 Extension Binaries
+
+:::danger[Known Issue]
+The Ryugraph extension server (`ghcr.io/predictable-labs/extension-repo`) currently contains **incorrectly packaged ARM64 binaries**.
+The `linux_arm64` directory contains x86-64 (AMD64) ELF binaries instead of ARM64 binaries.
+
+This causes `LOAD algo` to fail on ARM64 Linux systems with:
+```
+RuntimeError: IO exception: Failed to load library: .../libalgo.ryu_extension
+```
+
+**Tracking issue:** [predictable-labs/ryugraph#44](https://github.com/predictable-labs/ryugraph/issues/44)
+:::
+
+## Background
+
+The Ryugraph extension server provides pre-compiled extension binaries for different platforms:
+- `linux_amd64` - x86-64 Linux (works correctly)
+- `linux_arm64` - ARM64 Linux (broken - contains x86-64 binaries)
+- `osx_amd64` - macOS Intel
+- `osx_arm64` - macOS Apple Silicon
+
+On macOS, the Python wheel bundles the extensions, so no extension server is needed.
+On Linux, the extension server is required.
+
+## Workaround for ARM64 Hosts (Apple Silicon Macs)
+
+When running Ryugraph in Docker/Kubernetes on ARM64 hosts, build and run containers as AMD64.
+
+### Local Development (Earthly)
+
+Local development now uses **Earthly** for building AMD64 images:
+
+```bash
+# From tools/local-dev/
+make build  # Builds all images as AMD64 with Earthly
+
+# Or build individual services
+earthly +ryugraph-wrapper  # Builds AMD64 image
+```
+
+The [Earthfile](/Earthfile) is configured to build AMD64 images. On Apple Silicon Macs with OrbStack, AMD64 containers run via **Rosetta 2** with approximately 80-90% native performance.
+
+### CI/CD (depot.dev)
+
+CI/CD pipelines use depot.dev for fast native AMD64 builds in the cloud.
+See [depot-dev.mdx](../depot-dev.mdx) for GitHub Actions configuration.
+
+## Why This Workaround is Necessary
+
+You cannot load an x86-64 shared library (`.so`) into an ARM64 process. This is an OS-level constraint.
+Since the extension server serves x86-64 binaries for `linux_arm64`, the only solution is to run Ryugraph itself as x86-64.
+
+| Platform | Extension Server | Result |
+|----------|------------------|--------|
+| Linux AMD64 | Works | Extensions load correctly |
+| Linux ARM64 | Broken | `LOAD` fails - wrong binary architecture |
+| macOS (any) | Not needed | Extensions bundled in Python wheel |
+
+## macOS Note
+
+On macOS (both Intel and Apple Silicon), the Ryugraph Python wheel bundles the algo extension.
+You can use `LOAD algo` directly without an extension server:
+
+```python
+import ryugraph
+db = ryugraph.Database('/path/to/db')
+conn = ryugraph.Connection(db)
+conn.execute('LOAD algo')  # Works on macOS without extension server
+```
+
+## Extension Server Setup
+
+The correct extension server image is `ghcr.io/predictable-labs/extension-repo:latest`.
+
+Note: The URL `ghcr.io/ryugraphdb/extension-repo` mentioned in some documentation does not exist.
+
+```bash
+docker pull ghcr.io/predictable-labs/extension-repo:latest
+docker run -d -p 8080:80 ghcr.io/predictable-labs/extension-repo:latest
+```
+
+Then install extensions:
+```cypher
+INSTALL algo FROM 'http://localhost:8080/';
+LOAD algo;
+```
+
+## Platform-Specific Quick Start
+
+### On macOS
+
+```python
+import ryugraph
+db = ryugraph.Database('/path/to/db')
+conn = ryugraph.Connection(db)
+conn.execute('LOAD algo')
+```
+
+### On Linux (with extension server)
+
+```python
+import ryugraph
+import os
+
+db = ryugraph.Database('/path/to/db')
+conn = ryugraph.Connection(db)
+
+# Install from extension server (only needed once)
+extension_server = os.environ.get("RYUGRAPH_EXTENSION_SERVER_URL", "http://localhost:8080")
+conn.execute(f"INSTALL algo FROM '{extension_server}/';")
+
+# Load into current connection (required per connection)
+conn.execute('LOAD algo')
+```
+
+## References
+
+- [Ryugraph Extension Documentation](/reference/ryugraph-v25.9/extensions/)
+- [depot.dev Documentation](https://depot.dev/docs)

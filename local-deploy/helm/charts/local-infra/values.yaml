@@ -1,0 +1,52 @@
+# =============================================================================
+# Local Infrastructure - Default Values
+# =============================================================================
+#
+# Shared infrastructure for local Graph OLAP development:
+#   - PostgreSQL database
+#   - Control plane secrets (database-url, api-internal-token)
+#   - Extension server (Ryugraph algorithm extensions)
+#
+# Usage:
+#   helm install local-infra . -n graph-olap-local --create-namespace
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# PostgreSQL - Local Development Database
+# -----------------------------------------------------------------------------
+postgres:
+  enabled: false  # Enable for local development only
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+  database: "control_plane"
+  username: "control_plane"
+  password: "control_plane"
+  internalApiKey: "test-internal-api-key"
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+# -----------------------------------------------------------------------------
+# Extension Server - Ryugraph Algorithm Extensions
+# -----------------------------------------------------------------------------
+extensionServer:
+  enabled: false  # Enable to deploy extension-server
+  image:
+    repository: ghcr.io/predictable-labs/extension-repo
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "32Mi"
+      cpu: "25m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"

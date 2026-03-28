@@ -1,0 +1,97 @@
+# Export Worker K8s Deployment
+# Stateless database polling architecture per ADR-025
+#
+# Deploy with:
+#   kubectl apply -f deploy/k8s/
+#
+# Requires:
+#   - KEDA installed for ScaledObject
+#   - Workload Identity configured for GCP access
+#   - ConfigMap and Secret created (see configmap.yaml, secret.yaml)
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: export-worker
+  labels:
+    app: export-worker
+    component: export
+    team: graph-olap
+spec:
+  replicas: 0  # KEDA manages replicas
+  selector:
+    matchLabels:
+      app: export-worker
+  template:
+    metadata:
+      labels:
+        app: export-worker
+        component: export
+      annotations:
+        # Prometheus metrics scraping
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      serviceAccountName: export-worker
+      terminationGracePeriodSeconds: 60  # Graceful shutdown
+      # Schedule on control-plane node pool (co-located with Control Plane API)
+      nodeSelector:
+        workload-type: control-plane
+      tolerations:
+        - key: workload
+          operator: Equal
+          value: control-plane
+          effect: NoSchedule
+      containers:
+        - name: export-worker
+          image: ${REGISTRY}/export-worker:${VERSION}
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          envFrom:
+            - configMapRef:
+                name: export-worker-config
+            - secretRef:
+                name: export-worker-secrets
+          env:
+            - name: GCP_PROJECT
+              valueFrom:
+                configMapKeyRef:
+                  name: export-worker-config
+                  key: GCP_PROJECT
+            # Worker loop settings (ADR-025)
+            - name: POLL_INTERVAL_SECONDS
+              value: "5"
+            - name: EMPTY_POLL_BACKOFF_SECONDS
+              value: "10"
+            - name: CLAIM_LIMIT
+              value: "10"
+            - name: POLL_LIMIT
+              value: "10"
+            # Starburst resource group routing (ADR-025)
+            - name: STARBURST_CLIENT_TAGS
+              value: "graph-olap-export"
+            - name: STARBURST_SOURCE
+              value: "graph-olap-export-worker"
+            # Logging
+            - name: LOG_FORMAT
+              value: "json"
+            - name: LOG_LEVEL
+              value: "INFO"
+          # No HTTP port - worker polls Control Plane database
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: export-worker
+  labels:
+    app: export-worker
+  annotations:
+    # Workload Identity binding (GKE)
+    iam.gke.io/gcp-service-account: export-worker@${PROJECT_ID}.iam.gserviceaccount.com

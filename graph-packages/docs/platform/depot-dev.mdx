@@ -1,0 +1,273 @@
+---
+title: depot.dev Configuration
+description: Native cloud builds and Claude Code sessions for the Graph OLAP Platform
+---
+
+## Overview
+
+We use [depot.dev](https://depot.dev) for:
+
+1. **CI/CD Docker builds** - Native cloud builds in GitHub Actions
+2. **Claude Code sessions** - Persistent, shareable AI coding sessions with remote sandboxes
+
+**Project ID:** `nnzv5n78zf`
+
+:::note[Local Development]
+For local development, we now use **Earthly** instead of depot.dev or docker buildx.
+Earthly provides automatic content-based caching and parallel builds.
+
+```bash
+# Local builds use Earthly (from tools/local-dev/)
+make build  # Builds all images with Earthly
+
+# Or build individual services
+earthly +control-plane
+```
+
+See [ADR-056](/docs/process/adr/infrastructure/adr-056-orbstack-earthly-local-development.md) for details.
+:::
+
+## Why depot.dev
+
+### Docker Builds
+
+Building AMD64 Docker images on Apple Silicon Macs traditionally requires QEMU emulation, which is slow (10-20x slower than native). Depot solves this by:
+
+1. Running builds on native AMD64 cloud machines
+2. Caching layers across builds
+3. Returning the built image to your local Docker daemon
+
+This is particularly important for our ARM64 workaround (see [arm64-workaround.mdx](./extensions/arm64-workaround.mdx)), where we must build AMD64 images due to the Ryugraph extension server bug.
+
+### Claude Code Sessions
+
+Depot provides persistent Claude Code sessions that can be:
+
+- **Saved and resumed** across machines
+- **Shared with teammates** via session URLs
+- **Run in remote sandboxes** (2 vCPU, 4GB RAM) instead of locally
+
+## Configuration
+
+### Project Configuration
+
+Location: `ryugraph-wrapper/depot.json`
+
+```json
+{"id": "nnzv5n78zf"}
+```
+
+This file links the directory to our depot.dev project.
+
+### E2E Test Integration
+
+E2E tests now use **Earthly** for local builds. The Makefile handles image building:
+
+```bash
+# From tools/local-dev/
+make build   # Build all images with Earthly
+make test    # Run E2E tests against deployed images
+```
+
+Earthly is a hard requirement for local development. See the [Earthfile](/Earthfile) for build targets.
+
+## Setup
+
+### Install depot CLI
+
+```bash
+brew install depot/tap/depot
+```
+
+### Authenticate
+
+```bash
+depot login
+```
+
+This opens a browser for authentication.
+
+### Verify Configuration
+
+```bash
+# Check CLI is installed
+depot --version
+
+# List projects (verify access)
+depot projects list
+```
+
+## Usage
+
+### Manual Builds
+
+```bash
+cd ryugraph-wrapper
+
+# Build AMD64 image using depot
+depot build --platform linux/amd64 -t myimage:latest --load .
+```
+
+The `--load` flag imports the built image into your local Docker daemon.
+
+### E2E Tests
+
+E2E tests automatically detect and use depot:
+
+```bash
+cd ryugraph-wrapper
+pytest tests/e2e/ --timeout=600
+```
+
+If depot is not available, tests fall back to docker buildx with QEMU (slower but functional).
+
+## Build Time Comparison
+
+| Method | AMD64 build on ARM64 Mac | Notes |
+|--------|--------------------------|-------|
+| depot.dev | ~2-3 minutes | Native cloud build |
+| docker buildx (QEMU) | ~15-30 minutes | Emulation overhead |
+| docker buildx (Rosetta) | ~5-10 minutes | Better than QEMU |
+
+## Depot Registry
+
+Built images are saved to depot's registry for fast retrieval and pushing to other registries.
+
+### Current Images
+
+| Image | Tag | Registry URL |
+|-------|-----|--------------|
+| ryugraph-wrapper | latest | `registry.depot.dev/nnzv5n78zf:ryugraph-wrapper-latest` |
+| control-plane | latest | `registry.depot.dev/nnzv5n78zf:control-plane-latest` |
+
+### Pulling Images
+
+```bash
+# Login to depot registry
+docker login registry.depot.dev -u x-token -p $(depot pull-token)
+
+# Pull images
+docker pull registry.depot.dev/nnzv5n78zf:ryugraph-wrapper-latest
+docker pull registry.depot.dev/nnzv5n78zf:control-plane-latest
+```
+
+## GitHub Actions Integration
+
+All CI/CD pipelines run on depot's GitHub Actions runners (`depot-ubuntu-latest`) for faster execution, with OIDC authentication (no secrets needed).
+
+### OIDC Trust Relationship
+
+GitHub Actions authenticates via OIDC token exchange. Add the repository as a trust relationship in depot:
+
+1. Go to https://depot.dev/orgs/0ff214dqc2/projects/nnzv5n78zf
+2. Scroll to "Trust Relationships"
+3. Add: `sparkling-ideas/graph-olap`
+
+No `DEPOT_TOKEN` secret is required when using OIDC.
+
+### Workflows
+
+| Workflow | File | Purpose |
+|----------|------|---------|
+| CI | `.github/workflows/ci.yaml` | Build images on PRs |
+| Build & Push | `.github/workflows/build-push.yaml` | Build and save to depot registry on merge to main |
+
+### Example CI Build Step
+
+```yaml
+jobs:
+  build:
+    runs-on: depot-ubuntu-latest  # Depot's faster runners
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Depot
+        uses: depot/setup-action@v1
+
+      - name: Build image with Depot
+        uses: depot/build-push-action@v1
+        with:
+          project: nnzv5n78zf
+          context: .
+          file: ./ryugraph-wrapper/Dockerfile
+          platforms: linux/amd64
+          push: false
+          save: true
+          tags: |
+            ryugraph-wrapper:${{ github.sha }}
+            ryugraph-wrapper:latest
+```
+
+### Build Caching
+
+Depot automatically caches:
+- Docker layers across builds
+- Build artifacts in the depot registry
+
+Cache is shared across all builds in the project, so CI and local builds benefit from each other's cache.
+
+## Claude Code Sessions
+
+### Starting a Session
+
+```bash
+# Start a new session (runs in remote sandbox by default)
+depot claude --session-id my-feature
+
+# Start locally but persist session to depot
+depot claude --local --session-id my-feature
+```
+
+### Resuming a Session
+
+```bash
+# Resume from any machine
+depot claude --resume my-feature
+
+# List all sessions
+depot claude list-sessions
+```
+
+### Working with Private Repos
+
+For remote sandboxes to access private GitHub repos, add a token:
+
+```bash
+# Add GitHub token (interactive prompt)
+depot claude secrets add GITHUB_TOKEN
+
+# Or with value directly
+depot claude secrets add GITHUB_TOKEN --value "ghp_..."
+
+# List configured secrets
+depot claude secrets list
+```
+
+Then use with a private repo:
+
+```bash
+depot claude --repository https://github.com/org/private-repo.git --git-secret GITHUB_TOKEN
+```
+
+### Session Workflow Examples
+
+```bash
+# Start working on a feature
+depot claude --session-id feature-auth-redesign
+
+# Hand off to teammate (they resume with full context)
+# Teammate runs:
+depot claude --resume feature-auth-redesign
+
+# Wait for remote session to complete
+depot claude --wait --resume feature-auth-redesign
+```
+
+## References
+
+- [depot.dev Documentation](https://depot.dev/docs)
+- [Claude Code Sessions Quickstart](https://depot.dev/docs/agents/claude-code/quickstart)
+- [ARM64 Extension Workaround](./extensions/arm64-workaround.mdx)

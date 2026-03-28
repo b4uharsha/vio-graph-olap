@@ -1,0 +1,111 @@
+# Docker Compose for local development and testing
+#
+# Starts:
+# - fake-gcs-server: GCS emulator for Parquet data
+# - ryugraph-wrapper: The wrapper service
+#
+# Usage:
+#   docker-compose -f docker-compose.test.yml up --build
+#   docker-compose -f docker-compose.test.yml down -v
+
+services:
+  # =========================================================================
+  # GCS Emulator
+  # =========================================================================
+  fake-gcs:
+    image: fsouza/fake-gcs-server:latest
+    ports:
+      - "4443:4443"
+    command:
+      - "-scheme"
+      - "http"
+      - "-port"
+      - "4443"
+      - "-backend"
+      - "memory"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4443/storage/v1/b"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # =========================================================================
+  # Control Plane Mock (for testing)
+  # =========================================================================
+  control-plane-mock:
+    image: mockserver/mockserver:latest
+    ports:
+      - "8080:1080"
+    environment:
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/mock-expectations.json
+    volumes:
+      - ./tests/fixtures/mock-expectations.json:/config/mock-expectations.json:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1080/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # =========================================================================
+  # Ryugraph Wrapper Service
+  # =========================================================================
+  wrapper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Instance configuration
+      WRAPPER_INSTANCE_ID: "test-instance-001"
+      WRAPPER_SNAPSHOT_ID: "test-snapshot-001"
+      WRAPPER_MAPPING_ID: "test-mapping-001"
+      WRAPPER_OWNER_ID: "test-user-001"
+      WRAPPER_OWNER_USERNAME: "testuser"
+      WRAPPER_CONTROL_PLANE_URL: "http://control-plane-mock:1080"
+      WRAPPER_GCS_BASE_PATH: "gs://test-bucket/data"
+
+      # Ryugraph configuration
+      RYUGRAPH_DATABASE_PATH: "/data/db"
+      RYUGRAPH_BUFFER_POOL_SIZE: "536870912"  # 512MB for testing
+      RYUGRAPH_MAX_THREADS: "4"
+
+      # GCS emulator
+      STORAGE_EMULATOR_HOST: "http://fake-gcs:4443"
+
+      # Logging
+      LOG_LEVEL: "DEBUG"
+      LOG_FORMAT: "console"
+      ENVIRONMENT: "local"
+
+      # Metrics
+      METRICS_ENABLED: "false"
+
+    depends_on:
+      fake-gcs:
+        condition: service_healthy
+      control-plane-mock:
+        condition: service_healthy
+    volumes:
+      - wrapper-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+# =========================================================================
+# Volumes
+# =========================================================================
+volumes:
+  wrapper-data:
+    driver: local
+
+# =========================================================================
+# Networks
+# =========================================================================
+networks:
+  default:
+    name: ryugraph-test-network

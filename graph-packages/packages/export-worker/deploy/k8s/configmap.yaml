@@ -1,0 +1,41 @@
+# Export Worker ConfigMap
+# Non-sensitive configuration values (ADR-025 database polling)
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: export-worker-config
+  labels:
+    app: export-worker
+    component: export
+data:
+  # GCP Project
+  GCP_PROJECT: "${PROJECT_ID}"
+
+  # Starburst configuration
+  STARBURST_URL: "https://starburst.example.com"
+  STARBURST_USER: "export-worker"
+  STARBURST_CATALOG: "analytics"
+  STARBURST_SCHEMA: "public"
+  STARBURST_REQUEST_TIMEOUT_SECONDS: "30"
+  # Resource group routing (ADR-025)
+  STARBURST_CLIENT_TAGS: "graph-olap-export"
+  STARBURST_SOURCE: "graph-olap-export-worker"
+
+  # Control Plane
+  CONTROL_PLANE_URL: "http://control-plane:8080"
+  CONTROL_PLANE_TIMEOUT_SECONDS: "30"
+  CONTROL_PLANE_MAX_RETRIES: "5"
+
+  # Worker loop settings (ADR-025)
+  POLL_INTERVAL_SECONDS: "5"
+  EMPTY_POLL_BACKOFF_SECONDS: "10"
+  CLAIM_LIMIT: "10"
+  POLL_LIMIT: "10"
+
+  # Logging
+  LOG_FORMAT: "json"
+  LOG_LEVEL: "INFO"
+
+  # Feature flags
+  DRY_RUN: "false"

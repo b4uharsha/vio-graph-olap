@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>02-core-concepts.manual</title>
+
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+
+  <style>
+    :root {
+      --max-width: 900px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+      --color-text: #24292f;
+      --color-bg: #ffffff;
+      --color-border: #d0d7de;
+      --color-link: #0969da;
+      --color-code-bg: #f6f8fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 2em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    p {
+      margin: 1em 0;
+    }
+
+    pre {
+      background: var(--color-code-bg);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      line-height: 1.45;
+    }
+
+    pre.mermaid {
+      background: transparent;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+    }
+
+    :not(pre) > code {
+      background: var(--color-code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 0 1em;
+      border-left: 4px solid var(--color-border);
+      color: #57606a;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+
+    th, td {
+      border: 1px solid var(--color-border);
+      padding: 0.5em 1em;
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-code-bg);
+      font-weight: 600;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a.image-link {
+      display: block;
+      cursor: zoom-in;
+    }
+
+    a.image-link:hover img {
+      opacity: 0.9;
+      outline: 2px solid var(--color-link);
+      outline-offset: 2px;
+    }
+
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    li {
+      margin: 0.25em 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 2em 0;
+    }
+
+    details {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      background: var(--color-code-bg);
+      border-radius: 6px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .container {
+        max-width: none;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="sdk-core-concepts">SDK Core Concepts</h1>
+<p>This guide explains the fundamental concepts for working with the Graph OLAP SDK - the <strong>sole user interface</strong> for the Graph OLAP Platform. All platform operations are performed through this SDK in Jupyter notebooks. This document covers platform architecture, resource hierarchy, connection lifecycle, and query execution patterns.</p>
+<hr>
+<h2 id="1-platform-architecture-overview">1. Platform Architecture Overview</h2>
+<p>The Graph OLAP Platform follows a <strong>control plane + data plane</strong> architecture where the Control Plane manages resource lifecycle and the Data Plane (Wrapper Pods) handles graph operations.</p>
+<h3 id="architecture-diagram">Architecture Diagram</h3>
+<pre><code class="hljs">                                 +------------------+
+                                 |   Jupyter/SDK    |
+                                 |    (Client)      |
+                                 +--------+---------+
+                                          |
+                                          | HTTPS
+                                          v
++-------------------------------------------------------------------------+
+|                           Ingress Controller                             |
+|   /api/* -&gt; Control Plane  |  /{instance-id}/* -&gt; Wrapper Pod           |
++-------------------------------------------------------------------------+
+              |                                         |
+              v                                         v
++------------------------+                   +------------------------+
+|    Control Plane       |                   |    Wrapper Pod (N)     |
+|    (FastAPI)           |                   |    (FastAPI + Graph)   |
+|                        |                   |                        |
+|  - REST API            |                   |  - Cypher Queries      |
+|  - Resource Lifecycle  |                   |  - Graph Algorithms    |
+|  - Background Jobs     |                   |  - NetworkX Support    |
++----------+-------------+                   +------------------------+
+           |                                            |
+           v                                            v
++------------------------+                   +------------------------+
+|    Cloud SQL           |                   |    Google Cloud        |
+|    (PostgreSQL)        |                   |    Storage (Parquet)   |
++------------------------+                   +------------------------+</code></pre>
+<h3 id="component-responsibilities">Component Responsibilities</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Role</th>
+<th>SDK Interaction</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Control Plane</strong></td>
+<td>Manages mappings, snapshots, and instances</td>
+<td>SDK calls <code>/api/*</code> endpoints</td>
+</tr>
+<tr>
+<td><strong>Wrapper Pods</strong></td>
+<td>Runs graph database with data</td>
+<td>SDK calls <code>/{id}/*</code> for queries</td>
+</tr>
+<tr>
+<td><strong>Export Workers</strong></td>
+<td>Exports SQL results to Parquet</td>
+<td>Background (no SDK interaction)</td>
+</tr>
+<tr>
+<td><strong>Cloud SQL</strong></td>
+<td>Stores platform metadata</td>
+<td>Internal (no SDK interaction)</td>
+</tr>
+<tr>
+<td><strong>GCS</strong></td>
+<td>Stores exported Parquet files</td>
+<td>Internal (no SDK interaction)</td>
+</tr>
+</tbody></table>
+<p><strong>Data Flow:</strong></p>
+<ol>
+<li>User creates a <strong>Mapping</strong> defining SQL-to-graph schema via Control Plane</li>
+<li>User creates an <strong>Instance</strong> from a Mapping; system automatically creates a snapshot internally</li>
+<li>Export Workers run UNLOAD queries to GCS (automatic)</li>
+<li>Wrapper Pod loads Parquet data when snapshot is ready (automatic)</li>
+<li>User connects to the Instance and executes Cypher queries/algorithms</li>
+</ol>
+<h3 id="sdk-as-client-interface">SDK as Client Interface</h3>
+<p>The SDK (<code>graph-olap</code> package) provides a unified client interface that abstracts API complexity, manages authentication, provides type safety with Pydantic models, and enables rich Jupyter display.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+client = GraphOLAPClient.from_env()
+
+<span class="hljs-comment"># Control Plane operations</span>
+mapping = client.mappings.get(<span class="hljs-number">1</span>)
+
+<span class="hljs-comment"># Create instance directly from mapping (snapshot managed internally)</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=<span class="hljs-number">1</span>,
+    name=<span class="hljs-string">&quot;Analysis&quot;</span>,
+    wrapper_type=WrapperType.RYUGRAPH,
+)
+
+<span class="hljs-comment"># Data Plane operations (via connection)</span>
+conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)
+result = conn.query(<span class="hljs-string">&quot;MATCH (n) RETURN count(n)&quot;</span>)</code></pre>
+<hr>
+<h2 id="2-resource-hierarchy">2. Resource Hierarchy</h2>
+<p>The platform has three core resources: <strong>Mapping</strong>, <strong>Snapshot</strong> (internal), and <strong>Instance</strong>.</p>
+<blockquote>
+<p><strong>Note:</strong> Snapshots are now managed internally. Users create instances directly from mappings.</p>
+</blockquote>
+<pre><code class="hljs">Mapping (Schema Definition)
+    +-- MappingVersion v1, v2, ...
+    |       +-- NodeDefinition: Customer, Product
+    |       +-- EdgeDefinition: PURCHASED
+    +-- Instance (Running Graph Database)
+            +-- Snapshot (managed internally)
+                    +-- Parquet files in GCS</code></pre>
+<h3 id="mappings">Mappings</h3>
+<p>A <strong>Mapping</strong> defines how Starburst SQL queries map to graph nodes and edges.</p>
+<p><strong>Key Characteristics:</strong></p>
+<ul>
+<li>Owned by a user (<code>owner_username</code>)</li>
+<li>Contains multiple immutable <strong>versions</strong></li>
+<li>Supports lifecycle settings (TTL, inactivity timeout)</li>
+</ul>
+<p><strong>Versioning:</strong> Each update creates a new <strong>MappingVersion</strong>. Versions are immutable, ensuring snapshots reference specific versions and changes are tracked.</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Get a mapping and its versions</span>
+mapping = client.mappings.get(mapping_id=<span class="hljs-number">1</span>)
+versions = client.mappings.list_versions(mapping_id=<span class="hljs-number">1</span>)
+
+<span class="hljs-comment"># Compare versions</span>
+diff = client.mappings.diff(mapping_id=<span class="hljs-number">1</span>, from_version=<span class="hljs-number">1</span>, to_version=<span class="hljs-number">2</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Nodes added: <span class="hljs-subst">{diff.summary[<span class="hljs-string">&#x27;nodes_added&#x27;</span>]}</span>&quot;</span>)</code></pre>
+<h4 id="nodedefinition">NodeDefinition</h4>
+<p>Specifies how to create graph nodes from SQL:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>label</code></td>
+<td>Node type label</td>
+<td><code>&quot;Customer&quot;</code></td>
+</tr>
+<tr>
+<td><code>sql</code></td>
+<td>SQL query to extract data</td>
+<td><code>&quot;SELECT id, name FROM customers&quot;</code></td>
+</tr>
+<tr>
+<td><code>primary_key</code></td>
+<td>Unique identifier</td>
+<td><code>{&quot;name&quot;: &quot;id&quot;, &quot;type&quot;: &quot;STRING&quot;}</code></td>
+</tr>
+<tr>
+<td><code>properties</code></td>
+<td>Additional properties</td>
+<td><code>[{&quot;name&quot;: &quot;name&quot;, &quot;type&quot;: &quot;STRING&quot;}]</code></td>
+</tr>
+</tbody></table>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.models <span class="hljs-keyword">import</span> NodeDefinition, PropertyDefinition
+
+customer_node = NodeDefinition(
+    label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    sql=<span class="hljs-string">&quot;SELECT customer_id, name, email FROM analytics.customers&quot;</span>,
+    primary_key={<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;customer_id&quot;</span>, <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;STRING&quot;</span>},
+    properties=[
+        PropertyDefinition(name=<span class="hljs-string">&quot;name&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;STRING&quot;</span>),
+        PropertyDefinition(name=<span class="hljs-string">&quot;email&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;STRING&quot;</span>),
+    ],
+)</code></pre>
+<h4 id="edgedefinition">EdgeDefinition</h4>
+<p>Specifies how to create relationships between nodes:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type</code></td>
+<td>Relationship type</td>
+<td><code>&quot;PURCHASED&quot;</code></td>
+</tr>
+<tr>
+<td><code>from_node</code> / <code>to_node</code></td>
+<td>Source/target node labels</td>
+<td><code>&quot;Customer&quot;</code>, <code>&quot;Product&quot;</code></td>
+</tr>
+<tr>
+<td><code>sql</code></td>
+<td>SQL query for relationship data</td>
+<td><code>&quot;SELECT customer_id, product_id FROM orders&quot;</code></td>
+</tr>
+<tr>
+<td><code>from_key</code> / <code>to_key</code></td>
+<td>Foreign keys</td>
+<td><code>&quot;customer_id&quot;</code>, <code>&quot;product_id&quot;</code></td>
+</tr>
+<tr>
+<td><code>properties</code></td>
+<td>Edge properties</td>
+<td><code>[{&quot;name&quot;: &quot;quantity&quot;, &quot;type&quot;: &quot;INT64&quot;}]</code></td>
+</tr>
+</tbody></table>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.models <span class="hljs-keyword">import</span> EdgeDefinition
+
+purchased_edge = EdgeDefinition(
+    <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;PURCHASED&quot;</span>,
+    from_node=<span class="hljs-string">&quot;Customer&quot;</span>,
+    to_node=<span class="hljs-string">&quot;Product&quot;</span>,
+    sql=<span class="hljs-string">&quot;SELECT customer_id, product_id, quantity FROM orders&quot;</span>,
+    from_key=<span class="hljs-string">&quot;customer_id&quot;</span>,
+    to_key=<span class="hljs-string">&quot;product_id&quot;</span>,
+    properties=[PropertyDefinition(name=<span class="hljs-string">&quot;quantity&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;INT64&quot;</span>)],
+)</code></pre>
+<h4 id="supported-property-types">Supported Property Types</h4>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Python Equivalent</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>STRING</code></td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td><code>INT64</code></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td><code>DOUBLE</code></td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>BOOL</code></td>
+<td><code>bool</code></td>
+</tr>
+<tr>
+<td><code>DATE</code></td>
+<td><code>datetime.date</code></td>
+</tr>
+<tr>
+<td><code>TIMESTAMP</code></td>
+<td><code>datetime.datetime</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="snapshots">Snapshots</h3>
+<blockquote>
+<p><strong>SNAPSHOT FUNCTIONALITY DISABLED</strong></p>
+<p>Explicit snapshot APIs have been disabled. Instances are now created directly
+from mappings without requiring explicit snapshot creation. The snapshot layer
+operates implicitly when instances are created.</p>
+<p>Use <code>client.instances.create_from_mapping()</code> or <code>client.instances.create_from_mapping_and_wait()</code>
+instead of the snapshot methods described below.</p>
+</blockquote>
+<p>A <strong>Snapshot</strong> is a point-in-time export of data from Starburst based on a specific mapping version. Snapshots are now managed internally when creating instances from mappings.</p>
+<h4 id="status-lifecycle-internal">Status Lifecycle (Internal)</h4>
+<pre><code class="hljs">pending --&gt; creating --&gt; ready
+                    \--&gt; failed --&gt; creating (retry)</code></pre>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Description</th>
+<th>Can Create Instance?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pending</code></td>
+<td>Waiting for export workers</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>creating</code></td>
+<td>UNLOAD queries executing</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>ready</code></td>
+<td>All Parquet files written</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>failed</code></td>
+<td>Export encountered errors</td>
+<td>No</td>
+</tr>
+</tbody></table>
+<h4 id="recommended-create-instance-directly-from-mapping">Recommended: Create Instance Directly from Mapping</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-comment"># Recommended approach - creates snapshot automatically</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=<span class="hljs-number">1</span>,
+    name=<span class="hljs-string">&quot;My Analysis&quot;</span>,
+    wrapper_type=WrapperType.RYUGRAPH,
+    ttl=<span class="hljs-number">24</span>,  <span class="hljs-comment"># hours</span>
+)
+
+<span class="hljs-comment"># Instance is ready - snapshot was managed internally</span>
+conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)</code></pre>
+<hr>
+<h3 id="instances">Instances</h3>
+<p>An <strong>Instance</strong> is a running graph database loaded from a snapshot.</p>
+<h4 id="status-lifecycle">Status Lifecycle</h4>
+<pre><code class="hljs">starting --&gt; running --&gt; stopping --&gt; [deleted]
+        \--&gt; failed</code></pre>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Description</th>
+<th>Can Query?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>starting</code></td>
+<td>Pod initializing, loading data</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>running</code></td>
+<td>Ready for queries and algorithms</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>stopping</code></td>
+<td>Graceful shutdown in progress</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>failed</code></td>
+<td>Error during startup</td>
+<td>No</td>
+</tr>
+</tbody></table>
+<h4 id="creating-instances">Creating Instances</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-comment"># Create directly from mapping (recommended) - snapshot managed internally</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=mapping.<span class="hljs-built_in">id</span>,
+    name=<span class="hljs-string">&quot;Analysis Instance&quot;</span>,
+    wrapper_type=WrapperType.RYUGRAPH,  <span class="hljs-comment"># or WrapperType.FALKORDB</span>
+    ttl=<span class="hljs-number">24</span>,  <span class="hljs-comment"># 24-hour time-to-live</span>
+    inactivity_timeout=<span class="hljs-number">2</span>,  <span class="hljs-comment"># 2-hour idle timeout</span>
+)</code></pre>
+<h4 id="locking-mechanism">Locking Mechanism</h4>
+<p>Instances use an <strong>exclusive lock</strong> for algorithm execution:</p>
+<ul>
+<li><strong>Queries</strong>: Always allowed concurrently (read-only)</li>
+<li><strong>Algorithms</strong>: Require exclusive lock (one at a time)</li>
+</ul>
+<pre><code class="hljs language-python">lock = conn.get_lock()
+<span class="hljs-keyword">if</span> lock.locked:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Locked by: <span class="hljs-subst">{lock.holder_name}</span>, running: <span class="hljs-subst">{lock.algorithm}</span>&quot;</span>)</code></pre>
+<h4 id="ttl-and-lifecycle">TTL and Lifecycle</h4>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Description</th>
+<th>Format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ttl</code></td>
+<td>Time-to-live from creation</td>
+<td>ISO 8601 (e.g., <code>&quot;PT24H&quot;</code>)</td>
+</tr>
+<tr>
+<td><code>inactivity_timeout</code></td>
+<td>Idle time before cleanup</td>
+<td>ISO 8601 (e.g., <code>&quot;PT2H&quot;</code>)</td>
+</tr>
+</tbody></table>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Update lifecycle</span>
+instance = client.instances.set_lifecycle(instance_id, ttl=<span class="hljs-string">&quot;PT12H&quot;</span>)
+
+<span class="hljs-comment"># Extend TTL from current expiry</span>
+instance = client.instances.extend_ttl(instance_id, hours=<span class="hljs-number">24</span>)</code></pre>
+<hr>
+<h2 id="3-connection-lifecycle">3. Connection Lifecycle</h2>
+<p>The SDK uses a two-phase connection model: <strong>client initialization</strong> for Control Plane operations and <strong>instance connection</strong> for Data Plane operations.</p>
+<h3 id="client-initialization">Client Initialization</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+
+<span class="hljs-comment"># From environment variables (recommended)</span>
+client = GraphOLAPClient.from_env()
+
+<span class="hljs-comment"># Or explicit configuration</span>
+client = GraphOLAPClient(
+    api_url=<span class="hljs-string">&quot;https://graph-olap.example.com&quot;</span>,
+    api_key=<span class="hljs-string">&quot;sk-xxx&quot;</span>,
+    timeout=<span class="hljs-number">30.0</span>,
+    max_retries=<span class="hljs-number">3</span>,
+)</code></pre>
+<h3 id="context-manager-pattern-recommended">Context Manager Pattern (Recommended)</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">with</span> GraphOLAPClient.from_env() <span class="hljs-keyword">as</span> client:
+    <span class="hljs-comment"># Create instance directly from mapping (snapshot managed internally)</span>
+    instance = client.instances.create_from_mapping_and_wait(
+        mapping_id=<span class="hljs-number">1</span>,
+        name=<span class="hljs-string">&quot;Analysis&quot;</span>,
+        wrapper_type=WrapperType.RYUGRAPH,
+    )
+    conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)
+    result = conn.query(<span class="hljs-string">&quot;MATCH (n) RETURN count(n)&quot;</span>)
+    client.instances.terminate(instance.<span class="hljs-built_in">id</span>)
+<span class="hljs-comment"># Client closed automatically</span></code></pre>
+<h3 id="instance-connection">Instance Connection</h3>
+<p>Once an instance is running, connect to it for queries and algorithms:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Get connection to running instance</span>
+conn = client.instances.connect(instance_id)
+
+<span class="hljs-comment"># Connection properties</span>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance ID: <span class="hljs-subst">{conn.<span class="hljs-built_in">id</span>}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance Name: <span class="hljs-subst">{conn.name}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Snapshot ID: <span class="hljs-subst">{conn.snapshot_id}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Status: <span class="hljs-subst">{conn.current_status}</span>&quot;</span>)
+
+<span class="hljs-comment"># Execute queries</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN n LIMIT 10&quot;</span>)
+
+<span class="hljs-comment"># Close when done</span>
+conn.close()</code></pre>
+<p><strong>Connection Context Manager (recommended):</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">with</span> client.instances.connect(instance_id) <span class="hljs-keyword">as</span> conn:
+    df = conn.query_df(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN n.name, n.email&quot;</span>)
+    <span class="hljs-comment"># Connection automatically closed after block</span></code></pre>
+<h3 id="quick-start-pattern">Quick Start Pattern</h3>
+<p>For rapid prototyping:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Create snapshot, instance, and connect in one call</span>
+conn = client.quick_start(
+    mapping_id=<span class="hljs-number">1</span>,
+    wrapper_type=WrapperType.RYUGRAPH,
+)
+result = conn.query(<span class="hljs-string">&quot;MATCH (n) RETURN count(n)&quot;</span>)
+<span class="hljs-comment"># Remember to terminate the instance when done!</span></code></pre>
+<hr>
+<h2 id="4-query-execution">4. Query Execution</h2>
+<p>The SDK provides multiple methods for executing Cypher queries.</p>
+<h3 id="query-methods-overview">Query Methods Overview</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>query()</code></td>
+<td><code>QueryResult</code></td>
+<td>Flexible access to results</td>
+</tr>
+<tr>
+<td><code>query_df()</code></td>
+<td>DataFrame</td>
+<td>Data analysis workflows</td>
+</tr>
+<tr>
+<td><code>query_scalar()</code></td>
+<td>Single value</td>
+<td>Counts and aggregations</td>
+</tr>
+<tr>
+<td><code>query_one()</code></td>
+<td>Dict or None</td>
+<td>Single record lookup</td>
+</tr>
+</tbody></table>
+<h3 id="query---structured-results">query() - Structured Results</h3>
+<pre><code class="hljs language-python">result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)-[:PURCHASED]-&gt;(p:Product)
+    RETURN c.name AS customer, p.name AS product
+    LIMIT 100
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-comment"># Access metadata</span>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Columns: <span class="hljs-subst">{result.columns}</span>, Rows: <span class="hljs-subst">{result.row_count}</span>&quot;</span>)
+
+<span class="hljs-comment"># Iterate over rows</span>
+<span class="hljs-keyword">for</span> row <span class="hljs-keyword">in</span> result:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;<span class="hljs-subst">{row[<span class="hljs-string">&#x27;customer&#x27;</span>]}</span> bought <span class="hljs-subst">{row[<span class="hljs-string">&#x27;product&#x27;</span>]}</span>&quot;</span>)
+
+<span class="hljs-comment"># Convert to DataFrame</span>
+df = result.to_polars()  <span class="hljs-comment"># or result.to_pandas()</span></code></pre>
+<h3 id="query_df---dataframe-results">query_df() - DataFrame Results</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Polars DataFrame (default)</span>
+df = conn.query_df(<span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.id, c.name&quot;</span>)
+
+<span class="hljs-comment"># Pandas DataFrame</span>
+df = conn.query_df(<span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.*&quot;</span>, backend=<span class="hljs-string">&quot;pandas&quot;</span>)</code></pre>
+<h3 id="query_scalar---single-value">query_scalar() - Single Value</h3>
+<pre><code class="hljs language-python">count = conn.query_scalar(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN count(n)&quot;</span>)
+avg = conn.query_scalar(<span class="hljs-string">&quot;MATCH (c:Customer) RETURN avg(c.total_purchases)&quot;</span>)</code></pre>
+<h3 id="query_one---single-record">query_one() - Single Record</h3>
+<pre><code class="hljs language-python">customer = conn.query_one(
+    <span class="hljs-string">&quot;MATCH (c:Customer {id: $id}) RETURN c.*&quot;</span>,
+    {<span class="hljs-string">&quot;id&quot;</span>: <span class="hljs-string">&quot;C001&quot;</span>}
+)
+<span class="hljs-keyword">if</span> customer:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Name: <span class="hljs-subst">{customer[<span class="hljs-string">&#x27;name&#x27;</span>]}</span>&quot;</span>)</code></pre>
+<h3 id="parameter-substitution">Parameter Substitution</h3>
+<p>Use parameters to safely inject values:</p>
+<pre><code class="hljs language-python">result = conn.query(
+    <span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    WHERE c.total_purchases &gt; $min_purchases
+    RETURN c.name, c.total_purchases
+    LIMIT $limit
+    &quot;&quot;&quot;</span>,
+    parameters={<span class="hljs-string">&quot;min_purchases&quot;</span>: <span class="hljs-number">1000</span>, <span class="hljs-string">&quot;limit&quot;</span>: <span class="hljs-number">50</span>}
+)</code></pre>
+<p><strong>Parameter Types:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Python Type</th>
+<th>Cypher Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>str</code></td>
+<td>String</td>
+</tr>
+<tr>
+<td><code>int</code></td>
+<td>Integer</td>
+</tr>
+<tr>
+<td><code>float</code></td>
+<td>Float</td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td>Boolean</td>
+</tr>
+<tr>
+<td><code>list</code></td>
+<td>List</td>
+</tr>
+<tr>
+<td><code>dict</code></td>
+<td>Map</td>
+</tr>
+<tr>
+<td><code>None</code></td>
+<td>Null</td>
+</tr>
+</tbody></table>
+<h3 id="timeout-configuration">Timeout Configuration</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Per-query timeout</span>
+result = conn.query(
+    <span class="hljs-string">&quot;MATCH (n)-[*1..5]-(m) RETURN count(*)&quot;</span>,
+    timeout=<span class="hljs-number">120.0</span>,  <span class="hljs-comment"># 2 minutes</span>
+)</code></pre>
+<h3 id="error-handling">Error Handling</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> QueryError, QueryTimeoutError, ValidationError
+
+<span class="hljs-keyword">try</span>:
+    result = conn.query(<span class="hljs-string">&quot;MATCH (n) RETURN n.invalid&quot;</span>)
+<span class="hljs-keyword">except</span> QueryTimeoutError:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Query timed out&quot;</span>)
+<span class="hljs-keyword">except</span> QueryError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Query failed: <span class="hljs-subst">{e}</span>&quot;</span>)</code></pre>
+<h3 id="schema-inspection">Schema Inspection</h3>
+<pre><code class="hljs language-python">schema = conn.get_schema()
+
+<span class="hljs-keyword">for</span> label, props <span class="hljs-keyword">in</span> schema.node_labels.items():
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;:<span class="hljs-subst">{label}</span> - <span class="hljs-subst">{[p[<span class="hljs-string">&#x27;name&#x27;</span>] <span class="hljs-keyword">for</span> p <span class="hljs-keyword">in</span> props]}</span>&quot;</span>)
+
+<span class="hljs-keyword">for</span> rel_type, info <span class="hljs-keyword">in</span> schema.relationship_types.items():
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;[:<span class="hljs-subst">{rel_type}</span>]&quot;</span>)</code></pre>
+<hr>
+<h2 id="summary">Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Architecture</strong></td>
+<td>Control Plane manages resources; Data Plane executes queries</td>
+</tr>
+<tr>
+<td><strong>Mapping</strong></td>
+<td>Schema definition with SQL-to-graph mappings and versioning</td>
+</tr>
+<tr>
+<td><strong>Snapshot</strong></td>
+<td>Point-in-time data export (pending -&gt; creating -&gt; ready)</td>
+</tr>
+<tr>
+<td><strong>Instance</strong></td>
+<td>Running graph database with locking for algorithms</td>
+</tr>
+<tr>
+<td><strong>Client</strong></td>
+<td><code>GraphOLAPClient</code> for Control Plane operations</td>
+</tr>
+<tr>
+<td><strong>Connection</strong></td>
+<td><code>InstanceConnection</code> for Data Plane queries</td>
+</tr>
+</tbody></table>
+<p><strong>Next Steps:</strong></p>
+<ul>
+<li><a href="./03-algorithms.manual.html">03-algorithms.manual.md</a> - Running graph algorithms</li>
+<li><a href="./04-advanced-patterns.manual.html">04-advanced-patterns.manual.md</a> - Complex workflows</li>
+<li><a href="./05-troubleshooting.manual.html">05-troubleshooting.manual.md</a> - Debugging tips</li>
+</ul>
+
+  </div>
+
+  <!-- Mermaid with ELK layout support -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+
+    // Register ELK layout engine
+    mermaid.registerLayoutLoaders(elkLayouts);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+    
+  </script>
+</body>
+</html>

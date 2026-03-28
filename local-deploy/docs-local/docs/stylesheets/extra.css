@@ -1,0 +1,259 @@
+/* ============================================================
+   Hero section — home page banner
+   ============================================================ */
+.hero {
+  background: linear-gradient(135deg, #00695c 0%, #004d40 50%, #00251a 100%);
+  border-radius: 12px;
+  padding: 3.5rem 2.5rem;
+  margin: 1.5rem 0 2.5rem;
+  color: #fff;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(0, 188, 212, 0.18) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 20%, rgba(0, 150, 136, 0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.hero h1 {
+  font-size: 2.6rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.02em;
+  color: #fff !important;
+  border: none !important;
+}
+
+.hero p {
+  font-size: 1.15rem;
+  opacity: 0.88;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hero-btn {
+  display: inline-block;
+  padding: 0.75rem 1.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none !important;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.hero-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.hero-btn-primary {
+  background: #00bcd4;
+  color: #002a30 !important;
+}
+
+.hero-btn-secondary {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* ============================================================
+   Stats / highlight bar
+   ============================================================ */
+.stat-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.stat-card {
+  background: var(--md-code-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 10px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+
+.stat-card .stat-number {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #009688;
+  display: block;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+
+.stat-card .stat-label {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ============================================================
+   Feature / service cards
+   ============================================================ */
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.service-card {
+  background: var(--md-code-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 10px;
+  padding: 1.4rem 1.25rem;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.service-card:hover {
+  border-color: #009688;
+  transform: translateY(-3px);
+}
+
+.service-card .service-icon {
+  font-size: 1.8rem;
+  margin-bottom: 0.6rem;
+  display: block;
+}
+
+.service-card h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #009688;
+}
+
+.service-card p {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
+.service-card code {
+  font-size: 0.75rem;
+  background: var(--md-default-fg-color--lightest);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  display: inline-block;
+  margin-top: 0.4rem;
+}
+
+/* ============================================================
+   Flow step list
+   ============================================================ */
+.flow-steps {
+  counter-reset: step-counter;
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+
+.flow-steps li {
+  counter-increment: step-counter;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.flow-steps li:last-child {
+  border-bottom: none;
+}
+
+.flow-steps li::before {
+  content: counter(step-counter);
+  background: #009688;
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ============================================================
+   Comparison / gap table — highlight the gap column
+   ============================================================ */
+.gap-table td:last-child {
+  color: #e53935;
+  font-weight: 500;
+}
+
+[data-md-color-scheme="slate"] .gap-table td:last-child {
+  color: #ef9a9a;
+}
+
+/* ============================================================
+   Industry pill badges
+   ============================================================ */
+.pill {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 0.1rem;
+}
+
+.pill-bad  { background: #ffebee; color: #c62828; }
+.pill-good { background: #e0f2f1; color: #00695c; }
+
+[data-md-color-scheme="slate"] .pill-bad  { background: #4a1010; color: #ef9a9a; }
+[data-md-color-scheme="slate"] .pill-good { background: #003d36; color: #80cbc4; }
+
+/* ============================================================
+   Section dividers with label
+   ============================================================ */
+.section-label {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #009688;
+  background: rgba(0, 150, 136, 0.1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+}
+
+/* ============================================================
+   Misc improvements
+   ============================================================ */
+.md-typeset h1 { font-weight: 800; letter-spacing: -0.02em; }
+.md-typeset h2 { font-weight: 700; }
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 8px;
+}
+
+/* Navigation tab active indicator */
+.md-tabs__link--active {
+  font-weight: 700;
+}

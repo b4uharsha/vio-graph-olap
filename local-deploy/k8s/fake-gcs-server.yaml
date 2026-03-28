@@ -1,0 +1,53 @@
+---
+# Fake GCS Server for local development
+# Satisfies export-worker's STORAGE_EMULATOR_HOST=http://fake-gcs-local:4443
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fake-gcs-local
+  namespace: graph-olap-local
+  labels:
+    app: fake-gcs-local
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fake-gcs-local
+  template:
+    metadata:
+      labels:
+        app: fake-gcs-local
+    spec:
+      containers:
+        - name: fake-gcs-server
+          image: fsouza/fake-gcs-server:latest
+          args:
+            - -scheme
+            - http
+            - -port
+            - "4443"
+            - -backend
+            - memory
+            - -public-host
+            - fake-gcs-local:4443
+          ports:
+            - containerPort: 4443
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fake-gcs-local
+  namespace: graph-olap-local
+spec:
+  selector:
+    app: fake-gcs-local
+  ports:
+    - port: 4443
+      targetPort: 4443

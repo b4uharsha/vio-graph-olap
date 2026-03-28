@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>06-examples.manual</title>
+
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+
+  <style>
+    :root {
+      --max-width: 900px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+      --color-text: #24292f;
+      --color-bg: #ffffff;
+      --color-border: #d0d7de;
+      --color-link: #0969da;
+      --color-code-bg: #f6f8fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 2em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    p {
+      margin: 1em 0;
+    }
+
+    pre {
+      background: var(--color-code-bg);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      line-height: 1.45;
+    }
+
+    pre.mermaid {
+      background: transparent;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+    }
+
+    :not(pre) > code {
+      background: var(--color-code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 0 1em;
+      border-left: 4px solid var(--color-border);
+      color: #57606a;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+
+    th, td {
+      border: 1px solid var(--color-border);
+      padding: 0.5em 1em;
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-code-bg);
+      font-weight: 600;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a.image-link {
+      display: block;
+      cursor: zoom-in;
+    }
+
+    a.image-link:hover img {
+      opacity: 0.9;
+      outline: 2px solid var(--color-link);
+      outline-offset: 2px;
+    }
+
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    li {
+      margin: 0.25em 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 2em 0;
+    }
+
+    details {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      background: var(--color-code-bg);
+      border-radius: 6px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .container {
+        max-width: none;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="sdk-examples-and-workflows">SDK Examples and Workflows</h1>
+<p>Practical examples and real-world workflows for the Graph OLAP Python SDK.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li><a href="./01-quickstart.manual.html">01-quickstart.manual.md</a> - Getting started</li>
+<li><a href="./02-client.manual.html">02-client.manual.md</a> - Client configuration</li>
+<li><a href="./03-resources.manual.html">03-resources.manual.md</a> - Resource management</li>
+<li><a href="./04-queries.manual.html">04-queries.manual.md</a> - Query execution</li>
+<li><a href="./05-algorithms.manual.html">05-algorithms.manual.md</a> - Algorithm reference</li>
+</ul>
+<hr>
+<h2 id="1-common-workflows">1. Common Workflows</h2>
+<h3 id="basic-workflow-mapping---instance---query">Basic Workflow (Mapping -&gt; Instance -&gt; Query)</h3>
+<blockquote>
+<p><strong>Note:</strong> Snapshots are now managed internally. Instances are created directly from mappings.</p>
+</blockquote>
+<p>The standard workflow creates a graph mapping, starts an instance (snapshot created internally),
+and executes queries.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-comment"># Initialize client from environment variables</span>
+client = GraphOLAPClient.from_env()
+
+<span class="hljs-comment"># Create or get an existing mapping</span>
+mapping = client.mappings.get(<span class="hljs-string">&quot;customer-graph&quot;</span>)
+
+<span class="hljs-comment"># Create an instance directly from mapping (snapshot managed internally)</span>
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=mapping.<span class="hljs-built_in">id</span>,
+    name=<span class="hljs-string">&quot;Customer Analysis&quot;</span>,
+    wrapper_type=WrapperType.RYUGRAPH,
+    timeout=<span class="hljs-number">600</span>,  <span class="hljs-comment"># Wait up to 10 minutes for export + startup</span>
+)
+
+<span class="hljs-comment"># Connect to the running instance</span>
+conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)
+
+<span class="hljs-comment"># Execute queries</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.name, c.value ORDER BY c.value DESC LIMIT 10&quot;</span>)
+df = result.to_pandas()
+<span class="hljs-built_in">print</span>(df)
+
+<span class="hljs-comment"># Always clean up when done</span>
+client.instances.terminate(instance.<span class="hljs-built_in">id</span>)
+client.close()</code></pre>
+<h3 id="quick-start-helper">Quick Start Helper</h3>
+<p>For rapid exploration, use the client&#39;s <code>quick_start</code> method to create an instance from a mapping and connect in one call.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+client = GraphOLAPClient.from_env()
+
+<span class="hljs-comment"># Get a connection in one line (creates instance from mapping, snapshot managed internally)</span>
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+conn = client.quick_start(mapping_id=<span class="hljs-number">1</span>, wrapper_type=WrapperType.RYUGRAPH)
+
+<span class="hljs-comment"># Start querying immediately</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (n) RETURN labels(n)[0] AS label, count(*) AS count&quot;</span>)
+result.show()
+
+<span class="hljs-comment"># When done, terminate instance</span>
+client.instances.terminate(conn._instance_id)
+client.close()</code></pre>
+<h3 id="using-existing-resources">Using Existing Resources</h3>
+<p>If resources already exist, you can skip creation steps.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+client = GraphOLAPClient.from_env()
+
+<span class="hljs-comment"># Find an existing running instance by mapping</span>
+instances = client.instances.<span class="hljs-built_in">list</span>(mapping_id=<span class="hljs-number">42</span>, status=<span class="hljs-string">&quot;running&quot;</span>)
+
+<span class="hljs-keyword">if</span> instances:
+    <span class="hljs-comment"># Reuse existing instance</span>
+    instance = instances[<span class="hljs-number">0</span>]
+<span class="hljs-keyword">else</span>:
+    <span class="hljs-comment"># Create new instance directly from mapping (snapshot managed internally)</span>
+    <span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+    instance = client.instances.create_from_mapping_and_wait(
+        mapping_id=<span class="hljs-number">42</span>,
+        name=<span class="hljs-string">&quot;Analysis Instance&quot;</span>,
+        wrapper_type=WrapperType.RYUGRAPH,
+    )
+
+conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)
+<span class="hljs-comment"># ... perform analysis ...</span></code></pre>
+<h3 id="context-manager-pattern">Context Manager Pattern</h3>
+<p>Use context managers for automatic cleanup.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-keyword">with</span> GraphOLAPClient.from_env() <span class="hljs-keyword">as</span> client:
+    <span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+    conn = client.quick_start(mapping_id=<span class="hljs-number">1</span>, wrapper_type=WrapperType.RYUGRAPH)
+
+    <span class="hljs-keyword">try</span>:
+        <span class="hljs-comment"># Run your analysis</span>
+        result = conn.query(<span class="hljs-string">&quot;MATCH (n)-[r]-&gt;(m) RETURN n, r, m LIMIT 100&quot;</span>)
+        df = result.to_pandas()
+
+    <span class="hljs-keyword">finally</span>:
+        <span class="hljs-comment"># Always terminate to avoid resource leaks</span>
+        client.instances.terminate(conn._instance_id)</code></pre>
+<hr>
+<h2 id="2-real-world-use-cases">2. Real-World Use Cases</h2>
+<h3 id="customer-analysis">Customer Analysis</h3>
+<p>Identify influential customers using PageRank and community detection.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+client = GraphOLAPClient.from_env()
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+conn = client.quick_start(mapping_id=<span class="hljs-number">1</span>, wrapper_type=WrapperType.RYUGRAPH)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 1: Run PageRank to find influential customers</span>
+<span class="hljs-comment"># =============================================================================</span>
+exec_pr = conn.algo.pagerank(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;influence_score&quot;</span>,
+    damping=<span class="hljs-number">0.85</span>,
+    iterations=<span class="hljs-number">20</span>
+)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;PageRank completed: <span class="hljs-subst">{exec_pr.result[<span class="hljs-string">&#x27;nodes_updated&#x27;</span>]}</span> nodes scored&quot;</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 2: Detect communities using Louvain algorithm</span>
+<span class="hljs-comment"># =============================================================================</span>
+exec_louvain = conn.algo.louvain(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;community_id&quot;</span>
+)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Found <span class="hljs-subst">{exec_louvain.result[<span class="hljs-string">&#x27;communities_found&#x27;</span>]}</span> communities&quot;</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 3: Query top customers per community</span>
+<span class="hljs-comment"># =============================================================================</span>
+top_per_community = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    WITH c.community_id AS community, c
+    ORDER BY c.influence_score DESC
+    WITH community, collect(c)[0..5] AS top_customers
+    UNWIND top_customers AS customer
+    RETURN
+        community,
+        customer.name AS name,
+        customer.influence_score AS influence,
+        customer.total_purchases AS purchases
+    ORDER BY community, influence DESC
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nTop Customers by Community:&quot;</span>)
+<span class="hljs-built_in">print</span>(top_per_community)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 4: Visualize with PyVis</span>
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Get subgraph of top 100 customers</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    WITH c ORDER BY c.influence_score DESC LIMIT 100
+    MATCH (c)-[r:PURCHASED]-&gt;(p:Product)
+    RETURN c, r, p
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-comment"># Convert to PyVis network</span>
+net = result.to_pyvis(
+    notebook=<span class="hljs-literal">True</span>,
+    height=<span class="hljs-string">&quot;600px&quot;</span>,
+    node_color_property=<span class="hljs-string">&quot;community_id&quot;</span>,
+    node_size_property=<span class="hljs-string">&quot;influence_score&quot;</span>
+)
+net.show(<span class="hljs-string">&quot;customer_network.html&quot;</span>)
+
+<span class="hljs-comment"># Cleanup</span>
+client.instances.terminate(conn._instance_id)
+client.close()</code></pre>
+<h3 id="fraud-detection">Fraud Detection</h3>
+<p>Identify suspicious patterns using centrality analysis and path finding.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+client = GraphOLAPClient.from_env()
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+conn = client.quick_start(mapping_id=<span class="hljs-number">2</span>, wrapper_type=WrapperType.RYUGRAPH)  <span class="hljs-comment"># Fraud detection graph</span>
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 1: Calculate betweenness centrality (money flow brokers)</span>
+<span class="hljs-comment"># =============================================================================</span>
+conn.networkx.run(
+    algorithm=<span class="hljs-string">&quot;betweenness_centrality&quot;</span>,
+    node_label=<span class="hljs-string">&quot;Account&quot;</span>,
+    property_name=<span class="hljs-string">&quot;betweenness&quot;</span>,
+    params={<span class="hljs-string">&quot;normalized&quot;</span>: <span class="hljs-literal">True</span>}
+)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 2: Find accounts with unusually high centrality</span>
+<span class="hljs-comment"># =============================================================================</span>
+suspicious_accounts = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (a:Account)
+    WHERE a.betweenness &gt; 0.1
+    RETURN
+        a.account_id AS account,
+        a.holder_name AS holder,
+        a.betweenness AS centrality,
+        a.account_age_days AS age_days,
+        size((a)-[:TRANSFER]-&gt;()) AS outgoing_transfers,
+        size((a)&lt;-[:TRANSFER]-()) AS incoming_transfers
+    ORDER BY a.betweenness DESC
+    LIMIT 20
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;High-Centrality Accounts (Potential Money Brokers):&quot;</span>)
+<span class="hljs-built_in">print</span>(suspicious_accounts)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 3: Find circular transaction patterns (potential layering)</span>
+<span class="hljs-comment"># =============================================================================</span>
+circular_patterns = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH path = (a:Account)-[:TRANSFER*3..6]-&gt;(a)
+    WHERE all(t IN relationships(path) WHERE t.amount &gt; 1000)
+    WITH a, path,
+         reduce(total = 0, t IN relationships(path) | total + t.amount) AS total_amount
+    RETURN DISTINCT
+        a.account_id AS origin_account,
+        length(path) AS cycle_length,
+        total_amount,
+        [n IN nodes(path) | n.account_id] AS accounts_in_cycle
+    ORDER BY total_amount DESC
+    LIMIT 10
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nCircular Transaction Patterns:&quot;</span>)
+<span class="hljs-built_in">print</span>(circular_patterns)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 4: Path analysis between known fraudulent entities</span>
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Find shortest path between two suspicious accounts</span>
+path_result = conn.algo.shortest_path(
+    source_id=<span class="hljs-string">&quot;ACC_SUSPICIOUS_001&quot;</span>,
+    target_id=<span class="hljs-string">&quot;ACC_SUSPICIOUS_002&quot;</span>,
+    weight_property=<span class="hljs-string">&quot;amount&quot;</span>
+)
+
+<span class="hljs-keyword">if</span> path_result:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;\nPath between suspicious accounts: <span class="hljs-subst">{path_result[<span class="hljs-string">&#x27;path&#x27;</span>]}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Total value transferred: $<span class="hljs-subst">{path_result[<span class="hljs-string">&#x27;total_weight&#x27;</span>]:,<span class="hljs-number">.2</span>f}</span>&quot;</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 5: Anomaly detection - accounts with unusual patterns</span>
+<span class="hljs-comment"># =============================================================================</span>
+anomalies = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (a:Account)
+    WITH a,
+         size((a)-[:TRANSFER]-&gt;()) AS out_count,
+         size((a)&lt;-[:TRANSFER]-()) AS in_count
+    WHERE out_count &gt; 0 AND in_count &gt; 0
+    WITH a, out_count, in_count,
+         toFloat(out_count) / in_count AS ratio
+    WHERE ratio &gt; 10 OR ratio &lt; 0.1  // Highly asymmetric
+    RETURN
+        a.account_id AS account,
+        a.holder_name AS holder,
+        out_count,
+        in_count,
+        ratio,
+        a.betweenness AS centrality
+    ORDER BY a.betweenness DESC
+    LIMIT 20
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nAnomalous Transfer Patterns:&quot;</span>)
+<span class="hljs-built_in">print</span>(anomalies)
+
+<span class="hljs-comment"># Cleanup</span>
+client.instances.terminate(conn._instance_id)
+client.close()</code></pre>
+<h3 id="network-analysis">Network Analysis</h3>
+<p>Analyze influence propagation, link prediction, and clustering.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+<span class="hljs-keyword">import</span> polars <span class="hljs-keyword">as</span> pl
+
+client = GraphOLAPClient.from_env()
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+conn = client.quick_start(mapping_id=<span class="hljs-number">3</span>, wrapper_type=WrapperType.RYUGRAPH)  <span class="hljs-comment"># Social network graph</span>
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 1: Calculate multiple centrality metrics</span>
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Degree centrality (popularity)</span>
+conn.networkx.run(
+    algorithm=<span class="hljs-string">&quot;degree_centrality&quot;</span>,
+    node_label=<span class="hljs-string">&quot;User&quot;</span>,
+    property_name=<span class="hljs-string">&quot;degree_cent&quot;</span>
+)
+
+<span class="hljs-comment"># Closeness centrality (reach)</span>
+conn.networkx.run(
+    algorithm=<span class="hljs-string">&quot;closeness_centrality&quot;</span>,
+    node_label=<span class="hljs-string">&quot;User&quot;</span>,
+    property_name=<span class="hljs-string">&quot;closeness_cent&quot;</span>
+)
+
+<span class="hljs-comment"># Eigenvector centrality (influence)</span>
+conn.networkx.run(
+    algorithm=<span class="hljs-string">&quot;eigenvector_centrality&quot;</span>,
+    node_label=<span class="hljs-string">&quot;User&quot;</span>,
+    property_name=<span class="hljs-string">&quot;eigen_cent&quot;</span>,
+    params={<span class="hljs-string">&quot;max_iter&quot;</span>: <span class="hljs-number">100</span>}
+)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 2: Identify key influencers</span>
+<span class="hljs-comment"># =============================================================================</span>
+influencers = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (u:User)
+    RETURN
+        u.username AS user,
+        u.follower_count AS followers,
+        u.degree_cent AS degree,
+        u.closeness_cent AS closeness,
+        u.eigen_cent AS eigenvector,
+        (u.degree_cent + u.closeness_cent + u.eigen_cent) / 3 AS combined_score
+    ORDER BY combined_score DESC
+    LIMIT 20
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Top Influencers (Multi-metric Analysis):&quot;</span>)
+<span class="hljs-built_in">print</span>(influencers)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 3: Link prediction - who should connect?</span>
+<span class="hljs-comment"># =============================================================================</span>
+link_predictions = conn.networkx.run(
+    algorithm=<span class="hljs-string">&quot;jaccard_coefficient&quot;</span>,
+    node_label=<span class="hljs-string">&quot;User&quot;</span>,
+    edge_types=[<span class="hljs-string">&quot;FOLLOWS&quot;</span>]
+)
+
+<span class="hljs-comment"># Top predicted connections</span>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nPredicted Connections (Jaccard Coefficient):&quot;</span>)
+<span class="hljs-keyword">for</span> pred <span class="hljs-keyword">in</span> link_predictions.result[<span class="hljs-string">&quot;predictions&quot;</span>][:<span class="hljs-number">10</span>]:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  <span class="hljs-subst">{pred[<span class="hljs-string">&#x27;source&#x27;</span>]}</span> &lt;-&gt; <span class="hljs-subst">{pred[<span class="hljs-string">&#x27;target&#x27;</span>]}</span>: <span class="hljs-subst">{pred[<span class="hljs-string">&#x27;score&#x27;</span>]:<span class="hljs-number">.3</span>f}</span>&quot;</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 4: Clustering coefficient (local connectivity)</span>
+<span class="hljs-comment"># =============================================================================</span>
+conn.networkx.run(
+    algorithm=<span class="hljs-string">&quot;clustering&quot;</span>,
+    node_label=<span class="hljs-string">&quot;User&quot;</span>,
+    property_name=<span class="hljs-string">&quot;clustering_coeff&quot;</span>
+)
+
+<span class="hljs-comment"># Find users who bridge different groups (low clustering, high centrality)</span>
+bridge_users = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (u:User)
+    WHERE u.clustering_coeff &lt; 0.2 AND u.eigen_cent &gt; 0.1
+    RETURN
+        u.username AS user,
+        u.clustering_coeff AS clustering,
+        u.eigen_cent AS influence,
+        size((u)-[:FOLLOWS]-&gt;()) AS following,
+        size((u)&lt;-[:FOLLOWS]-()) AS followers
+    ORDER BY u.eigen_cent DESC
+    LIMIT 15
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nBridge Users (Low Clustering, High Influence):&quot;</span>)
+<span class="hljs-built_in">print</span>(bridge_users)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Step 5: Community structure analysis</span>
+<span class="hljs-comment"># =============================================================================</span>
+conn.networkx.run(
+    algorithm=<span class="hljs-string">&quot;louvain_communities&quot;</span>,
+    property_name=<span class="hljs-string">&quot;community&quot;</span>,
+    params={<span class="hljs-string">&quot;resolution&quot;</span>: <span class="hljs-number">1.0</span>}
+)
+
+community_stats = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (u:User)
+    WITH u.community AS community, collect(u) AS members
+    RETURN
+        community,
+        size(members) AS member_count,
+        avg([m IN members | m.eigen_cent][0]) AS avg_influence,
+        max([m IN members | m.follower_count][0]) AS max_followers
+    ORDER BY member_count DESC
+    LIMIT 10
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nCommunity Statistics:&quot;</span>)
+<span class="hljs-built_in">print</span>(community_stats)
+
+<span class="hljs-comment"># Cleanup</span>
+client.instances.terminate(conn._instance_id)
+client.close()</code></pre>
+<hr>
+<h2 id="3-integration-patterns">3. Integration Patterns</h2>
+<h3 id="pandaspolars-workflows">Pandas/Polars Workflows</h3>
+<p>Seamless integration with DataFrame libraries for analysis pipelines.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+<span class="hljs-keyword">import</span> pandas <span class="hljs-keyword">as</span> pd
+<span class="hljs-keyword">import</span> polars <span class="hljs-keyword">as</span> pl
+
+client = GraphOLAPClient.from_env()
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+conn = client.quick_start(mapping_id=<span class="hljs-number">1</span>, wrapper_type=WrapperType.RYUGRAPH)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Pandas Integration</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Get data as Pandas DataFrame</span>
+df_pandas = conn.query(<span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.* LIMIT 1000&quot;</span>).to_pandas()
+
+<span class="hljs-comment"># Apply Pandas transformations</span>
+df_pandas[<span class="hljs-string">&quot;revenue_tier&quot;</span>] = pd.cut(
+    df_pandas[<span class="hljs-string">&quot;total_revenue&quot;</span>],
+    bins=[<span class="hljs-number">0</span>, <span class="hljs-number">1000</span>, <span class="hljs-number">10000</span>, <span class="hljs-number">100000</span>, <span class="hljs-built_in">float</span>(<span class="hljs-string">&quot;inf&quot;</span>)],
+    labels=[<span class="hljs-string">&quot;Bronze&quot;</span>, <span class="hljs-string">&quot;Silver&quot;</span>, <span class="hljs-string">&quot;Gold&quot;</span>, <span class="hljs-string">&quot;Platinum&quot;</span>]
+)
+
+<span class="hljs-comment"># Group and aggregate</span>
+summary = df_pandas.groupby(<span class="hljs-string">&quot;revenue_tier&quot;</span>).agg({
+    <span class="hljs-string">&quot;customer_id&quot;</span>: <span class="hljs-string">&quot;count&quot;</span>,
+    <span class="hljs-string">&quot;total_revenue&quot;</span>: [<span class="hljs-string">&quot;sum&quot;</span>, <span class="hljs-string">&quot;mean&quot;</span>],
+    <span class="hljs-string">&quot;order_count&quot;</span>: <span class="hljs-string">&quot;sum&quot;</span>
+}).<span class="hljs-built_in">round</span>(<span class="hljs-number">2</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Customer Revenue Tiers (Pandas):&quot;</span>)
+<span class="hljs-built_in">print</span>(summary)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Polars Integration (Faster for large datasets)</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Get data as Polars DataFrame</span>
+df_polars = conn.query(<span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.* LIMIT 100000&quot;</span>).to_polars()
+
+<span class="hljs-comment"># Apply Polars transformations (lazy evaluation)</span>
+result = (
+    df_polars
+    .lazy()
+    .with_columns([
+        pl.when(pl.col(<span class="hljs-string">&quot;total_revenue&quot;</span>) &gt; <span class="hljs-number">100000</span>).then(pl.lit(<span class="hljs-string">&quot;Platinum&quot;</span>))
+        .when(pl.col(<span class="hljs-string">&quot;total_revenue&quot;</span>) &gt; <span class="hljs-number">10000</span>).then(pl.lit(<span class="hljs-string">&quot;Gold&quot;</span>))
+        .when(pl.col(<span class="hljs-string">&quot;total_revenue&quot;</span>) &gt; <span class="hljs-number">1000</span>).then(pl.lit(<span class="hljs-string">&quot;Silver&quot;</span>))
+        .otherwise(pl.lit(<span class="hljs-string">&quot;Bronze&quot;</span>))
+        .alias(<span class="hljs-string">&quot;tier&quot;</span>)
+    ])
+    .group_by(<span class="hljs-string">&quot;tier&quot;</span>)
+    .agg([
+        pl.count().alias(<span class="hljs-string">&quot;customer_count&quot;</span>),
+        pl.<span class="hljs-built_in">sum</span>(<span class="hljs-string">&quot;total_revenue&quot;</span>).alias(<span class="hljs-string">&quot;total_revenue&quot;</span>),
+        pl.mean(<span class="hljs-string">&quot;order_count&quot;</span>).alias(<span class="hljs-string">&quot;avg_orders&quot;</span>)
+    ])
+    .sort(<span class="hljs-string">&quot;total_revenue&quot;</span>, descending=<span class="hljs-literal">True</span>)
+    .collect()
+)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nCustomer Revenue Tiers (Polars):&quot;</span>)
+<span class="hljs-built_in">print</span>(result)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Combining Graph Queries with DataFrame Operations</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Get graph metrics</span>
+conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)
+conn.networkx.run(<span class="hljs-string">&quot;clustering&quot;</span>, node_label=<span class="hljs-string">&quot;Customer&quot;</span>, property_name=<span class="hljs-string">&quot;clustering&quot;</span>)
+
+<span class="hljs-comment"># Query combined metrics</span>
+metrics_df = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    RETURN
+        c.customer_id AS id,
+        c.name AS name,
+        c.total_revenue AS revenue,
+        c.pr_score AS pagerank,
+        c.clustering AS clustering_coeff
+&quot;&quot;&quot;</span>, use_polars=<span class="hljs-literal">True</span>)
+
+<span class="hljs-comment"># Polars analysis</span>
+top_customers = (
+    metrics_df
+    .with_columns([
+        (pl.col(<span class="hljs-string">&quot;pagerank&quot;</span>) * pl.col(<span class="hljs-string">&quot;revenue&quot;</span>)).alias(<span class="hljs-string">&quot;weighted_influence&quot;</span>)
+    ])
+    .sort(<span class="hljs-string">&quot;weighted_influence&quot;</span>, descending=<span class="hljs-literal">True</span>)
+    .head(<span class="hljs-number">20</span>)
+)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nTop Customers by Weighted Influence:&quot;</span>)
+<span class="hljs-built_in">print</span>(top_customers)
+
+<span class="hljs-comment"># Cleanup</span>
+client.instances.terminate(conn._instance_id)
+client.close()</code></pre>
+<h3 id="networkx-visualization">NetworkX Visualization</h3>
+<p>Export graph data to NetworkX for advanced visualization and analysis.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+<span class="hljs-keyword">import</span> networkx <span class="hljs-keyword">as</span> nx
+<span class="hljs-keyword">import</span> matplotlib.pyplot <span class="hljs-keyword">as</span> plt
+
+client = GraphOLAPClient.from_env()
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+conn = client.quick_start(mapping_id=<span class="hljs-number">1</span>, wrapper_type=WrapperType.RYUGRAPH)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Export Subgraph to NetworkX</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Query a subgraph (nodes and edges)</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)-[p:PURCHASED]-&gt;(pr:Product)
+    WHERE c.region = &#x27;EMEA&#x27;
+    RETURN c, p, pr
+    LIMIT 500
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-comment"># Convert to NetworkX graph</span>
+G = result.to_networkx(directed=<span class="hljs-literal">True</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Exported graph: <span class="hljs-subst">{G.number_of_nodes()}</span> nodes, <span class="hljs-subst">{G.number_of_edges()}</span> edges&quot;</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># NetworkX Analysis (client-side)</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Calculate metrics using NetworkX</span>
+nx_pagerank = nx.pagerank(G)
+nx_betweenness = nx.betweenness_centrality(G)
+nx_communities = <span class="hljs-built_in">list</span>(nx.community.louvain_communities(G.to_undirected()))
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;\nLocal NetworkX Analysis:&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  PageRank computed for <span class="hljs-subst">{<span class="hljs-built_in">len</span>(nx_pagerank)}</span> nodes&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  Found <span class="hljs-subst">{<span class="hljs-built_in">len</span>(nx_communities)}</span> communities&quot;</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Matplotlib Visualization</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Create layout</span>
+pos = nx.spring_layout(G, k=<span class="hljs-number">0.5</span>, iterations=<span class="hljs-number">50</span>)
+
+<span class="hljs-comment"># Color nodes by type</span>
+node_colors = []
+<span class="hljs-keyword">for</span> node <span class="hljs-keyword">in</span> G.nodes():
+    label = G.nodes[node].get(<span class="hljs-string">&quot;_label&quot;</span>, <span class="hljs-string">&quot;Unknown&quot;</span>)
+    <span class="hljs-keyword">if</span> label == <span class="hljs-string">&quot;Customer&quot;</span>:
+        node_colors.append(<span class="hljs-string">&quot;#1f77b4&quot;</span>)
+    <span class="hljs-keyword">elif</span> label == <span class="hljs-string">&quot;Product&quot;</span>:
+        node_colors.append(<span class="hljs-string">&quot;#ff7f0e&quot;</span>)
+    <span class="hljs-keyword">else</span>:
+        node_colors.append(<span class="hljs-string">&quot;#7f7f7f&quot;</span>)
+
+<span class="hljs-comment"># Size nodes by PageRank</span>
+node_sizes = [nx_pagerank.get(n, <span class="hljs-number">0.01</span>) * <span class="hljs-number">3000</span> <span class="hljs-keyword">for</span> n <span class="hljs-keyword">in</span> G.nodes()]
+
+<span class="hljs-comment"># Draw graph</span>
+plt.figure(figsize=(<span class="hljs-number">14</span>, <span class="hljs-number">10</span>))
+nx.draw(
+    G, pos,
+    node_color=node_colors,
+    node_size=node_sizes,
+    edge_color=<span class="hljs-string">&quot;#cccccc&quot;</span>,
+    alpha=<span class="hljs-number">0.7</span>,
+    with_labels=<span class="hljs-literal">False</span>,
+    arrows=<span class="hljs-literal">True</span>,
+    arrowsize=<span class="hljs-number">8</span>
+)
+plt.title(<span class="hljs-string">&quot;Customer-Product Network (Node size = PageRank)&quot;</span>)
+plt.tight_layout()
+plt.savefig(<span class="hljs-string">&quot;network_visualization.svg&quot;</span>, dpi=<span class="hljs-number">150</span>)
+plt.show()
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># PyVis Interactive Visualization</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Alternative: use built-in PyVis conversion</span>
+net = result.to_pyvis(
+    notebook=<span class="hljs-literal">True</span>,
+    height=<span class="hljs-string">&quot;700px&quot;</span>,
+    width=<span class="hljs-string">&quot;100%&quot;</span>
+)
+
+<span class="hljs-comment"># Customize appearance</span>
+net.barnes_hut(gravity=-<span class="hljs-number">3000</span>, central_gravity=<span class="hljs-number">0.3</span>, spring_length=<span class="hljs-number">200</span>)
+net.show_buttons(filter_=[<span class="hljs-string">&quot;physics&quot;</span>])
+net.show(<span class="hljs-string">&quot;interactive_network.html&quot;</span>)
+
+<span class="hljs-comment"># Cleanup</span>
+client.instances.terminate(conn._instance_id)
+client.close()</code></pre>
+<h3 id="exporting-to-csvparquet">Exporting to CSV/Parquet</h3>
+<p>Export query results and analysis data for downstream processing.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+<span class="hljs-keyword">from</span> pathlib <span class="hljs-keyword">import</span> Path
+
+client = GraphOLAPClient.from_env()
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+conn = client.quick_start(mapping_id=<span class="hljs-number">1</span>, wrapper_type=WrapperType.RYUGRAPH)
+
+<span class="hljs-comment"># Create output directory</span>
+output_dir = Path(<span class="hljs-string">&quot;./exports&quot;</span>)
+output_dir.mkdir(exist_ok=<span class="hljs-literal">True</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Export Query Results to CSV</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Run algorithms first</span>
+conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)
+conn.algo.louvain(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;community_id&quot;</span>)
+
+<span class="hljs-comment"># Query and export to CSV</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    RETURN
+        c.customer_id AS id,
+        c.name AS name,
+        c.email AS email,
+        c.region AS region,
+        c.total_revenue AS revenue,
+        c.pr_score AS pagerank,
+        c.community_id AS community
+    ORDER BY c.pr_score DESC
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-comment"># Export to CSV</span>
+result.to_csv(<span class="hljs-built_in">str</span>(output_dir / <span class="hljs-string">&quot;customers_with_metrics.csv&quot;</span>))
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Exported <span class="hljs-subst">{result.row_count}</span> customers to CSV&quot;</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Export to Parquet (better for large datasets)</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Export all transactions</span>
+transactions = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)-[t:PURCHASED]-&gt;(p:Product)
+    RETURN
+        c.customer_id AS customer_id,
+        p.product_id AS product_id,
+        t.amount AS amount,
+        t.quantity AS quantity,
+        t.transaction_date AS date
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-comment"># Parquet with compression</span>
+transactions.to_parquet(
+    <span class="hljs-built_in">str</span>(output_dir / <span class="hljs-string">&quot;transactions.parquet&quot;</span>),
+    compression=<span class="hljs-string">&quot;snappy&quot;</span>
+)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Exported <span class="hljs-subst">{transactions.row_count}</span> transactions to Parquet&quot;</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Export Graph Structure (Nodes and Edges)</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Export nodes</span>
+nodes_df = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (n)
+    RETURN
+        id(n) AS node_id,
+        labels(n)[0] AS label,
+        properties(n) AS properties
+&quot;&quot;&quot;</span>)
+nodes_df.write_parquet(<span class="hljs-built_in">str</span>(output_dir / <span class="hljs-string">&quot;nodes.parquet&quot;</span>))
+
+<span class="hljs-comment"># Export edges</span>
+edges_df = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH ()-[r]-&gt;()
+    RETURN
+        id(startNode(r)) AS source_id,
+        id(endNode(r)) AS target_id,
+        type(r) AS edge_type,
+        properties(r) AS properties
+&quot;&quot;&quot;</span>)
+edges_df.write_parquet(<span class="hljs-built_in">str</span>(output_dir / <span class="hljs-string">&quot;edges.parquet&quot;</span>))
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Exported graph structure: <span class="hljs-subst">{<span class="hljs-built_in">len</span>(nodes_df)}</span> nodes, <span class="hljs-subst">{<span class="hljs-built_in">len</span>(edges_df)}</span> edges&quot;</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Export to JSON (for web applications)</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Export community summary as JSON</span>
+community_summary = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    WITH c.community_id AS community, collect(c.name) AS members, count(*) AS size
+    RETURN community, size, members[0..5] AS sample_members
+    ORDER BY size DESC
+    LIMIT 20
+&quot;&quot;&quot;</span>)
+
+community_summary.to_json(<span class="hljs-built_in">str</span>(output_dir / <span class="hljs-string">&quot;communities.json&quot;</span>), indent=<span class="hljs-number">2</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Exported community summary to JSON&quot;</span>)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Batch Export with Progress</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">export_with_progress</span>(<span class="hljs-params">conn, query, output_path, batch_size=<span class="hljs-number">10000</span></span>):
+    <span class="hljs-string">&quot;&quot;&quot;Export large result sets in batches with progress tracking.&quot;&quot;&quot;</span>
+
+    <span class="hljs-comment"># First, get total count</span>
+    count_query = <span class="hljs-string">f&quot;MATCH (n) RETURN count(n) AS total&quot;</span>
+    total = conn.query_scalar(count_query)
+
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Exporting <span class="hljs-subst">{total}</span> records...&quot;</span>)
+
+    offset = <span class="hljs-number">0</span>
+    batch_num = <span class="hljs-number">0</span>
+
+    <span class="hljs-keyword">while</span> offset &lt; total:
+        batch_query = <span class="hljs-string">f&quot;<span class="hljs-subst">{query}</span> SKIP <span class="hljs-subst">{offset}</span> LIMIT <span class="hljs-subst">{batch_size}</span>&quot;</span>
+        result = conn.query(batch_query)
+
+        <span class="hljs-keyword">if</span> batch_num == <span class="hljs-number">0</span>:
+            <span class="hljs-comment"># First batch - write with header</span>
+            result.to_csv(output_path)
+        <span class="hljs-keyword">else</span>:
+            <span class="hljs-comment"># Append without header</span>
+            df = result.to_polars()
+            <span class="hljs-keyword">with</span> <span class="hljs-built_in">open</span>(output_path, <span class="hljs-string">&quot;a&quot;</span>) <span class="hljs-keyword">as</span> f:
+                df.write_csv(f, include_header=<span class="hljs-literal">False</span>)
+
+        offset += batch_size
+        batch_num += <span class="hljs-number">1</span>
+        progress = <span class="hljs-built_in">min</span>(<span class="hljs-number">100</span>, (offset / total) * <span class="hljs-number">100</span>)
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  Progress: <span class="hljs-subst">{progress:<span class="hljs-number">.1</span>f}</span>%&quot;</span>)
+
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Export complete: <span class="hljs-subst">{output_path}</span>&quot;</span>)
+
+<span class="hljs-comment"># Example usage</span>
+export_with_progress(
+    conn,
+    <span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.*&quot;</span>,
+    <span class="hljs-built_in">str</span>(output_dir / <span class="hljs-string">&quot;all_customers.csv&quot;</span>),
+    batch_size=<span class="hljs-number">5000</span>
+)
+
+<span class="hljs-comment"># Cleanup</span>
+client.instances.terminate(conn._instance_id)
+client.close()</code></pre>
+<hr>
+<h2 id="4-advanced-patterns">4. Advanced Patterns</h2>
+<h3 id="temporal-analysis">Temporal Analysis</h3>
+<p>Analyze time-series patterns in graph data.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+<span class="hljs-keyword">from</span> datetime <span class="hljs-keyword">import</span> datetime, timedelta
+
+client = GraphOLAPClient.from_env()
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+conn = client.quick_start(mapping_id=<span class="hljs-number">1</span>, wrapper_type=WrapperType.RYUGRAPH)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Time-windowed Analysis</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Get transaction patterns by month</span>
+monthly_patterns = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)-[t:PURCHASED]-&gt;(p:Product)
+    WITH
+        date(t.transaction_date).year AS year,
+        date(t.transaction_date).month AS month,
+        c, t, p
+    RETURN
+        year, month,
+        count(DISTINCT c) AS unique_customers,
+        count(t) AS transaction_count,
+        sum(t.amount) AS total_revenue,
+        avg(t.amount) AS avg_transaction
+    ORDER BY year, month
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Monthly Transaction Patterns:&quot;</span>)
+<span class="hljs-built_in">print</span>(monthly_patterns)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Cohort Analysis</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Analyze customers by signup cohort</span>
+cohort_analysis = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    WITH
+        date(c.signup_date).year AS cohort_year,
+        date(c.signup_date).month AS cohort_month,
+        c
+    OPTIONAL MATCH (c)-[t:PURCHASED]-&gt;()
+    WITH cohort_year, cohort_month, c, count(t) AS purchases
+    RETURN
+        cohort_year, cohort_month,
+        count(c) AS cohort_size,
+        avg(purchases) AS avg_purchases,
+        sum(CASE WHEN purchases &gt; 0 THEN 1 ELSE 0 END) AS active_customers
+    ORDER BY cohort_year, cohort_month
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nCohort Analysis:&quot;</span>)
+<span class="hljs-built_in">print</span>(cohort_analysis)
+
+<span class="hljs-comment"># Cleanup</span>
+client.instances.terminate(conn._instance_id)
+client.close()</code></pre>
+<h3 id="multi-hop-path-analysis">Multi-hop Path Analysis</h3>
+<p>Analyze relationship chains and influence paths.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+client = GraphOLAPClient.from_env()
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+conn = client.quick_start(mapping_id=<span class="hljs-number">1</span>, wrapper_type=WrapperType.RYUGRAPH)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Find Influence Chains</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Find paths from top influencer to others</span>
+influence_paths = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (top:Customer)
+    WHERE top.pr_score &gt; 0.1
+    WITH top ORDER BY top.pr_score DESC LIMIT 5
+    MATCH path = (top)-[:REFERRED*1..3]-&gt;(reached:Customer)
+    RETURN
+        top.name AS influencer,
+        reached.name AS reached_customer,
+        length(path) AS path_length,
+        [n IN nodes(path) | n.name] AS path_names
+    ORDER BY top.pr_score DESC, path_length
+    LIMIT 50
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Influence Chains from Top Customers:&quot;</span>)
+<span class="hljs-built_in">print</span>(influence_paths)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Supply Chain Analysis</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Find all paths from suppliers to end customers</span>
+supply_paths = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH path = (s:Supplier)-[:SUPPLIES*]-&gt;(d:Distributor)-[:SELLS_TO*]-&gt;(c:Customer)
+    WHERE length(path) &lt;= 5
+    WITH s, c, path,
+         [r IN relationships(path) | r.lead_time_days] AS lead_times
+    RETURN
+        s.name AS supplier,
+        c.name AS customer,
+        length(path) AS hops,
+        reduce(total = 0, lt IN lead_times | total + lt) AS total_lead_time
+    ORDER BY total_lead_time
+    LIMIT 20
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nSupply Chain Paths:&quot;</span>)
+<span class="hljs-built_in">print</span>(supply_paths)
+
+<span class="hljs-comment"># Cleanup</span>
+client.instances.terminate(conn._instance_id)
+client.close()</code></pre>
+<h3 id="hybrid-analysis-graph--sql">Hybrid Analysis (Graph + SQL)</h3>
+<p>Combine graph analysis with external SQL data.</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+<span class="hljs-keyword">import</span> pandas <span class="hljs-keyword">as</span> pd
+
+client = GraphOLAPClient.from_env()
+<span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+conn = client.quick_start(mapping_id=<span class="hljs-number">1</span>, wrapper_type=WrapperType.RYUGRAPH)
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Get Graph Metrics</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Calculate graph-based scores</span>
+conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;graph_influence&quot;</span>)
+conn.algo.louvain(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;community&quot;</span>)
+
+<span class="hljs-comment"># Export customer metrics from graph</span>
+graph_metrics = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    RETURN
+        c.customer_id AS customer_id,
+        c.graph_influence AS influence_score,
+        c.community AS community_id,
+        size((c)-[:PURCHASED]-&gt;()) AS product_diversity
+&quot;&quot;&quot;</span>).to_pandas()
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Load External Data (e.g., from data warehouse)</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Simulate loading CRM data from external source</span>
+crm_data = pd.DataFrame({
+    <span class="hljs-string">&quot;customer_id&quot;</span>: graph_metrics[<span class="hljs-string">&quot;customer_id&quot;</span>].tolist(),
+    <span class="hljs-string">&quot;ltv&quot;</span>: [<span class="hljs-number">1000</span> * (i + <span class="hljs-number">1</span>) <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-built_in">len</span>(graph_metrics))],
+    <span class="hljs-string">&quot;churn_risk&quot;</span>: [<span class="hljs-number">0.1</span> + <span class="hljs-number">0.05</span> * (i % <span class="hljs-number">10</span>) <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-built_in">len</span>(graph_metrics))],
+    <span class="hljs-string">&quot;segment&quot;</span>: [<span class="hljs-string">&quot;Enterprise&quot;</span> <span class="hljs-keyword">if</span> i % <span class="hljs-number">5</span> == <span class="hljs-number">0</span> <span class="hljs-keyword">else</span> <span class="hljs-string">&quot;SMB&quot;</span> <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-built_in">len</span>(graph_metrics))]
+})
+
+<span class="hljs-comment"># =============================================================================</span>
+<span class="hljs-comment"># Combine Graph and SQL Metrics</span>
+<span class="hljs-comment"># =============================================================================</span>
+
+<span class="hljs-comment"># Merge datasets</span>
+combined = graph_metrics.merge(crm_data, on=<span class="hljs-string">&quot;customer_id&quot;</span>)
+
+<span class="hljs-comment"># Create composite scores</span>
+combined[<span class="hljs-string">&quot;retention_priority&quot;</span>] = (
+    combined[<span class="hljs-string">&quot;influence_score&quot;</span>] * <span class="hljs-number">0.3</span> +
+    (combined[<span class="hljs-string">&quot;ltv&quot;</span>] / combined[<span class="hljs-string">&quot;ltv&quot;</span>].<span class="hljs-built_in">max</span>()) * <span class="hljs-number">0.4</span> +
+    combined[<span class="hljs-string">&quot;churn_risk&quot;</span>] * <span class="hljs-number">0.3</span>
+)
+
+<span class="hljs-comment"># Segment analysis</span>
+segment_analysis = combined.groupby(<span class="hljs-string">&quot;segment&quot;</span>).agg({
+    <span class="hljs-string">&quot;customer_id&quot;</span>: <span class="hljs-string">&quot;count&quot;</span>,
+    <span class="hljs-string">&quot;influence_score&quot;</span>: <span class="hljs-string">&quot;mean&quot;</span>,
+    <span class="hljs-string">&quot;ltv&quot;</span>: <span class="hljs-string">&quot;sum&quot;</span>,
+    <span class="hljs-string">&quot;churn_risk&quot;</span>: <span class="hljs-string">&quot;mean&quot;</span>,
+    <span class="hljs-string">&quot;retention_priority&quot;</span>: <span class="hljs-string">&quot;mean&quot;</span>
+}).<span class="hljs-built_in">round</span>(<span class="hljs-number">3</span>)
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Hybrid Analysis - Segment Summary:&quot;</span>)
+<span class="hljs-built_in">print</span>(segment_analysis)
+
+<span class="hljs-comment"># Top retention targets</span>
+top_targets = combined.nlargest(<span class="hljs-number">10</span>, <span class="hljs-string">&quot;retention_priority&quot;</span>)[
+    [<span class="hljs-string">&quot;customer_id&quot;</span>, <span class="hljs-string">&quot;segment&quot;</span>, <span class="hljs-string">&quot;influence_score&quot;</span>, <span class="hljs-string">&quot;ltv&quot;</span>, <span class="hljs-string">&quot;churn_risk&quot;</span>, <span class="hljs-string">&quot;retention_priority&quot;</span>]
+]
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nTop Retention Targets:&quot;</span>)
+<span class="hljs-built_in">print</span>(top_targets)
+
+<span class="hljs-comment"># Cleanup</span>
+client.instances.terminate(conn._instance_id)
+client.close()</code></pre>
+<hr>
+<h2 id="5-error-handling-patterns">5. Error Handling Patterns</h2>
+<h3 id="robust-workflow-with-retries">Robust Workflow with Retries</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+<span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> (
+    SnapshotFailedError,
+    InstanceFailedError,
+    QueryTimeoutError,
+    ResourceLockedError
+)
+<span class="hljs-keyword">import</span> time
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">robust_analysis</span>(<span class="hljs-params">client, mapping_id, wrapper_type, max_retries=<span class="hljs-number">3</span></span>):
+    <span class="hljs-string">&quot;&quot;&quot;Execute analysis with comprehensive error handling.
+
+    Args:
+        client: GraphOLAPClient instance
+        mapping_id: Mapping ID to use
+        wrapper_type: WrapperType.RYUGRAPH (disk-backed) or WrapperType.FALKORDB (in-memory)
+        max_retries: Number of retries for failed operations
+    &quot;&quot;&quot;</span>
+
+    instance = <span class="hljs-literal">None</span>
+
+    <span class="hljs-keyword">try</span>:
+        <span class="hljs-comment"># Create instance from mapping with retry (snapshot managed internally)</span>
+        <span class="hljs-comment"># wrapper_type is REQUIRED: RYUGRAPH (disk-backed) or FALKORDB (in-memory)</span>
+        <span class="hljs-keyword">for</span> attempt <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(max_retries):
+            <span class="hljs-keyword">try</span>:
+                instance = client.instances.create_from_mapping_and_wait(
+                    mapping_id=mapping_id,
+                    name=<span class="hljs-string">f&quot;Robust Analysis <span class="hljs-subst">{time.strftime(<span class="hljs-string">&#x27;%Y%m%d_%H%M%S&#x27;</span>)}</span>&quot;</span>,
+                    wrapper_type=wrapper_type,
+                    timeout=<span class="hljs-number">600</span>
+                )
+                <span class="hljs-keyword">break</span>
+            <span class="hljs-keyword">except</span> InstanceFailedError <span class="hljs-keyword">as</span> e:
+                <span class="hljs-keyword">if</span> attempt &lt; max_retries - <span class="hljs-number">1</span>:
+                    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance creation failed, retrying... (<span class="hljs-subst">{e}</span>)&quot;</span>)
+                    time.sleep(<span class="hljs-number">10</span>)
+                <span class="hljs-keyword">else</span>:
+                    <span class="hljs-keyword">raise</span>
+
+        conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)
+
+        <span class="hljs-comment"># Run algorithms with lock handling</span>
+        <span class="hljs-keyword">try</span>:
+            conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)
+        <span class="hljs-keyword">except</span> ResourceLockedError <span class="hljs-keyword">as</span> e:
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance locked by <span class="hljs-subst">{e.holder_name}</span>, waiting...&quot;</span>)
+            time.sleep(<span class="hljs-number">30</span>)
+            conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)
+
+        <span class="hljs-comment"># Execute queries with timeout handling</span>
+        <span class="hljs-keyword">try</span>:
+            result = conn.query(
+                <span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.* ORDER BY c.pr_score DESC LIMIT 100&quot;</span>,
+                timeout_ms=<span class="hljs-number">30000</span>
+            )
+            <span class="hljs-keyword">return</span> result.to_pandas()
+        <span class="hljs-keyword">except</span> QueryTimeoutError:
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Query timed out, trying simpler version...&quot;</span>)
+            result = conn.query(
+                <span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.name, c.pr_score ORDER BY c.pr_score DESC LIMIT 100&quot;</span>,
+                timeout_ms=<span class="hljs-number">60000</span>
+            )
+            <span class="hljs-keyword">return</span> result.to_pandas()
+
+    <span class="hljs-keyword">finally</span>:
+        <span class="hljs-comment"># Always clean up</span>
+        <span class="hljs-keyword">if</span> instance:
+            <span class="hljs-keyword">try</span>:
+                client.instances.terminate(instance.<span class="hljs-built_in">id</span>)
+            <span class="hljs-keyword">except</span> Exception <span class="hljs-keyword">as</span> e:
+                <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Warning: cleanup failed: <span class="hljs-subst">{e}</span>&quot;</span>)
+
+
+<span class="hljs-comment"># Usage</span>
+client = GraphOLAPClient.from_env()
+<span class="hljs-keyword">try</span>:
+    df = robust_analysis(client, mapping_id=<span class="hljs-number">1</span>, wrapper_type=WrapperType.RYUGRAPH)
+    <span class="hljs-built_in">print</span>(df)
+<span class="hljs-keyword">finally</span>:
+    client.close()</code></pre>
+<hr>
+<h2 id="6-performance-tips">6. Performance Tips</h2>
+<h3 id="efficient-query-patterns">Efficient Query Patterns</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># BAD: Returns entire nodes when you only need a few properties</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (c:Customer) RETURN c&quot;</span>)
+
+<span class="hljs-comment"># GOOD: Project only needed properties</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.id, c.name, c.value&quot;</span>)
+
+<span class="hljs-comment"># BAD: Unbounded query</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (c:Customer)-[r]-&gt;(p:Product) RETURN c, r, p&quot;</span>)
+
+<span class="hljs-comment"># GOOD: Always use LIMIT for exploration</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (c:Customer)-[r]-&gt;(p:Product) RETURN c, r, p LIMIT 1000&quot;</span>)
+
+<span class="hljs-comment"># BAD: Multiple sequential queries</span>
+<span class="hljs-keyword">for</span> customer_id <span class="hljs-keyword">in</span> customer_ids:
+    result = conn.query(<span class="hljs-string">f&quot;MATCH (c:Customer {{id: &#x27;<span class="hljs-subst">{customer_id}</span>&#x27;}}) RETURN c&quot;</span>)
+
+<span class="hljs-comment"># GOOD: Batch with UNWIND</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    UNWIND $ids AS id
+    MATCH (c:Customer {id: id})
+    RETURN c
+&quot;&quot;&quot;</span>, parameters={<span class="hljs-string">&quot;ids&quot;</span>: customer_ids})
+
+<span class="hljs-comment"># GOOD: Use parameters for dynamic values (prevents injection, enables caching)</span>
+result = conn.query(
+    <span class="hljs-string">&quot;MATCH (c:Customer) WHERE c.region = $region RETURN c LIMIT $limit&quot;</span>,
+    parameters={<span class="hljs-string">&quot;region&quot;</span>: <span class="hljs-string">&quot;EMEA&quot;</span>, <span class="hljs-string">&quot;limit&quot;</span>: <span class="hljs-number">100</span>}
+)</code></pre>
+<h3 id="algorithm-execution-tips">Algorithm Execution Tips</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Run algorithms on subgraphs when possible</span>
+conn.algo.pagerank(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,  <span class="hljs-comment"># Filter to specific label</span>
+    property_name=<span class="hljs-string">&quot;pr_score&quot;</span>,
+)
+
+<span class="hljs-comment"># Use sampling for expensive algorithms on large graphs</span>
+conn.networkx.run(
+    algorithm=<span class="hljs-string">&quot;betweenness_centrality&quot;</span>,
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;bc&quot;</span>,
+    params={<span class="hljs-string">&quot;k&quot;</span>: <span class="hljs-number">500</span>}  <span class="hljs-comment"># Sample 500 nodes instead of all</span>
+)
+
+<span class="hljs-comment"># Monitor algorithm progress</span>
+<span class="hljs-built_in">exec</span> = conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>, wait=<span class="hljs-literal">False</span>)
+<span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
+    status = conn.algo.status(<span class="hljs-built_in">exec</span>.execution_id)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Status: <span class="hljs-subst">{status.status}</span>, Progress: <span class="hljs-subst">{status.progress}</span>%&quot;</span>)
+    <span class="hljs-keyword">if</span> status.status <span class="hljs-keyword">in</span> (<span class="hljs-string">&quot;completed&quot;</span>, <span class="hljs-string">&quot;failed&quot;</span>):
+        <span class="hljs-keyword">break</span>
+    time.sleep(<span class="hljs-number">5</span>)</code></pre>
+
+  </div>
+
+  <!-- Mermaid with ELK layout support -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+
+    // Register ELK layout engine
+    mermaid.registerLayoutLoaders(elkLayouts);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+    
+  </script>
+</body>
+</html>

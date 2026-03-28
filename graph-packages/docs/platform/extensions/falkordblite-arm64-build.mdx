@@ -1,0 +1,141 @@
+---
+title: FalkorDBLite ARM64 Build Workaround
+description: Workaround for FalkorDBLite PyPI package ARM64 binary packaging issue
+---
+
+## Known Issue: ARM64 Binary in Source Tarball
+
+:::danger[Known Issue]
+The FalkorDBLite PyPI package (v0.6.0) contains **incorrectly packaged ARM64 support**.
+
+The source tarball includes a pre-built **x86_64 `falkordb.so` binary**, and the `setup.py` only downloads the correct architecture-specific binary if the file doesn't already exist.
+
+This causes FalkorDB wrapper pods to crash on ARM64 Linux (k3d on Apple Silicon) with:
+```
+Module falkordb.so failed to load: cannot open shared object file: No such file or directory
+```
+
+The file exists but cannot be loaded due to architecture mismatch (x86_64 binary on ARM64 runtime).
+:::
+
+## Background
+
+FalkorDBLite's `setup.py` contains correct ARM64 detection logic:
+
+```python
+elif system == 'linux':
+    if machine in ['x86_64', 'amd64']:
+        module_name = 'falkordb-x64.so'
+    elif machine in ['aarch64', 'arm64']:
+        module_name = 'falkordb-arm64v8.so'  # ARM64 IS SUPPORTED
+```
+
+However, the source tarball (`falkordblite-0.6.0.tar.gz`) ships with a pre-built x86_64 binary:
+
+```
+-rw-r--r--  34041112 falkordb.so  # 34MB x86_64 binary included in tarball
+```
+
+Since `setup.py` checks `if not os.path.exists(falkordb_module)` before downloading, the pre-existing x86_64 binary is used on all architectures.
+
+## Workaround: Force Source Build
+
+The `falkordb-wrapper.Dockerfile` implements the workaround:
+
+```dockerfile
+# CRITICAL: FalkorDBLite ARM64 fix
+#
+# PROBLEM: FalkorDBLite source tarball contains a pre-built x86_64 falkordb.so.
+# The setup.py only downloads architecture-specific binary if falkordb.so doesn't exist.
+# Since the tarball already has x86_64 binary, ARM64 builds get the wrong architecture.
+#
+# SOLUTION: Download source, DELETE the pre-built x86_64 binary, then install.
+# This forces setup.py to download the correct architecture from GitHub:
+#   - x86_64/amd64: falkordb-x64.so
+#   - aarch64/arm64: falkordb-arm64v8.so
+ARG FALKORDBLITE_VERSION=0.6.0
+RUN pip download --no-binary :all: falkordblite==${FALKORDBLITE_VERSION} -d /tmp/falkordblite && \
+    cd /tmp/falkordblite && \
+    tar xzf falkordblite-${FALKORDBLITE_VERSION}.tar.gz && \
+    rm -f falkordblite-${FALKORDBLITE_VERSION}/falkordb.so && \
+    echo "Removed pre-built x86_64 falkordb.so - will download correct arch during build" && \
+    pip install --no-cache-dir /tmp/falkordblite/falkordblite-${FALKORDBLITE_VERSION} && \
+    rm -rf /tmp/falkordblite
+```
+
+## Additional Requirement: libgomp
+
+The FalkorDB module (`falkordb.so`) links against OpenMP for parallel operations:
+
+```
+Module falkordb.so failed to load: libgomp.so.1: cannot open shared object file
+```
+
+The Chainguard `-dev` image (builder) includes `libgomp`, but the minimal runtime image does not. The Dockerfile copies it:
+
+```dockerfile
+# Copy libgomp from builder - required by FalkorDB module for OpenMP support
+COPY --from=builder /usr/lib/libgomp.so.1 /usr/lib/libgomp.so.1
+```
+
+## Verification
+
+After building, verify the correct architecture:
+
+```bash
+# Check binary architecture (should be ARM64 on Apple Silicon)
+docker run --rm --entrypoint /app/venv/bin/python falkordb-wrapper:latest -c "
+import os, struct
+path = '/app/venv/lib/python3.14/site-packages/redislite/bin/falkordb.so'
+with open(path, 'rb') as f:
+    f.seek(18)
+    machine = struct.unpack('<H', f.read(2))[0]
+    arch = 'ARM64' if machine == 0xB7 else 'x86_64' if machine == 0x3E else 'Unknown'
+    print(f'Architecture: {arch}')
+"
+# Expected output: Architecture: ARM64
+```
+
+Test FalkorDB functionality:
+
+```bash
+kubectl run falkordb-test --rm -i --restart=Never -n default \
+  --image=falkordb-wrapper:sha-xxx --command -- /app/venv/bin/python -c "
+from redislite import FalkorDB
+from pathlib import Path
+Path('/tmp/test').mkdir(exist_ok=True)
+db = FalkorDB('/tmp/test/test.rdb')
+graph = db.select_graph('test')
+result = graph.query(\"CREATE (n:Test {value: 42}) RETURN n.value\")
+print(f'Result: {result.result_set}')  # Expected: [[42]]
+db.close()
+"
+```
+
+## Platform Compatibility
+
+| Platform | FalkorDBLite Source | Result |
+|----------|---------------------|--------|
+| Linux AMD64 | Works (with workaround) | Correct x86_64 binary downloaded |
+| Linux ARM64 | Works (with workaround) | Correct ARM64 binary downloaded |
+| Linux ARM64 | Without workaround | **BROKEN** - x86_64 binary from tarball |
+| macOS (any) | Works | Python wheel has correct binaries |
+
+## Why This Affects k3d on Apple Silicon
+
+When running k3d (lightweight Kubernetes) on Apple Silicon Macs:
+
+1. k3d runs ARM64 Linux containers natively (no Rosetta)
+2. Docker builds run as ARM64 Linux
+3. FalkorDBLite source build extracts x86_64 binary from tarball
+4. ARM64 Linux cannot execute x86_64 shared libraries
+5. Pod crashes immediately when FalkorDB module loads
+
+Unlike Ryugraph (which requires AMD64 for algo extensions), FalkorDB **has native ARM64 support** - the issue is purely in the source tarball packaging.
+
+## References
+
+- [ADR-055: FalkorDBLite ARM64 Source Build](/docs/process/adr/infrastructure/adr-055-falkordblite-arm64-source-build.md) - Architecture decision
+- [ADR-050: FalkorDBLite vs Standalone Deployment](/docs/process/adr/infrastructure/adr-050-falkordb-lite-vs-standalone-deployment.md) - Why we use FalkorDBLite
+- [FalkorDBLite GitHub](https://github.com/FalkorDB/FalkorDBLite) - Upstream repository
+- [FalkorDB Releases](https://github.com/FalkorDB/FalkorDB/releases) - ARM64 binaries available

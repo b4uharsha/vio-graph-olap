@@ -1,0 +1,58 @@
+# Common Library Chart - Default Values
+# These values are used as defaults when charts include this library
+
+# Global values that can be overridden by parent charts
+global:
+  # Image registry for all components
+  imageRegistry: ""
+  # Image pull secrets
+  imagePullSecrets: []
+  # GCP Project ID
+  gcpProject: ""
+  # Environment name (staging, production)
+  environment: ""
+  # Common labels applied to all resources
+  commonLabels: {}
+  # Common annotations applied to all resources
+  commonAnnotations: {}
+
+# Default security context following NSA Kubernetes Hardening Guide
+# and Pod Security Standards (restricted profile)
+defaultSecurityContext:
+  pod:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  container:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+# Default resource requests/limits
+defaultResources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Default probe configuration
+defaultProbes:
+  liveness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+    successThreshold: 1

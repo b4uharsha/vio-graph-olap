@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>data-pipeline.reference</title>
+
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+
+  <style>
+    :root {
+      --max-width: 900px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+      --color-text: #24292f;
+      --color-bg: #ffffff;
+      --color-border: #d0d7de;
+      --color-link: #0969da;
+      --color-code-bg: #f6f8fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 2em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    p {
+      margin: 1em 0;
+    }
+
+    pre {
+      background: var(--color-code-bg);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      line-height: 1.45;
+    }
+
+    pre.mermaid {
+      background: transparent;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+    }
+
+    :not(pre) > code {
+      background: var(--color-code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 0 1em;
+      border-left: 4px solid var(--color-border);
+      color: #57606a;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+
+    th, td {
+      border: 1px solid var(--color-border);
+      padding: 0.5em 1em;
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-code-bg);
+      font-weight: 600;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a.image-link {
+      display: block;
+      cursor: zoom-in;
+    }
+
+    a.image-link:hover img {
+      opacity: 0.9;
+      outline: 2px solid var(--color-link);
+      outline-offset: 2px;
+    }
+
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    li {
+      margin: 0.25em 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 2em 0;
+    }
+
+    details {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      background: var(--color-code-bg);
+      border-radius: 6px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .container {
+        max-width: none;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="data-pipeline-reference">Data Pipeline Reference</h1>
+<p>Technical reference for the Starburst Galaxy → Parquet → Ryugraph data pipeline.</p>
+<h2 id="overview">Overview</h2>
+<p>This document details how relational data flows from <strong>Starburst Galaxy</strong> (managed Trino SaaS) SQL queries through Parquet files into Ryugraph/KuzuDB graph structures. It documents <strong>external system behaviour</strong> that our components depend on.</p>
+<p><strong>References:</strong></p>
+<ul>
+<li><a href="../process/adr/infrastructure/adr-070-starburst-galaxy-bigquery-export.html">ADR-070: Starburst Galaxy + BigQuery Export Platform</a></li>
+<li><a href="../process/adr/system-design/adr-071-pyarrow-fallback-export.html">ADR-071: PyArrow Fallback Export Strategy</a></li>
+</ul>
+<p><strong>Related documents:</strong></p>
+<ul>
+<li><a href="../foundation/requirements.html">requirements.md</a> - Mapping definition JSON schema (authoritative source)</li>
+<li><a href="../component-designs/export-worker.design.html">export-worker.design.md</a> - How our worker executes exports</li>
+<li><a href="../component-designs/ryugraph-wrapper.design.html">ryugraph-wrapper.design.md</a> - How our wrapper loads graphs</li>
+<li><a href="../component-designs/control-plane.design.html#mapping-generator-subsystem">control-plane.design.md#mapping-generator-subsystem</a> - How we validate mappings</li>
+</ul>
+<hr>
+<h2 id="data-flow-pipeline">Data Flow Pipeline</h2>
+<a href="diagrams/data-pipeline.reference/diagram-1.svg" target="_blank" title="Click to open full size" class="image-link"><img src="diagrams/data-pipeline.reference/diagram-1.svg" alt="diagram-1"></a>
+<details>
+<summary>Mermaid Source</summary>
+
+<pre class="mermaid">
+flowchart LR
+    A["Starburst<br/>SQL Query"] -->|UNLOAD| B["GCS<br/>Parquet Files"]
+    B -->|Separate files for<br/>nodes and edges| C["Ryugraph<br/>COPY FROM"]
+    C -->|CREATE NODE TABLE<br/>CREATE REL TABLE| D["Graph<br/>Instance"]
+</pre>
+</details>
+
+<hr>
+<h2 id="two-tier-export-strategy">Two-Tier Export Strategy</h2>
+<p>The platform implements a two-tier export strategy with automatic fallback:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Method</th>
+<th>When Used</th>
+<th>Characteristics</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>1 (Primary)</strong></td>
+<td>Server-side (<code>system.unload()</code>)</td>
+<td>Starburst Galaxy with GCS catalog</td>
+<td>Distributed execution, direct GCS write</td>
+</tr>
+<tr>
+<td><strong>2 (Fallback)</strong></td>
+<td>Client-side (PyArrow)</td>
+<td>When server-side unavailable</td>
+<td>Streams through export worker, memory buffered</td>
+</tr>
+</tbody></table>
+<h3 id="export-flow-with-fallback">Export Flow with Fallback</h3>
+<pre><code class="hljs">Export Worker → Starburst Galaxy
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+        ▼                       ▼
+  system.unload()          SELECT * (fallback)
+        │                       │
+        │                       ▼
+        │               Export Worker
+        │                       │
+        │                       ▼
+        │                   PyArrow
+        │                       │
+        └───────────┬───────────┘
+                    ▼
+                   GCS</code></pre>
+<h3 id="fallback-triggers">Fallback Triggers</h3>
+<p>The system falls back to PyArrow when:</p>
+<ul>
+<li><code>system.unload()</code> is not available</li>
+<li>GCS catalog is not configured</li>
+<li>Feature flag is disabled</li>
+<li>Permission errors occur</li>
+</ul>
+<h3 id="memory-considerations-fallback-path">Memory Considerations (Fallback Path)</h3>
+<table>
+<thead>
+<tr>
+<th>Dataset Size</th>
+<th>Memory Required</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&lt; 100 MB</td>
+<td>256 MB</td>
+<td>Safe for fallback</td>
+</tr>
+<tr>
+<td>100 MB - 1 GB</td>
+<td>1-2 GB</td>
+<td>Monitor closely</td>
+</tr>
+<tr>
+<td>&gt; 1 GB</td>
+<td>2+ GB</td>
+<td>Prefer server-side</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="starburst-galaxy-unload">Starburst Galaxy UNLOAD</h2>
+<h3 id="syntax">Syntax</h3>
+<p>The <code>UNLOAD</code> table function exports query results directly to GCS:</p>
+<pre><code class="hljs language-sql"><span class="hljs-keyword">SELECT</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">FROM</span> <span class="hljs-keyword">TABLE</span>(
+    io.unload(
+        input <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-keyword">TABLE</span>(
+            <span class="hljs-keyword">SELECT</span> customer_id, name, city, signup_date
+            <span class="hljs-keyword">FROM</span> analytics.customers
+        ),
+        location <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;gs://bucket/{user_id}/{mapping_id}/{snapshot_id}/nodes/customers/&#x27;</span>,
+        format <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;PARQUET&#x27;</span>,
+        compression <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;SNAPPY&#x27;</span>
+    )
+)</code></pre>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>input</td>
+<td>Yes</td>
+<td>TABLE(...) containing the SELECT query</td>
+</tr>
+<tr>
+<td>location</td>
+<td>Yes</td>
+<td>GCS destination path</td>
+</tr>
+<tr>
+<td>format</td>
+<td>Yes</td>
+<td>Output format (use &#39;PARQUET&#39;)</td>
+</tr>
+<tr>
+<td>compression</td>
+<td>No</td>
+<td>Compression codec (recommend &#39;SNAPPY&#39;)</td>
+</tr>
+</tbody></table>
+<h3 id="parallel-writing-behaviour">Parallel Writing Behaviour</h3>
+<p>Starburst writes in parallel <strong>without</strong> partitioning. Multiple worker nodes each produce their own output files:</p>
+<pre><code class="hljs">gs://bucket/snapshot/nodes/customers/
+├── 00000-123-uuid1-0-00001.parquet  ← worker 1
+├── 00000-124-uuid2-0-00001.parquet  ← worker 2
+├── 00000-125-uuid3-0-00001.parquet  ← worker 3
+└── 00000-126-uuid4-0-00001.parquet  ← worker 4</code></pre>
+<p><strong>File naming pattern:</strong> <code>{sequence}-{task}-{UUID}-{split}-{part}.parquet</code></p>
+<p>The number of files depends on cluster size and data volume. For typical ≤2GB graphs, this produces a manageable number of files.</p>
+<h3 id="column-ordering-requirements">Column Ordering Requirements</h3>
+<p>The Parquet schema is controlled entirely by the SELECT query. <strong>Column ordering is critical:</strong></p>
+<ul>
+<li>For nodes: primary_key must be first column</li>
+<li>For edges: from_key, to_key must be first two columns</li>
+<li>Properties follow in defined order</li>
+</ul>
+<pre><code class="hljs language-sql"><span class="hljs-keyword">SELECT</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">FROM</span> <span class="hljs-keyword">TABLE</span>(
+    io.unload(
+        input <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-keyword">TABLE</span>(
+            <span class="hljs-keyword">SELECT</span>
+                customer_id,                              <span class="hljs-comment">-- Primary key (must be first)</span>
+                name,                                     <span class="hljs-comment">-- Property</span>
+                <span class="hljs-built_in">CAST</span>(balance <span class="hljs-keyword">AS</span> <span class="hljs-keyword">DOUBLE</span>) <span class="hljs-keyword">as</span> balance,       <span class="hljs-comment">-- Cast DECIMAL to DOUBLE</span>
+                signup_date                               <span class="hljs-comment">-- Property</span>
+            <span class="hljs-keyword">FROM</span> analytics.customers
+        ),
+        location <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;gs://bucket/path/nodes/customers/&#x27;</span>,
+        format <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;PARQUET&#x27;</span>,
+        compression <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;SNAPPY&#x27;</span>
+    )
+)</code></pre>
+<hr>
+<h2 id="ryugraph-schema">Ryugraph Schema</h2>
+<h3 id="node-table-definition">Node Table Definition</h3>
+<pre><code class="hljs language-cypher">CREATE NODE TABLE Customer(
+    customer_id STRING PRIMARY KEY,
+    name STRING,
+    city STRING,
+    signup_date DATE
+);</code></pre>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>Every node table requires a <code>PRIMARY KEY</code></li>
+<li>Primary key must be unique across all nodes of that type</li>
+<li>Supported PK types: STRING, INT64, DATE, UUID</li>
+</ul>
+<h3 id="relationship-table-definition">Relationship Table Definition</h3>
+<pre><code class="hljs language-cypher">CREATE REL TABLE PURCHASED(
+    FROM Customer TO Product,
+    purchase_date DATE,
+    amount DOUBLE,
+    quantity INT64
+);</code></pre>
+<p><strong>Rules:</strong></p>
+<ul>
+<li>Must specify <code>FROM NodeTable TO NodeTable</code></li>
+<li>First two columns in Parquet must be FROM and TO primary keys</li>
+<li>Relationship properties follow the FROM/TO columns</li>
+</ul>
+<h3 id="multi-sourcetarget-relationships">Multi-Source/Target Relationships</h3>
+<pre><code class="hljs language-cypher">CREATE REL TABLE REVIEWED(
+    FROM Customer TO Product,
+    FROM Customer TO Merchant,
+    rating INT64,
+    review_text STRING
+);</code></pre>
+<p>When importing, specify which pair:</p>
+<pre><code class="hljs language-cypher">COPY REVIEWED FROM &#039;customer_product_reviews.parquet&#039; (from=&#039;Customer&#039;, to=&#039;Product&#039;);
+COPY REVIEWED FROM &#039;customer_merchant_reviews.parquet&#039; (from=&#039;Customer&#039;, to=&#039;Merchant&#039;);</code></pre>
+<blockquote>
+<p><strong>Design decision:</strong> Our mapping schema does not currently support multi-source/target relationships. Each edge definition connects exactly one <code>from_node</code> to one <code>to_node</code>. For polymorphic relationships, define separate edge types (e.g., <code>REVIEWED_PRODUCT</code>, <code>REVIEWED_MERCHANT</code>). This simplifies validation, export, and import logic. Revisit if analysts need to query across polymorphic endpoints as a single relationship type—would require allowing multiple edge definitions with the same <code>type</code> and identical <code>properties</code>.</p>
+</blockquote>
+<h3 id="multiplicity-constraints">Multiplicity Constraints</h3>
+<pre><code class="hljs language-cypher">-- Each customer has at most one primary address
+CREATE REL TABLE HAS_PRIMARY_ADDRESS(FROM Customer TO Address, MANY_ONE);
+
+-- One-to-one marriage relationship
+CREATE REL TABLE MARRIED_TO(FROM Person TO Person, ONE_ONE);</code></pre>
+<blockquote>
+<p><strong>Design decision:</strong> Our mapping schema does not support multiplicity constraints. All relationships use the default <code>MANY_MANY</code>. Since our graphs are read-only analytics snapshots (no inserts/updates after initial load), cardinality enforcement provides no benefit—the source data already defines the actual cardinality.</p>
+</blockquote>
+<hr>
+<h2 id="parquet-file-requirements">Parquet File Requirements</h2>
+<h3 id="node-table-parquet-structure">Node Table Parquet Structure</h3>
+<p>For a node table:</p>
+<pre><code class="hljs language-cypher">CREATE NODE TABLE Customer(
+    customer_id STRING PRIMARY KEY,
+    name STRING,
+    age INT64,
+    city STRING
+);</code></pre>
+<p><strong>Parquet columns must be in exact order:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>customer_id</td>
+<td>STRING</td>
+<td>Primary key (required, first)</td>
+</tr>
+<tr>
+<td>name</td>
+<td>STRING</td>
+<td>Property</td>
+</tr>
+<tr>
+<td>age</td>
+<td>INT64</td>
+<td>Property</td>
+</tr>
+<tr>
+<td>city</td>
+<td>STRING</td>
+<td>Property</td>
+</tr>
+</tbody></table>
+<h3 id="relationship-table-parquet-structure">Relationship Table Parquet Structure</h3>
+<p>For a relationship table:</p>
+<pre><code class="hljs language-cypher">CREATE REL TABLE PURCHASED(
+    FROM Customer TO Product,
+    purchase_date DATE,
+    amount DOUBLE
+);</code></pre>
+<p><strong>Parquet columns must be:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>customer_id</td>
+<td>STRING</td>
+<td>FROM node primary key (required, first)</td>
+</tr>
+<tr>
+<td>product_id</td>
+<td>STRING</td>
+<td>TO node primary key (required, second)</td>
+</tr>
+<tr>
+<td>purchase_date</td>
+<td>DATE</td>
+<td>Relationship property</td>
+</tr>
+<tr>
+<td>amount</td>
+<td>DOUBLE</td>
+<td>Relationship property</td>
+</tr>
+</tbody></table>
+<h3 id="serial-primary-keys-auto-increment">SERIAL Primary Keys (Auto-Increment)</h3>
+<p>For large datasets with sequential IDs:</p>
+<pre><code class="hljs language-cypher">CREATE NODE TABLE Event(
+    id SERIAL PRIMARY KEY,
+    event_type STRING,
+    timestamp TIMESTAMP
+);</code></pre>
+<p><strong>When using SERIAL:</strong></p>
+<ul>
+<li><strong>Omit the primary key column from Parquet file</strong></li>
+<li>Ryugraph auto-generates IDs starting from 0</li>
+<li>Significantly improves load performance</li>
+</ul>
+<p>Parquet columns for SERIAL node:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>event_type</td>
+<td>STRING</td>
+</tr>
+<tr>
+<td>timestamp</td>
+<td>TIMESTAMP</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Design decision:</strong> Our mapping schema does not support SERIAL primary keys. We always use the source database primary key to maintain traceability between graph nodes and source data. At our target scale (≤2GB graphs, ~10M nodes max), the performance benefit of SERIAL is negligible. SERIAL would also complicate edge definitions since edges reference nodes by primary key, and auto-generated IDs aren&#39;t known until after node import. Revisit if scale increases significantly (50M+ nodes)—SERIAL provides fastest graph traversal via sequential INT64 keys with optimal memory layout and cache locality.</p>
+</blockquote>
+<hr>
+<h2 id="ryugraph-copy-from">Ryugraph COPY FROM</h2>
+<h3 id="syntax-1">Syntax</h3>
+<pre><code class="hljs language-cypher">COPY TableName FROM &#039;gs://bucket/path/*.parquet&#039;;</code></pre>
+<h3 id="import-order-constraint">Import Order Constraint</h3>
+<p><strong>Critical:</strong> Always import nodes before relationships. Relationships reference node primary keys that must already exist.</p>
+<pre><code class="hljs language-cypher">-- STEP 1: Import nodes FIRST (order matters!)
+COPY Customer FROM &#039;gs://bucket/snapshot_123/nodes/customers/*.parquet&#039;;
+COPY Product FROM &#039;gs://bucket/snapshot_123/nodes/products/*.parquet&#039;;
+
+-- STEP 2: Import relationships AFTER nodes exist
+COPY PURCHASED FROM &#039;gs://bucket/snapshot_123/edges/purchased/*.parquet&#039;;</code></pre>
+<h3 id="glob-pattern-support">Glob Pattern Support</h3>
+<p>Ryugraph reads all matching files via glob pattern:</p>
+<pre><code class="hljs language-cypher">COPY Customer FROM &#039;gs://bucket/path/*.parquet&#039;;  -- reads all parquet files</code></pre>
+<hr>
+<h2 id="type-mapping">Type Mapping</h2>
+<h3 id="starburst-to-ryugraph-type-mapping">Starburst to Ryugraph Type Mapping</h3>
+<table>
+<thead>
+<tr>
+<th>Starburst/Trino Type</th>
+<th>Ryugraph Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>VARCHAR, CHAR</td>
+<td>STRING</td>
+<td>UTF-8 encoded</td>
+</tr>
+<tr>
+<td>BIGINT</td>
+<td>INT64</td>
+<td>64-bit signed integer</td>
+</tr>
+<tr>
+<td>INTEGER</td>
+<td>INT32</td>
+<td>32-bit signed integer</td>
+</tr>
+<tr>
+<td>SMALLINT</td>
+<td>INT16</td>
+<td>16-bit signed integer</td>
+</tr>
+<tr>
+<td>TINYINT</td>
+<td>INT8</td>
+<td>8-bit signed integer</td>
+</tr>
+<tr>
+<td>DOUBLE</td>
+<td>DOUBLE</td>
+<td>64-bit floating point</td>
+</tr>
+<tr>
+<td>REAL</td>
+<td>FLOAT</td>
+<td>32-bit floating point</td>
+</tr>
+<tr>
+<td>DECIMAL</td>
+<td>DOUBLE</td>
+<td>Cast in SQL query</td>
+</tr>
+<tr>
+<td>DATE</td>
+<td>DATE</td>
+<td>Calendar date</td>
+</tr>
+<tr>
+<td>TIMESTAMP</td>
+<td>TIMESTAMP</td>
+<td>Date and time</td>
+</tr>
+<tr>
+<td>TIMESTAMP WITH TIME ZONE</td>
+<td>TIMESTAMP</td>
+<td>Timezone stripped</td>
+</tr>
+<tr>
+<td>BOOLEAN</td>
+<td>BOOL</td>
+<td>True/false</td>
+</tr>
+<tr>
+<td>VARBINARY</td>
+<td>BLOB</td>
+<td>Binary data</td>
+</tr>
+<tr>
+<td>ARRAY</td>
+<td>LIST</td>
+<td>Variable-length array</td>
+</tr>
+<tr>
+<td>MAP</td>
+<td>MAP</td>
+<td>Key-value pairs</td>
+</tr>
+<tr>
+<td>ROW</td>
+<td>STRUCT</td>
+<td>Structured type</td>
+</tr>
+<tr>
+<td>UUID</td>
+<td>UUID</td>
+<td>Universal identifier</td>
+</tr>
+</tbody></table>
+<h3 id="required-sql-casts">Required SQL Casts</h3>
+<p>Some types require explicit casting in the SQL query:</p>
+<pre><code class="hljs language-sql"><span class="hljs-keyword">SELECT</span>
+    customer_id,
+    name,
+    <span class="hljs-built_in">CAST</span>(price <span class="hljs-keyword">AS</span> <span class="hljs-keyword">DOUBLE</span>) <span class="hljs-keyword">as</span> price,           <span class="hljs-comment">-- DECIMAL -&gt; DOUBLE</span>
+    <span class="hljs-built_in">CAST</span>(created_at <span class="hljs-keyword">AS</span> <span class="hljs-type">TIMESTAMP</span>) <span class="hljs-keyword">as</span> created, <span class="hljs-comment">-- Handle timezone</span>
+    <span class="hljs-built_in">CAST</span>(is_active <span class="hljs-keyword">AS</span> <span class="hljs-type">BOOLEAN</span>) <span class="hljs-keyword">as</span> is_active   <span class="hljs-comment">-- Ensure boolean</span>
+<span class="hljs-keyword">FROM</span> source_table</code></pre>
+<hr>
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="duplicate-primary-keys">Duplicate Primary Keys</h3>
+<p>Ryugraph rejects duplicate primary keys by default:</p>
+<pre><code class="hljs language-cypher">-- Enable error skipping for dirty data
+COPY Customer FROM &#039;file.parquet&#039; (IGNORE_ERRORS=true);</code></pre>
+<p><strong>Note:</strong> <code>IGNORE_ERRORS=true</code> has performance cost. Prefer clean data.</p>
+<h3 id="missing-foreign-keys">Missing Foreign Keys</h3>
+<p>Relationships referencing non-existent nodes will fail:</p>
+<pre><code class="hljs">Error: Node with primary key &#039;customer_xyz&#039; not found in Customer table</code></pre>
+<p><strong>Solution:</strong> Always load nodes before relationships.</p>
+<h3 id="schema-mismatch">Schema Mismatch</h3>
+<p>Parquet columns must match Ryugraph schema exactly:</p>
+<pre><code class="hljs">Error: Column count mismatch. Expected 4 columns, got 3.</code></pre>
+<p><strong>Solution:</strong> Ensure SELECT column order matches CREATE TABLE property order.</p>
+<hr>
+<h2 id="performance-considerations">Performance Considerations</h2>
+<h3 id="parallel-io">Parallel I/O</h3>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Parallelism</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Starburst UNLOAD</td>
+<td>Multiple workers write files concurrently</td>
+<td>Automatic based on cluster size</td>
+</tr>
+<tr>
+<td>Ryugraph COPY FROM</td>
+<td>Multiple threads read files concurrently</td>
+<td><code>max_num_threads</code> setting</td>
+</tr>
+</tbody></table>
+<p><strong>Both parallel write and parallel read work without partitioning.</strong> The flat file structure is optimal:</p>
+<pre><code class="hljs">gs://bucket/snapshot/nodes/customers/
+├── file-001.parquet  ← written by worker 1, read by thread A
+├── file-002.parquet  ← written by worker 2, read by thread B
+├── file-003.parquet  ← written by worker 3, read by thread C
+└── ...</code></pre>
+<h3 id="starburst-export-tuning">Starburst Export Tuning</h3>
+<ul>
+<li>Use <code>compression =&gt; &#39;SNAPPY&#39;</code> for balance of speed and size</li>
+<li>Files are automatically parallelised across workers</li>
+<li>No partitioning needed for performance</li>
+</ul>
+<h3 id="ryugraph-import-tuning">Ryugraph Import Tuning</h3>
+<ul>
+<li><strong>COPY FROM is fastest</strong> for bulk loading (vs individual inserts)</li>
+<li>Use glob patterns: <code>COPY FROM &#39;path/*.parquet&#39;</code> to read all files</li>
+<li>Ryugraph reads multiple files in parallel using available threads</li>
+<li>Set buffer pool appropriately: <code>buffer_pool_size=2_147_483_648</code> (2GB)</li>
+<li>For consecutive integer IDs, use <code>SERIAL</code> and omit PK column</li>
+</ul>
+<h3 id="memory-management">Memory Management</h3>
+<p>For large graphs (approaching 2GB limit):</p>
+<ul>
+<li>Configure Ryugraph buffer pool to ~80% of pod memory</li>
+<li>Enable disk spilling for larger-than-memory operations</li>
+<li>Use persistent volume for spill files</li>
+</ul>
+<hr>
+<h2 id="mapping-many-to-many-relationships">Mapping Many-to-Many Relationships</h2>
+<p>In relational databases, many-to-many relationships are represented using <strong>join tables</strong> with foreign keys to both entities. In the graph model, these become <strong>relationship tables with properties</strong>.</p>
+<h3 id="relational-pattern">Relational Pattern</h3>
+<pre><code class="hljs language-sql"><span class="hljs-comment">-- Join table with foreign keys to both entities</span>
+<span class="hljs-keyword">CREATE TABLE</span> transactions (
+    transaction_id <span class="hljs-type">VARCHAR</span> <span class="hljs-keyword">PRIMARY KEY</span>,
+    customer_id <span class="hljs-type">VARCHAR</span> <span class="hljs-keyword">REFERENCES</span> customers(customer_id),
+    product_id <span class="hljs-type">VARCHAR</span> <span class="hljs-keyword">REFERENCES</span> products(product_id),
+    amount <span class="hljs-type">DECIMAL</span>(<span class="hljs-number">10</span>,<span class="hljs-number">2</span>),
+    transaction_date <span class="hljs-type">TIMESTAMP</span>
+);</code></pre>
+<h3 id="graph-pattern">Graph Pattern</h3>
+<pre><code class="hljs language-cypher">-- Foreign keys become FROM/TO, other columns become properties
+CREATE REL TABLE PURCHASED(
+    FROM Customer TO Product,
+    transaction_id STRING,
+    amount DOUBLE,
+    transaction_date TIMESTAMP
+);</code></pre>
+<h3 id="mapping-rules">Mapping Rules</h3>
+<table>
+<thead>
+<tr>
+<th>Relational Concept</th>
+<th>Graph Equivalent</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Join table</td>
+<td>REL TABLE</td>
+</tr>
+<tr>
+<td>FK to source entity</td>
+<td>FROM NodeType</td>
+</tr>
+<tr>
+<td>FK to target entity</td>
+<td>TO NodeType</td>
+</tr>
+<tr>
+<td>Other columns</td>
+<td>Relationship properties</td>
+</tr>
+<tr>
+<td>Join table PK</td>
+<td>Optional property (or omit if not needed)</td>
+</tr>
+</tbody></table>
+<h3 id="export-query-structure">Export Query Structure</h3>
+<p><strong>Critical:</strong> Column ordering determines the relationship direction.</p>
+<pre><code class="hljs language-sql"><span class="hljs-keyword">SELECT</span>
+    customer_id,           <span class="hljs-comment">-- FROM node PK (must be first)</span>
+    product_id,            <span class="hljs-comment">-- TO node PK (must be second)</span>
+    transaction_id,        <span class="hljs-comment">-- Property</span>
+    <span class="hljs-built_in">CAST</span>(amount <span class="hljs-keyword">AS</span> <span class="hljs-keyword">DOUBLE</span>) <span class="hljs-keyword">as</span> amount,
+    transaction_date
+<span class="hljs-keyword">FROM</span> transactions</code></pre>
+<h3 id="import-order">Import Order</h3>
+<p>Always load <strong>both node tables before</strong> the relationship table:</p>
+<pre><code class="hljs language-cypher">-- 1. Load nodes first
+COPY Customer FROM &#039;gs://bucket/nodes/Customer/*.parquet&#039;;
+COPY Product FROM &#039;gs://bucket/nodes/Product/*.parquet&#039;;
+
+-- 2. Load relationships after nodes exist
+COPY PURCHASED FROM &#039;gs://bucket/edges/PURCHASED/*.parquet&#039;;</code></pre>
+<hr>
+<h2 id="complete-example">Complete Example</h2>
+<h3 id="source-relational-schema-in-starburst">Source: Relational Schema (in Starburst)</h3>
+<pre><code class="hljs language-sql"><span class="hljs-comment">-- Customers table</span>
+<span class="hljs-keyword">CREATE TABLE</span> customers (
+    customer_id <span class="hljs-type">VARCHAR</span> <span class="hljs-keyword">PRIMARY KEY</span>,
+    name <span class="hljs-type">VARCHAR</span>,
+    email <span class="hljs-type">VARCHAR</span>,
+    city <span class="hljs-type">VARCHAR</span>,
+    signup_date <span class="hljs-type">DATE</span>
+);
+
+<span class="hljs-comment">-- Products table</span>
+<span class="hljs-keyword">CREATE TABLE</span> products (
+    product_id <span class="hljs-type">VARCHAR</span> <span class="hljs-keyword">PRIMARY KEY</span>,
+    name <span class="hljs-type">VARCHAR</span>,
+    category <span class="hljs-type">VARCHAR</span>,
+    price <span class="hljs-type">DECIMAL</span>(<span class="hljs-number">10</span>,<span class="hljs-number">2</span>)
+);
+
+<span class="hljs-comment">-- Transactions table (join table with attributes)</span>
+<span class="hljs-keyword">CREATE TABLE</span> transactions (
+    transaction_id <span class="hljs-type">VARCHAR</span> <span class="hljs-keyword">PRIMARY KEY</span>,
+    customer_id <span class="hljs-type">VARCHAR</span> <span class="hljs-keyword">REFERENCES</span> customers(customer_id),
+    product_id <span class="hljs-type">VARCHAR</span> <span class="hljs-keyword">REFERENCES</span> products(product_id),
+    amount <span class="hljs-type">DECIMAL</span>(<span class="hljs-number">10</span>,<span class="hljs-number">2</span>),
+    transaction_date <span class="hljs-type">TIMESTAMP</span>
+);</code></pre>
+<h3 id="target-graph-schema-in-ryugraph">Target: Graph Schema (in Ryugraph)</h3>
+<pre><code class="hljs language-cypher">-- Node tables
+CREATE NODE TABLE Customer(
+    customer_id STRING PRIMARY KEY,
+    name STRING,
+    email STRING,
+    city STRING,
+    signup_date DATE
+);
+
+CREATE NODE TABLE Product(
+    product_id STRING PRIMARY KEY,
+    name STRING,
+    category STRING,
+    price DOUBLE
+);
+
+-- Relationship table (foreign keys become explicit edges)
+CREATE REL TABLE PURCHASED(
+    FROM Customer TO Product,
+    transaction_id STRING,
+    amount DOUBLE,
+    transaction_date TIMESTAMP
+);</code></pre>
+<h3 id="export-queries">Export Queries</h3>
+<pre><code class="hljs language-sql"><span class="hljs-comment">-- Export Customers</span>
+<span class="hljs-keyword">SELECT</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">FROM</span> <span class="hljs-keyword">TABLE</span>(io.unload(
+    input <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-keyword">TABLE</span>(
+        <span class="hljs-keyword">SELECT</span> customer_id, name, email, city, signup_date
+        <span class="hljs-keyword">FROM</span> analytics.customers
+    ),
+    location <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;gs://bucket/snapshot_123/nodes/Customer/&#x27;</span>,
+    format <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;PARQUET&#x27;</span>,
+    compression <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;SNAPPY&#x27;</span>
+))
+
+<span class="hljs-comment">-- Export Products</span>
+<span class="hljs-keyword">SELECT</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">FROM</span> <span class="hljs-keyword">TABLE</span>(io.unload(
+    input <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-keyword">TABLE</span>(
+        <span class="hljs-keyword">SELECT</span> product_id, name, category, <span class="hljs-built_in">CAST</span>(price <span class="hljs-keyword">AS</span> <span class="hljs-keyword">DOUBLE</span>) <span class="hljs-keyword">as</span> price
+        <span class="hljs-keyword">FROM</span> analytics.products
+    ),
+    location <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;gs://bucket/snapshot_123/nodes/Product/&#x27;</span>,
+    format <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;PARQUET&#x27;</span>,
+    compression <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;SNAPPY&#x27;</span>
+))
+
+<span class="hljs-comment">-- Export PURCHASED relationships</span>
+<span class="hljs-keyword">SELECT</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">FROM</span> <span class="hljs-keyword">TABLE</span>(io.unload(
+    input <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-keyword">TABLE</span>(
+        <span class="hljs-keyword">SELECT</span>
+            t.customer_id,           <span class="hljs-comment">-- FROM node PK (first)</span>
+            t.product_id,            <span class="hljs-comment">-- TO node PK (second)</span>
+            t.transaction_id,        <span class="hljs-comment">-- Property</span>
+            <span class="hljs-built_in">CAST</span>(t.amount <span class="hljs-keyword">AS</span> <span class="hljs-keyword">DOUBLE</span>) <span class="hljs-keyword">as</span> amount,
+            t.transaction_date
+        <span class="hljs-keyword">FROM</span> analytics.transactions t
+    ),
+    location <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;gs://bucket/snapshot_123/edges/PURCHASED/&#x27;</span>,
+    format <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;PARQUET&#x27;</span>,
+    compression <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;SNAPPY&#x27;</span>
+))</code></pre>
+<h3 id="import-commands">Import Commands</h3>
+<pre><code class="hljs language-cypher">-- Create schema
+CREATE NODE TABLE Customer(customer_id STRING PRIMARY KEY, name STRING, email STRING, city STRING, signup_date DATE);
+CREATE NODE TABLE Product(product_id STRING PRIMARY KEY, name STRING, category STRING, price DOUBLE);
+CREATE REL TABLE PURCHASED(FROM Customer TO Product, transaction_id STRING, amount DOUBLE, transaction_date TIMESTAMP);
+
+-- Import nodes first
+COPY Customer FROM &#039;gs://bucket/snapshot_123/nodes/Customer/*.parquet&#039;;
+COPY Product FROM &#039;gs://bucket/snapshot_123/nodes/Product/*.parquet&#039;;
+
+-- Import relationships after nodes exist
+COPY PURCHASED FROM &#039;gs://bucket/snapshot_123/edges/PURCHASED/*.parquet&#039;;</code></pre>
+<h3 id="gcs-file-structure">GCS File Structure</h3>
+<pre><code class="hljs">gs://bucket/snapshot_123/
+├── nodes/
+│   ├── Customer/
+│   │   ├── 00000-xxx-uuid1.parquet
+│   │   └── 00000-xxx-uuid2.parquet
+│   └── Product/
+│       └── 00000-xxx-uuid3.parquet
+└── edges/
+    └── PURCHASED/
+        ├── 00000-xxx-uuid4.parquet
+        └── 00000-xxx-uuid5.parquet</code></pre>
+<hr>
+<h2 id="starbursttrino-rest-api-protocol">Starburst/Trino REST API Protocol</h2>
+<p>This section documents the Starburst REST API used for async query execution. Reference: <a href="https://trino.io/docs/current/develop/client-protocol.html">Trino Client Protocol</a>.</p>
+<h3 id="query-submission">Query Submission</h3>
+<p>Submit a query via POST to <code>/v1/statement</code>:</p>
+<pre><code class="hljs language-http"><span class="hljs-keyword">POST</span> <span class="hljs-string">/v1/statement</span> <span class="hljs-meta">HTTP/1.1</span>
+<span class="hljs-attribute">Host</span><span class="hljs-punctuation">: </span>starburst.example.com
+<span class="hljs-attribute">X-Trino-Catalog</span><span class="hljs-punctuation">: </span>analytics
+<span class="hljs-attribute">X-Trino-Schema</span><span class="hljs-punctuation">: </span>public
+<span class="hljs-attribute">Content-Type</span><span class="hljs-punctuation">: </span>text/plain
+<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Basic &lt;base64&gt;
+
+<span class="language-css"><span class="hljs-selector-tag">SELECT</span> * <span class="hljs-selector-tag">FROM</span> <span class="hljs-selector-tag">TABLE</span>(io<span class="hljs-selector-class">.unload</span>(...))</span></code></pre>
+<p><strong>Response (success):</strong></p>
+<pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;20250116_123456_00001_abcde&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;infoUri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http://starburst:8080/ui/query/20250116_123456_00001_abcde&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;nextUri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http://starburst:8080/v1/query/20250116_123456_00001_abcde/1&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;stats&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;state&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;QUEUED&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;queued&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;scheduled&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;nodes&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;totalSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;queuedSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;runningSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;completedSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre>
+<p><strong>Response (immediate error):</strong></p>
+<pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;20250116_123456_00001_abcde&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;stats&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">&quot;state&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;FAILED&quot;</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;error&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;message&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;line 1:1: Table &#x27;analytics.public.invalid&#x27; does not exist&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;errorCode&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;errorName&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;TABLE_NOT_FOUND&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;errorType&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;USER_ERROR&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre>
+<h3 id="query-polling">Query Polling</h3>
+<p>Poll query status via GET to the <code>nextUri</code>:</p>
+<pre><code class="hljs language-http"><span class="hljs-keyword">GET</span> <span class="hljs-string">/v1/query/20250116_123456_00001_abcde/1</span> <span class="hljs-meta">HTTP/1.1</span>
+<span class="hljs-attribute">Host</span><span class="hljs-punctuation">: </span>starburst.example.com
+<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Basic &lt;base64&gt;</code></pre>
+<p><strong>Response (in progress):</strong></p>
+<pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;20250116_123456_00001_abcde&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;nextUri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http://starburst:8080/v1/query/20250116_123456_00001_abcde/2&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;stats&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;state&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;RUNNING&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;queued&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;scheduled&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;nodes&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">4</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;totalSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">100</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;queuedSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">20</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;runningSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">30</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;completedSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">50</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre>
+<p><strong>Response (finished - no nextUri):</strong></p>
+<pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;20250116_123456_00001_abcde&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;stats&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;state&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;FINISHED&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;queued&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;scheduled&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;nodes&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">4</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;totalSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">100</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;queuedSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;runningSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;completedSplits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">100</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre>
+<p><strong>Response (failed):</strong></p>
+<pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;20250116_123456_00001_abcde&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;stats&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">&quot;state&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;FAILED&quot;</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;error&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;message&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Query exceeded maximum time limit of 1.00h&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;errorCode&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">65540</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;errorName&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;EXCEEDED_TIME_LIMIT&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;errorType&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;USER_ERROR&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre>
+<h3 id="query-state-machine">Query State Machine</h3>
+<pre><code class="hljs">     QUEUED
+        ↓
+    PLANNING
+        ↓
+    STARTING
+        ↓
+     RUNNING  ────→  FAILED
+        ↓
+   FINISHING
+        ↓
+    FINISHED</code></pre>
+<p><strong>State descriptions:</strong></p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>QUEUED</code></td>
+<td>Query waiting in queue</td>
+</tr>
+<tr>
+<td><code>PLANNING</code></td>
+<td>Query plan being generated</td>
+</tr>
+<tr>
+<td><code>STARTING</code></td>
+<td>Allocating resources</td>
+</tr>
+<tr>
+<td><code>RUNNING</code></td>
+<td>Executing on workers</td>
+</tr>
+<tr>
+<td><code>FINISHING</code></td>
+<td>Completing final operations</td>
+</tr>
+<tr>
+<td><code>FINISHED</code></td>
+<td>Query completed successfully</td>
+</tr>
+<tr>
+<td><code>FAILED</code></td>
+<td>Query failed (check <code>error</code> field)</td>
+</tr>
+</tbody></table>
+<h3 id="protocol-rules">Protocol Rules</h3>
+<ol>
+<li><p><strong>Completion detection</strong>: Keep polling <code>nextUri</code> until it&#39;s <strong>absent</strong> from the response. The <code>state</code> field is for humans only.</p>
+</li>
+<li><p><strong>HTTP error handling</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>200</td>
+<td>Process response</td>
+</tr>
+<tr>
+<td>429</td>
+<td>Retry after <code>Retry-After</code> header</td>
+</tr>
+<tr>
+<td>502, 503, 504</td>
+<td>Retry in 50-100ms (load balancer issue)</td>
+</tr>
+<tr>
+<td>Other</td>
+<td>Query failed</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>Authentication</strong>: Headers only required on initial POST, not when following <code>nextUri</code>.</p>
+</li>
+<li><p><strong>Query cancellation</strong>: Send <code>DELETE</code> to <code>nextUri</code> to cancel a running query.</p>
+</li>
+</ol>
+<h3 id="required-headers">Required Headers</h3>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>X-Trino-Catalog</code></td>
+<td>Yes (POST)</td>
+<td>Default catalog</td>
+</tr>
+<tr>
+<td><code>X-Trino-Schema</code></td>
+<td>Yes (POST)</td>
+<td>Default schema</td>
+</tr>
+<tr>
+<td><code>Authorization</code></td>
+<td>Yes</td>
+<td>Basic auth or Bearer token</td>
+</tr>
+<tr>
+<td><code>Content-Type</code></td>
+<td>Yes (POST)</td>
+<td><code>text/plain</code> for query body</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="appendix-gcs-configuration-for-starburst">Appendix: GCS Configuration for Starburst</h2>
+<h3 id="catalog-configuration">Catalog Configuration</h3>
+<pre><code class="hljs language-properties"><span class="hljs-attr">connector.name</span>=<span class="hljs-string">hive</span>
+<span class="hljs-attr">hive.metastore.uri</span>=<span class="hljs-string">thrift://metastore:9083</span>
+<span class="hljs-comment">
+# Enable native GCS</span>
+<span class="hljs-attr">fs.native-gcs.enabled</span>=<span class="hljs-string">true</span>
+<span class="hljs-attr">gcs.project-id</span>=<span class="hljs-string">your-gcp-project</span>
+<span class="hljs-attr">gcs.json-key-file-path</span>=<span class="hljs-string">/path/to/service-account.json</span></code></pre>
+<h3 id="unload-credentials">UNLOAD Credentials</h3>
+<pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;gcs-export&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;location&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;gs://your-bucket/&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;configuration&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;fs.native-gcs.enabled&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;true&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;gcs.json-key&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;{...service account key JSON...}&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre>
+<h3 id="required-gcs-permissions">Required GCS Permissions</h3>
+<ul>
+<li><code>storage.objects.create</code></li>
+<li><code>storage.objects.delete</code> (for overwrites)</li>
+<li><code>storage.objects.get</code></li>
+<li><code>storage.objects.list</code></li>
+<li><code>storage.buckets.get</code></li>
+</ul>
+<hr>
+<h2 id="e2e-testing-with-trino">E2E Testing with Trino</h2>
+<p>For E2E testing, we use open-source Trino with a translation proxy instead of Starburst Enterprise. This approach replicates production behavior by executing real SQL queries and writing actual Parquet files.</p>
+<h3 id="architecture">Architecture</h3>
+<p>Starburst&#39;s <code>io.unload()</code> is <strong>proprietary</strong> and not available in open-source Trino. The trino-proxy translates <code>io.unload()</code> calls to Hive CTAS (CREATE TABLE AS SELECT) with <code>external_location</code>:</p>
+<pre><code class="hljs language-sql"><span class="hljs-comment">-- Input (Starburst io.unload):</span>
+<span class="hljs-keyword">SELECT</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">FROM</span> <span class="hljs-keyword">TABLE</span>(io.unload(
+    input <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-keyword">TABLE</span>(<span class="hljs-keyword">SELECT</span> id, name <span class="hljs-keyword">FROM</span> catalog.schema.table),
+    location <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;gs://bucket/export/&#x27;</span>,
+    format <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;PARQUET&#x27;</span>, compression <span class="hljs-operator">=</span><span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;SNAPPY&#x27;</span>))
+
+<span class="hljs-comment">-- Output (Trino Hive CTAS):</span>
+<span class="hljs-keyword">CREATE TABLE</span> hive.temp.export_abc123
+<span class="hljs-keyword">WITH</span> (format <span class="hljs-operator">=</span> <span class="hljs-string">&#x27;PARQUET&#x27;</span>, external_location <span class="hljs-operator">=</span> <span class="hljs-string">&#x27;gs://bucket/export/&#x27;</span>)
+<span class="hljs-keyword">AS</span> <span class="hljs-keyword">SELECT</span> id, name <span class="hljs-keyword">FROM</span> catalog.schema.table</code></pre>
+<h3 id="components">Components</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Image</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>trino</td>
+<td><code>trino-gcs:e2e-test</code></td>
+<td>Trino 479 with native GCS (<code>gcs.endpoint</code> for fake-gcs-server)</td>
+</tr>
+<tr>
+<td>trino-proxy</td>
+<td><code>trino-proxy:e2e-test</code></td>
+<td>io.unload() → Hive CTAS translation</td>
+</tr>
+<tr>
+<td>hive-metastore</td>
+<td><code>hive-metastore-gcs:e2e-test</code></td>
+<td>Apache Hive 4.1.0 with GCS connector JAR</td>
+</tr>
+<tr>
+<td>fake-gcs-server</td>
+<td><code>fsouza/fake-gcs-server:1.52.3</code></td>
+<td>GCS emulator for local testing</td>
+</tr>
+</tbody></table>
+<h3 id="why-this-approach">Why This Approach</h3>
+<ol>
+<li><strong>Same execution path</strong> - Trino executes queries and writes Parquet, same as production</li>
+<li><strong>Same storage API</strong> - Uses GCS URLs (<code>gs://</code>), not S3/MinIO</li>
+<li><strong>Same file format</strong> - Raw Parquet files, not Iceberg tables</li>
+<li><strong>Export-worker unchanged</strong> - No code changes needed for E2E testing</li>
+</ol>
+<h3 id="references">References</h3>
+<ul>
+<li><a href="../process/decision.log.html#adr-029-e2e-trino-stack-with-hive-ctas-translation-gcs-native">ADR-029: E2E Trino Stack with Hive CTAS Translation</a></li>
+<li><a href="../component-designs/e2e-tests.design.html#trino-stack">e2e-tests.design.md</a></li>
+<li><a href="../../tests/e2e/k8s/">tests/e2e/k8s/</a> - E2E test Kubernetes configurations</li>
+</ul>
+
+  </div>
+
+  <!-- Mermaid with ELK layout support -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+
+    // Register ELK layout engine
+    mermaid.registerLayoutLoaders(elkLayouts);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+    
+  </script>
+</body>
+</html>

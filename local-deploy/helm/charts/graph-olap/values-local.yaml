@@ -1,0 +1,353 @@
+# =============================================================================
+# Graph OLAP Platform - Local OrbStack Values
+# =============================================================================
+#
+# Local development configuration for OrbStack Kubernetes.
+# Differences from GKE:
+#   - Images loaded locally (pullPolicy: Never)
+#   - In-cluster PostgreSQL (not Cloud SQL)
+#   - Shorter job intervals for testing
+#   - Different Auth0 tenant (your auth0 tenant)
+#   - GCP SA key mounted from secret for GCS access
+#
+# Usage:
+#   helm upgrade --install graph-olap . \
+#     -n graph-olap-local \
+#     -f values-local.yaml \
+#     --set control-plane.image.tag=hash-xxx \
+#     --set export-worker.image.tag=hash-xxx
+#
+# =============================================================================
+
+global:
+  # No registry prefix - local images
+  imageRegistry: ""
+  gcpProject: "graph-olap"
+  environment: "development"
+
+# -----------------------------------------------------------------------------
+# Control Plane - Local Configuration
+# -----------------------------------------------------------------------------
+control-plane:
+  enabled: true
+
+  replicaCount: 1
+
+  image:
+    repository: "control-plane"
+    # tag: set via --set
+    pullPolicy: Never
+
+  serviceAccount:
+    create: true
+    name: "control-plane"
+
+  # Use existing secrets created by local-infra.yaml
+  secrets:
+    enabled: true
+    databaseUrl:
+      secretName: "control-plane-secrets"
+      key: "database-url"
+    apiInternalToken:
+      secretName: "control-plane-secrets"
+      key: "api-internal-token"
+
+  initContainers:
+    waitForPostgres:
+      enabled: true
+      image: "busybox:1.36"
+      host: "postgres"  # In-cluster postgres
+      port: 5432
+
+  config:
+    host: "0.0.0.0"
+    port: "8080"
+    debug: "true"
+    gcpProject: "graph-olap"
+    gcs:
+      bucket: "graph-olap-dev"
+    k8s:
+      namespace: "graph-olap-local"
+      inCluster: "true"
+    wrapper:
+      # image/falkordbImage set via --set
+      image: ""
+      falkordbImage: ""
+      pullPolicy: "Never"
+      serviceAccount: "control-plane"
+      externalBaseUrl: "http://localhost:30081"
+      ingressClass: "nginx"
+      gcpSecret: "gcp-sa-key"  # Mount GCP SA key for GCS access
+    extensionServer:
+      url: "http://extension-server:80"
+    starburst:
+      url: "https://your-cluster.trino.galaxy.starburst.io:443"
+      # user/password set via environment
+      catalog: "bigquery"
+      timeoutSeconds: "60"
+    # Shorter intervals for local testing
+    jobs:
+      reconciliationIntervalSeconds: "10"
+      lifecycleIntervalSeconds: "10"
+      schemaCacheIntervalSeconds: "60"
+    # Larger resources for local dev (OrbStack has more headroom)
+    ryugraph:
+      memoryRequest: "1Gi"
+      memoryLimit: "2Gi"
+      cpuRequest: "500m"
+      cpuLimit: "2"
+      bufferPoolSize: "134217728"
+    falkordb:
+      memoryRequest: "1Gi"
+      memoryLimit: "2Gi"
+      cpuRequest: "500m"
+      cpuLimit: "1"
+    # Local Auth0 tenant
+    auth0:
+      jwksUrl: "https://your-tenant.auth0.com/.well-known/jwks.json"
+      audience: "https://api.graph-olap.example.com"
+      issuer: "https://your-tenant.auth0.com/"
+
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "1000m"
+    limits:
+      memory: "2Gi"
+      cpu: "4000m"
+
+  service:
+    type: NodePort
+    port: 8080
+    nodePort: 30080
+
+  ingress:
+    enabled: false
+
+  podDisruptionBudget:
+    enabled: false
+
+  autoscaling:
+    enabled: false
+
+  # Optimized probes for fast local deploys
+  livenessProbe:
+    initialDelaySeconds: 5   # Down from default - control-plane starts quickly locally
+  readinessProbe:
+    initialDelaySeconds: 3   # Down from default
+
+# -----------------------------------------------------------------------------
+# Export Worker - Local Configuration
+# -----------------------------------------------------------------------------
+export-worker:
+  enabled: true
+
+  replicaCount: 1
+
+  image:
+    repository: "export-worker"
+    # tag: set via --set
+    pullPolicy: Never
+
+  serviceAccount:
+    create: true
+    name: "export-worker"
+
+  keda:
+    enabled: false
+
+  initContainers:
+    waitForDeps:
+      enabled: true
+      image: "busybox:1.36"
+      host: "graph-olap-control-plane"  # Helm release name prefix
+      port: 8080
+
+  secrets:
+    starburst:
+      secretName: "export-worker-secrets"
+      passwordKey: "STARBURST_PASSWORD"
+    internalApiKey:
+      secretName: "export-worker-secrets"
+      key: "GRAPH_OLAP_INTERNAL_API_KEY"
+
+  config:
+    gcpProject: "graph-olap"
+    # GCP SA key for GCS access
+    gcpCredentialsSecret: "gcp-sa-key"
+    starburst:
+      url: "https://your-cluster.trino.galaxy.starburst.io:443"
+      # user set via environment
+      catalog: "bigquery"
+      schema: "public"
+      requestTimeoutSeconds: "30"
+      clientTags: "graph-olap-export,e2e-test"
+      source: "graph-olap-export-worker-e2e"
+    controlPlane:
+      url: "http://graph-olap-control-plane:8080"
+      timeoutSeconds: "30"
+      maxRetries: "5"
+    worker:
+      pollIntervalSeconds: "2"
+      emptyPollBackoffSeconds: "5"
+      claimLimit: "10"
+      pollLimit: "10"
+    logging:
+      level: "DEBUG"
+      format: "json"
+    dryRun: "false"
+
+  # Mount GCP SA key for GCS access
+  extraVolumes:
+    - name: gcp-sa-key
+      secret:
+        secretName: gcp-sa-key
+  extraVolumeMounts:
+    - name: gcp-sa-key
+      mountPath: /var/secrets/google
+      readOnly: true
+  extraEnv:
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: "/var/secrets/google/key.json"
+    - name: GCS_BUCKET
+      value: "graph-olap-dev"
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+  # Optimized probes for fast local deploys
+  livenessProbe:
+    initialDelaySeconds: 3   # Down from default - export-worker starts quickly locally
+  readinessProbe:
+    initialDelaySeconds: 2   # Down from default
+
+# -----------------------------------------------------------------------------
+# System & Observability - Disabled for local
+# -----------------------------------------------------------------------------
+system:
+  enabled: false
+
+observability:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# PostgreSQL - Local Development Database
+# -----------------------------------------------------------------------------
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+  database: "control_plane"
+  username: "control_plane"
+  password: "control_plane"
+  internalApiKey: "test-internal-api-key"
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+# -----------------------------------------------------------------------------
+# Extension Server - Algorithm Extensions
+# -----------------------------------------------------------------------------
+extensionServer:
+  enabled: true
+  image:
+    repository: ghcr.io/predictable-labs/extension-repo
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "32Mi"
+      cpu: "25m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+# -----------------------------------------------------------------------------
+# OAuth2 Proxy - Local JWT Validation
+# -----------------------------------------------------------------------------
+oauth2Proxy:
+  enabled: true
+  image:
+    repository: quay.io/oauth2-proxy/oauth2-proxy
+    tag: "v7.6.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  cookieSecret: "abcdefghijklmnopqrstuvwxyz123456"
+  clientId: "jwt-validator"
+  clientSecret: "not-used-for-jwt-validation"
+  extraArgs:
+    - --upstream=static://202
+    - --reverse-proxy=true
+    - --provider=oidc
+    - --oidc-issuer-url=https://your-tenant.auth0.com/
+    - --oidc-jwks-url=https://your-tenant.auth0.com/.well-known/jwks.json
+    - --oidc-extra-audience=https://api.graph-olap.example.com
+    - --oidc-email-claim=https://api.graph-olap.example.com/email
+    - --email-domain=*
+    - --skip-jwt-bearer-tokens=true
+    - --skip-auth-preflight=true
+    - --set-xauthrequest=true
+    - --pass-access-token=true
+    - --cookie-secure=false
+    - --cookie-samesite=lax
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+# -----------------------------------------------------------------------------
+# Export Worker Secrets
+# -----------------------------------------------------------------------------
+# Note: starburstPassword is set via --set in deploy.sh
+exportWorkerSecrets:
+  enabled: true
+  starburstPassword: ""  # Set via --set exportWorkerSecrets.starburstPassword=$STARBURST_PASSWORD
+  internalApiKey: "test-internal-api-key"
+
+# -----------------------------------------------------------------------------
+# Documentation - Local Configuration
+# -----------------------------------------------------------------------------
+documentation:
+  enabled: true
+  image:
+    repository: "documentation"
+    tag: hash-11c55eca18ff
+    pullPolicy: Never
+  replicaCount: 1
+  service:
+    type: NodePort
+    port: 3000
+    nodePort: 30082
+  ingress:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+  # Optimized probes for fast local deploys
+  livenessProbe:
+    initialDelaySeconds: 3   # Down from 10 - docs start fast locally
+    periodSeconds: 15        # Down from 30
+  readinessProbe:
+    initialDelaySeconds: 2   # Down from 5
+    periodSeconds: 5         # Down from 10
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "200m"

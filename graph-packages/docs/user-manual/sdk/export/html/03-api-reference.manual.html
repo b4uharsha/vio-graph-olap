@@ -1,0 +1,3428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>03-api-reference.manual</title>
+
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+
+  <style>
+    :root {
+      --max-width: 900px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+      --color-text: #24292f;
+      --color-bg: #ffffff;
+      --color-border: #d0d7de;
+      --color-link: #0969da;
+      --color-code-bg: #f6f8fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 2em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    p {
+      margin: 1em 0;
+    }
+
+    pre {
+      background: var(--color-code-bg);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      line-height: 1.45;
+    }
+
+    pre.mermaid {
+      background: transparent;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+    }
+
+    :not(pre) > code {
+      background: var(--color-code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 0 1em;
+      border-left: 4px solid var(--color-border);
+      color: #57606a;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+
+    th, td {
+      border: 1px solid var(--color-border);
+      padding: 0.5em 1em;
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-code-bg);
+      font-weight: 600;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a.image-link {
+      display: block;
+      cursor: zoom-in;
+    }
+
+    a.image-link:hover img {
+      opacity: 0.9;
+      outline: 2px solid var(--color-link);
+      outline-offset: 2px;
+    }
+
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    li {
+      margin: 0.25em 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 2em 0;
+    }
+
+    details {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      background: var(--color-code-bg);
+      border-radius: 6px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .container {
+        max-width: none;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="sdk-api-reference">SDK API Reference</h1>
+<!-- Last updated: 2026-02-03 -->
+
+<p>Complete API reference for the Graph OLAP Python SDK - the <strong>sole user interface</strong>
+for the Graph OLAP Platform.</p>
+<hr>
+<h2 id="overview">Overview</h2>
+<p>The Graph OLAP SDK provides the complete interface for all platform operations. There
+is no separate web console or GUI - all user interactions happen through this SDK in
+Jupyter notebooks.</p>
+<h3 id="resource-managers-summary">Resource Managers Summary</h3>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Purpose</th>
+<th>Role Required</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>client.mappings</code></td>
+<td>Graph mapping CRUD (create, read, update, delete, copy, list)</td>
+<td>Analyst</td>
+</tr>
+<tr>
+<td><code>client.instances</code></td>
+<td>Instance lifecycle (create, terminate, update CPU, connect)</td>
+<td>Analyst</td>
+</tr>
+<tr>
+<td><code>client.snapshots</code></td>
+<td>Snapshot listing and status (creation is implicit)</td>
+<td>Analyst</td>
+</tr>
+<tr>
+<td><code>client.favorites</code></td>
+<td>Bookmark mappings, snapshots, instances</td>
+<td>Analyst</td>
+</tr>
+<tr>
+<td><code>client.schema</code></td>
+<td>Browse Starburst catalog metadata</td>
+<td>Analyst</td>
+</tr>
+<tr>
+<td><code>client.health</code></td>
+<td>Basic health and readiness checks</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>client.ops</code></td>
+<td>Cluster configuration and monitoring</td>
+<td>Ops</td>
+</tr>
+<tr>
+<td><code>client.admin</code></td>
+<td>Bulk delete and privileged operations</td>
+<td>Admin</td>
+</tr>
+</tbody></table>
+<h3 id="typical-workflow">Typical Workflow</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-comment"># 1. Connect to the platform</span>
+client = GraphOLAPClient.from_env()
+
+<span class="hljs-comment"># 2. Discover available data</span>
+catalogs = client.schema.list_catalogs()
+tables = client.schema.search_tables(<span class="hljs-string">&quot;customer&quot;</span>)
+
+<span class="hljs-comment"># 3. Create a mapping (defines graph structure)</span>
+mapping = client.mappings.create(
+    name=<span class="hljs-string">&quot;Customer Network&quot;</span>,
+    node_definitions=[...],
+    edge_definitions=[...],
+)
+
+<span class="hljs-comment"># 4. Create and connect to an instance</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=mapping.<span class="hljs-built_in">id</span>,
+    name=<span class="hljs-string">&quot;Analysis Instance&quot;</span>,
+    wrapper_type=WrapperType.RYUGRAPH,
+)
+conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)
+
+<span class="hljs-comment"># 5. Query and analyze</span>
+df = conn.query_df(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN n.name, n.city&quot;</span>)
+conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;influence_score&quot;</span>)
+
+<span class="hljs-comment"># 6. Clean up</span>
+client.instances.terminate(instance.<span class="hljs-built_in">id</span>)
+client.close()</code></pre>
+<hr>
+<h2 id="1-grapholapclient">1. GraphOLAPClient</h2>
+<p>The main entry point for interacting with the Graph OLAP Platform.</p>
+<h3 id="class-definition">Class Definition</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">GraphOLAPClient</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Main client for the Graph OLAP Platform.
+
+    Provides access to all platform resources through typed resource managers.
+    Handles authentication, connection pooling, and retry logic.
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="constructor">Constructor</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">
+    self,
+    api_url: <span class="hljs-built_in">str</span>,
+    api_key: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    internal_api_key: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    username: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    role: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    *,
+    timeout: <span class="hljs-built_in">float</span> = <span class="hljs-number">30.0</span>,
+    max_retries: <span class="hljs-built_in">int</span> = <span class="hljs-number">3</span>,
+</span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Initialize the Graph OLAP client.
+
+    Args:
+        api_url: Base URL for the control plane API (e.g., &quot;https://graph.example.com&quot;)
+        api_key: API key for authentication (Bearer token)
+        internal_api_key: Internal API key (X-Internal-Api-Key header)
+        username: Username for user-scoped routes (X-Username header)
+        role: User role for X-User-Role header (e.g., &quot;analyst&quot;, &quot;admin&quot;, &quot;ops&quot;)
+        timeout: Default request timeout in seconds (default: 30.0)
+        max_retries: Maximum retry attempts for failed requests (default: 3)
+
+    Note:
+        At least one of api_key, internal_api_key, or username must be provided
+        for authentication. Use GraphOLAPClient.from_env() for environment-based
+        configuration.
+
+    Example:
+        &gt;&gt;&gt; client = GraphOLAPClient(
+        ...     api_url=&quot;https://graph.example.com&quot;,
+        ...     api_key=&quot;your-api-key&quot;,
+        ...     timeout=60.0,
+        ... )
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="class-methods">Class Methods</h3>
+<h4 id="from_env">from_env</h4>
+<pre><code class="hljs language-python"><span class="hljs-meta">@classmethod</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">from_env</span>(<span class="hljs-params">cls</span>) -&gt; <span class="hljs-string">&quot;GraphOLAPClient&quot;</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Create client from environment variables.
+
+    Reads configuration from:
+        - GRAPH_OLAP_API_URL: API base URL
+        - GRAPH_OLAP_API_KEY: API key for authentication
+        - GRAPH_OLAP_TIMEOUT: Request timeout (optional, default: 30.0)
+        - GRAPH_OLAP_MAX_RETRIES: Max retries (optional, default: 3)
+
+    Returns:
+        Configured GraphOLAPClient instance
+
+    Raises:
+        EnvironmentError: If required variables are not set
+
+    Example:
+        &gt;&gt;&gt; import os
+        &gt;&gt;&gt; os.environ[&quot;GRAPH_OLAP_API_URL&quot;] = &quot;https://graph.example.com&quot;
+        &gt;&gt;&gt; os.environ[&quot;GRAPH_OLAP_API_KEY&quot;] = &quot;your-api-key&quot;
+        &gt;&gt;&gt; client = GraphOLAPClient.from_env()
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="resource-managers">Resource Managers</h3>
+<p>The client exposes typed resource managers as attributes:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Resource managers (read-only properties)</span>
+mappings: MappingResource      <span class="hljs-comment"># Manage graph mappings</span>
+snapshots: SnapshotResource    <span class="hljs-comment"># Manage data snapshots</span>
+instances: InstanceResource    <span class="hljs-comment"># Manage graph instances</span>
+favorites: FavoriteResource    <span class="hljs-comment"># Manage user favorites</span>
+schema: SchemaResource         <span class="hljs-comment"># Browse Starburst schema metadata</span>
+ops: OpsResource               <span class="hljs-comment"># Operations configuration (Ops role required)</span>
+health: HealthResource         <span class="hljs-comment"># Health and status checks</span>
+admin: AdminResource           <span class="hljs-comment"># Admin operations (Admin role required)</span></code></pre>
+<h3 id="instance-methods">Instance Methods</h3>
+<h4 id="close">close</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">close</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Close the client and release resources.
+
+    Should be called when done with the client, or use as context manager.
+
+    Example:
+        &gt;&gt;&gt; client = GraphOLAPClient(api_url, api_key)
+        &gt;&gt;&gt; try:
+        ...     # Use client
+        ... finally:
+        ...     client.close()
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="context-manager-support">Context Manager Support</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">__enter__</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-string">&quot;GraphOLAPClient&quot;</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Enter context manager.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-variable language_">self</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">__exit__</span>(<span class="hljs-params">self, *args</span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Exit context manager and close client.&quot;&quot;&quot;</span>
+    <span class="hljs-variable language_">self</span>.close()</code></pre>
+<p><strong>Example: Using as Context Manager</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">with</span> GraphOLAPClient(api_url, api_key) <span class="hljs-keyword">as</span> client:
+    mappings = client.mappings.<span class="hljs-built_in">list</span>()
+    <span class="hljs-comment"># Client automatically closed on exit</span></code></pre>
+<hr>
+<h2 id="2-mappingresource">2. MappingResource</h2>
+<p>Manage graph mapping definitions.</p>
+<h3 id="methods">Methods</h3>
+<h4 id="list">list</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list</span>(<span class="hljs-params">
+    self,
+    *,
+    owner: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    search: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    created_after: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    created_before: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    sort_by: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;created_at&quot;</span>,
+    sort_order: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;desc&quot;</span>,
+    offset: <span class="hljs-built_in">int</span> = <span class="hljs-number">0</span>,
+    limit: <span class="hljs-built_in">int</span> = <span class="hljs-number">50</span>,
+</span>) -&gt; PaginatedList[Mapping]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List mappings with optional filtering.
+
+    Args:
+        owner: Filter by owner username (Admin/Ops can see others&#x27; mappings)
+        search: Search in name and description
+        created_after: Filter by creation date (ISO 8601)
+        created_before: Filter by creation date (ISO 8601)
+        sort_by: Sort field (default: &quot;created_at&quot;)
+        sort_order: Sort order (&quot;asc&quot; or &quot;desc&quot;, default: &quot;desc&quot;)
+        offset: Pagination offset (default: 0)
+        limit: Maximum results (default: 50, max: 1000)
+
+    Returns:
+        PaginatedList[Mapping] with items, total, offset, limit attributes
+
+    Example:
+        &gt;&gt;&gt; result = client.mappings.list()
+        &gt;&gt;&gt; for m in result.items:
+        ...     print(f&quot;{m.name}: {m.snapshot_count} snapshots&quot;)
+        &gt;&gt;&gt; print(f&quot;Total: {result.total}&quot;)
+
+        &gt;&gt;&gt; # Search by name
+        &gt;&gt;&gt; result = client.mappings.list(search=&quot;customer&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get">get</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get</span>(<span class="hljs-params">self, mapping_id: <span class="hljs-built_in">int</span></span>) -&gt; Mapping:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get a single mapping by ID.
+
+    Args:
+        mapping_id: Mapping ID
+
+    Returns:
+        Mapping object with version details included
+
+    Raises:
+        NotFoundError: If mapping does not exist
+        PermissionDeniedError: If user cannot access this mapping
+
+    Example:
+        &gt;&gt;&gt; mapping = client.mappings.get(123)
+        &gt;&gt;&gt; print(mapping.version.node_definitions)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="create">create</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">create</span>(<span class="hljs-params">
+    self,
+    name: <span class="hljs-built_in">str</span>,
+    node_definitions: <span class="hljs-built_in">list</span>[NodeDefinition],
+    edge_definitions: <span class="hljs-built_in">list</span>[EdgeDefinition],
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    ttl: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    inactivity_timeout: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Mapping:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Create a new mapping.
+
+    Args:
+        name: Display name for the mapping
+        node_definitions: List of node table definitions
+        edge_definitions: List of edge table definitions
+        description: Optional description
+        ttl: Time-to-live (ISO 8601 duration, e.g., &quot;P30D&quot; for 30 days)
+        inactivity_timeout: Inactivity timeout (ISO 8601 duration)
+
+    Returns:
+        Created Mapping object
+
+    Raises:
+        ValidationError: If definitions are invalid
+        ConflictError: If name already exists for this user
+
+    Example:
+        &gt;&gt;&gt; mapping = client.mappings.create(
+        ...     name=&quot;Customer Graph&quot;,
+        ...     description=&quot;Customer purchase relationships&quot;,
+        ...     node_definitions=[
+        ...         NodeDefinition(
+        ...             label=&quot;Customer&quot;,
+        ...             sql=&quot;SELECT id, name FROM customers&quot;,
+        ...             primary_key={&quot;name&quot;: &quot;id&quot;, &quot;type&quot;: &quot;STRING&quot;},
+        ...             properties=[{&quot;name&quot;: &quot;name&quot;, &quot;type&quot;: &quot;STRING&quot;}],
+        ...         ),
+        ...     ],
+        ...     edge_definitions=[
+        ...         EdgeDefinition(
+        ...             type=&quot;PURCHASED&quot;,
+        ...             from_node=&quot;Customer&quot;,
+        ...             to_node=&quot;Product&quot;,
+        ...             sql=&quot;SELECT customer_id, product_id FROM orders&quot;,
+        ...             from_key=&quot;customer_id&quot;,
+        ...             to_key=&quot;product_id&quot;,
+        ...             properties=[],
+        ...         ),
+        ...     ],
+        ... )
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="update">update</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">update</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    change_description: <span class="hljs-built_in">str</span>,
+    *,
+    name: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    node_definitions: <span class="hljs-built_in">list</span>[NodeDefinition] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    edge_definitions: <span class="hljs-built_in">list</span>[EdgeDefinition] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Mapping:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Update a mapping (creates new version if definitions changed).
+
+    Args:
+        mapping_id: Mapping ID to update
+        change_description: Description of changes (REQUIRED for audit trail)
+        name: New name (optional)
+        description: New description (optional)
+        node_definitions: New node definitions (creates new version)
+        edge_definitions: New edge definitions (creates new version)
+
+    Returns:
+        Updated Mapping object
+
+    Raises:
+        NotFoundError: If mapping does not exist
+        ValidationError: If definitions are invalid
+
+    Example:
+        &gt;&gt;&gt; # Update metadata only (no new version)
+        &gt;&gt;&gt; mapping = client.mappings.update(
+        ...     123,
+        ...     &quot;Updated description text&quot;,
+        ...     description=&quot;Updated description&quot;,
+        ... )
+
+        &gt;&gt;&gt; # Update definitions (creates new version)
+        &gt;&gt;&gt; mapping = client.mappings.update(
+        ...     123,
+        ...     &quot;Added age property to Customer&quot;,
+        ...     node_definitions=[...],
+        ... )
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="delete">delete</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">delete</span>(<span class="hljs-params">self, mapping_id: <span class="hljs-built_in">int</span></span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Delete a mapping.
+
+    Args:
+        mapping_id: Mapping ID to delete
+
+    Raises:
+        NotFoundError: If mapping does not exist
+        DependencyError: If mapping has snapshots
+
+    Example:
+        &gt;&gt;&gt; client.mappings.delete(123)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="copy">copy</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">copy</span>(<span class="hljs-params">self, mapping_id: <span class="hljs-built_in">int</span>, new_name: <span class="hljs-built_in">str</span></span>) -&gt; Mapping:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Copy a mapping to a new mapping.
+
+    Creates an exact copy with a new name. Useful for creating variations
+    of existing mappings.
+
+    Args:
+        mapping_id: Source mapping ID
+        new_name: Name for the new mapping
+
+    Returns:
+        New Mapping object (copies latest version with same definitions)
+
+    Example:
+        &gt;&gt;&gt; new_mapping = client.mappings.copy(123, &quot;Customer Graph - Q4 Version&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_version">get_version</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_version</span>(<span class="hljs-params">self, mapping_id: <span class="hljs-built_in">int</span>, version: <span class="hljs-built_in">int</span></span>) -&gt; MappingVersion:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get a specific version of a mapping.
+
+    Args:
+        mapping_id: Mapping ID
+        version: Version number
+
+    Returns:
+        MappingVersion object
+
+    Raises:
+        NotFoundError: If mapping or version does not exist
+
+    Example:
+        &gt;&gt;&gt; v1 = client.mappings.get_version(123, version=1)
+        &gt;&gt;&gt; print(f&quot;Created by: {v1.created_by_name}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="list_versions">list_versions</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list_versions</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    limit: <span class="hljs-built_in">int</span> = <span class="hljs-number">50</span>,
+    offset: <span class="hljs-built_in">int</span> = <span class="hljs-number">0</span>,
+</span>) -&gt; <span class="hljs-built_in">list</span>[MappingVersion]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List all versions of a mapping.
+
+    Args:
+        mapping_id: Mapping ID
+        limit: Maximum versions to return
+        offset: Pagination offset
+
+    Returns:
+        List of MappingVersion objects (newest first)
+
+    Example:
+        &gt;&gt;&gt; versions = client.mappings.list_versions(123)
+        &gt;&gt;&gt; for v in versions:
+        ...     print(f&quot;v{v.version}: {v.change_description}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="diff_versions">diff_versions</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">diff_versions</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    from_version: <span class="hljs-built_in">int</span>,
+    to_version: <span class="hljs-built_in">int</span>,
+</span>) -&gt; <span class="hljs-built_in">dict</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Compare two mapping versions.
+
+    Args:
+        mapping_id: Mapping ID
+        from_version: Base version number
+        to_version: Target version number
+
+    Returns:
+        Diff dict with:
+            - summary: {nodes_added, nodes_removed, edges_added, ...}
+            - nodes: {added: [...], removed: [...], modified: [...]}
+            - edges: {added: [...], removed: [...], modified: [...]}
+
+    Example:
+        &gt;&gt;&gt; diff = client.mappings.diff_versions(123, from_version=1, to_version=2)
+        &gt;&gt;&gt; print(f&quot;Added {diff[&#x27;summary&#x27;][&#x27;nodes_added&#x27;]} node definitions&quot;)
+        &gt;&gt;&gt; for node in diff[&#x27;nodes&#x27;][&#x27;added&#x27;]:
+        ...     print(f&quot;  + {node[&#x27;label&#x27;]}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="list_snapshots">list_snapshots</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list_snapshots</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    *,
+    offset: <span class="hljs-built_in">int</span> = <span class="hljs-number">0</span>,
+    limit: <span class="hljs-built_in">int</span> = <span class="hljs-number">50</span>,
+</span>) -&gt; PaginatedList[Snapshot]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List all snapshots for a mapping.
+
+    Args:
+        mapping_id: Mapping ID
+        offset: Pagination offset (default: 0)
+        limit: Maximum results (default: 50)
+
+    Returns:
+        PaginatedList[Snapshot] with items, total, offset, limit attributes
+
+    Example:
+        &gt;&gt;&gt; result = client.mappings.list_snapshots(123)
+        &gt;&gt;&gt; for s in result.items:
+        ...     print(f&quot;{s.name}: {s.status}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="list_instances">list_instances</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list_instances</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    *,
+    offset: <span class="hljs-built_in">int</span> = <span class="hljs-number">0</span>,
+    limit: <span class="hljs-built_in">int</span> = <span class="hljs-number">50</span>,
+</span>) -&gt; PaginatedList[Instance]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List instances created from any snapshot of this mapping.
+
+    Returns instances across all versions of the mapping, ordered by
+    creation date (newest first). Use this to find all active graph
+    instances associated with a mapping.
+
+    Args:
+        mapping_id: Mapping ID
+        offset: Number of records to skip (default: 0)
+        limit: Max records to return (default: 50, max: 100)
+
+    Returns:
+        PaginatedList[Instance] with items, total, offset, limit attributes
+
+    Example:
+        &gt;&gt;&gt; # Find all instances for a mapping
+        &gt;&gt;&gt; instances = client.mappings.list_instances(mapping_id=123)
+        &gt;&gt;&gt; for i in instances:
+        ...     print(f&quot;{i.name}: {i.status}&quot;)
+
+        &gt;&gt;&gt; # Check if any instances are running
+        &gt;&gt;&gt; running = [i for i in instances if i.status == &quot;running&quot;]
+        &gt;&gt;&gt; print(f&quot;{len(running)} instances currently running&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="set_lifecycle">set_lifecycle</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">set_lifecycle</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    ttl: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    inactivity_timeout: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Mapping:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Set lifecycle parameters for a mapping.
+
+    Args:
+        mapping_id: Mapping ID
+        ttl: Time-to-live (ISO 8601 duration) or None to clear
+        inactivity_timeout: Inactivity timeout (ISO 8601 duration) or None to clear
+
+    Returns:
+        Updated Mapping object
+
+    Example:
+        &gt;&gt;&gt; # Set 90-day TTL
+        &gt;&gt;&gt; mapping = client.mappings.set_lifecycle(123, ttl=&quot;P90D&quot;)
+
+        &gt;&gt;&gt; # Set 30-day inactivity timeout
+        &gt;&gt;&gt; mapping = client.mappings.set_lifecycle(
+        ...     123,
+        ...     inactivity_timeout=&quot;P30D&quot;,
+        ... )
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_tree">get_tree</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_tree</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    include_instances: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    status: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; <span class="hljs-built_in">dict</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get full resource hierarchy for a mapping.
+
+    Returns the complete tree: versions -&gt; snapshots -&gt; instances.
+    Useful for understanding dependencies before deletion.
+
+    Args:
+        mapping_id: Mapping ID
+        include_instances: Include instance details (default: True)
+        status: Filter snapshots by status (pending, creating, ready, failed)
+
+    Returns:
+        Tree structure dict
+
+    Example:
+        &gt;&gt;&gt; tree = client.mappings.get_tree(123)
+        &gt;&gt;&gt; for version in tree[&#x27;versions&#x27;]:
+        ...     print(f&quot;v{version[&#x27;version&#x27;]}: {len(version[&#x27;snapshots&#x27;])} snapshots&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<hr>
+<h2 id="3-snapshotresource">3. SnapshotResource</h2>
+<blockquote>
+<p><strong>SNAPSHOT FUNCTIONALITY DISABLED</strong></p>
+<p>Explicit snapshot APIs have been disabled. Instances are now created directly
+from mappings without requiring explicit snapshot creation. The snapshot layer
+operates implicitly when instances are created.</p>
+<p>Use <code>client.instances.create_from_mapping()</code> or <code>client.instances.create_from_mapping_and_wait()</code>
+instead of the snapshot methods described below.</p>
+</blockquote>
+<p>Manage data snapshots exported from mappings.</p>
+<h3 id="methods-1">Methods</h3>
+<h4 id="list-1">list</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list</span>(<span class="hljs-params">
+    self,
+    *,
+    mapping_id: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    mapping_version: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    owner: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    status: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    search: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    created_after: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    created_before: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    sort_by: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;created_at&quot;</span>,
+    sort_order: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;desc&quot;</span>,
+    offset: <span class="hljs-built_in">int</span> = <span class="hljs-number">0</span>,
+    limit: <span class="hljs-built_in">int</span> = <span class="hljs-number">50</span>,
+</span>) -&gt; PaginatedList[Snapshot]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List snapshots with optional filtering.
+
+    Args:
+        mapping_id: Filter by mapping ID
+        mapping_version: Filter by mapping version
+        owner: Filter by owner username
+        status: Filter by status (pending, creating, ready, failed)
+        search: Search in name and description
+        created_after: Filter by creation date (ISO 8601)
+        created_before: Filter by creation date (ISO 8601)
+        sort_by: Sort field (default: &quot;created_at&quot;)
+        sort_order: Sort order (&quot;asc&quot; or &quot;desc&quot;, default: &quot;desc&quot;)
+        offset: Pagination offset (default: 0)
+        limit: Maximum results (default: 50, max: 1000)
+
+    Returns:
+        PaginatedList[Snapshot] with items, total, offset, limit attributes
+
+    Example:
+        &gt;&gt;&gt; result = client.snapshots.list(mapping_id=123)
+        &gt;&gt;&gt; for s in result.items:
+        ...     print(f&quot;{s.name}: {s.status}&quot;)
+
+        &gt;&gt;&gt; result = client.snapshots.list(status=&quot;ready&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get-1">get</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get</span>(<span class="hljs-params">self, snapshot_id: <span class="hljs-built_in">int</span></span>) -&gt; Snapshot:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get a single snapshot by ID.
+
+    Args:
+        snapshot_id: Snapshot ID
+
+    Returns:
+        Snapshot object
+
+    Raises:
+        NotFoundError: If snapshot does not exist
+
+    Example:
+        &gt;&gt;&gt; snapshot = client.snapshots.get(456)
+        &gt;&gt;&gt; print(f&quot;Status: {snapshot.status}, Size: {snapshot.size_bytes}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="create-1">create</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">create</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    name: <span class="hljs-built_in">str</span>,
+    *,
+    mapping_version: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    ttl: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    inactivity_timeout: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Snapshot:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Create a new snapshot (triggers data export).
+
+    Args:
+        mapping_id: Source mapping ID
+        name: Display name
+        mapping_version: Mapping version to use (defaults to current version)
+        description: Optional description
+        ttl: Time-to-live (ISO 8601 duration)
+        inactivity_timeout: Inactivity timeout (ISO 8601 duration)
+
+    Returns:
+        Snapshot object with status=&#x27;pending&#x27;
+
+    Raises:
+        NotFoundError: If mapping does not exist
+        ValidationError: If mapping_version does not exist
+
+    Example:
+        &gt;&gt;&gt; snapshot = client.snapshots.create(
+        ...     mapping_id=123,
+        ...     name=&quot;Q4 2024 Data&quot;,
+        ...     description=&quot;End of quarter snapshot&quot;,
+        ... )
+        &gt;&gt;&gt; print(f&quot;Export started: {snapshot.id}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="delete-1">delete</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">delete</span>(<span class="hljs-params">self, snapshot_id: <span class="hljs-built_in">int</span></span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Delete a snapshot.
+
+    Args:
+        snapshot_id: Snapshot ID to delete
+
+    Raises:
+        NotFoundError: If snapshot does not exist
+        DependencyError: If snapshot has active instances
+
+    Example:
+        &gt;&gt;&gt; client.snapshots.delete(456)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="wait_until_ready">wait_until_ready</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">wait_until_ready</span>(<span class="hljs-params">
+    self,
+    snapshot_id: <span class="hljs-built_in">int</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">600</span>,
+    poll_interval: <span class="hljs-built_in">int</span> = <span class="hljs-number">5</span>,
+</span>) -&gt; Snapshot:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Wait for a snapshot to become ready.
+
+    Polls the snapshot status until it reaches &#x27;ready&#x27; or &#x27;failed&#x27;.
+
+    Args:
+        snapshot_id: Snapshot ID
+        timeout: Maximum wait time in seconds (default: 600)
+        poll_interval: Time between status checks (default: 5)
+
+    Returns:
+        Snapshot object with status=&#x27;ready&#x27;
+
+    Raises:
+        SnapshotFailedError: If snapshot export failed
+        SDKTimeoutError: If timeout exceeded
+
+    Example:
+        &gt;&gt;&gt; snapshot = client.snapshots.create(mapping_id=123, name=&quot;Test&quot;)
+        &gt;&gt;&gt; snapshot = client.snapshots.wait_until_ready(snapshot.id, timeout=300)
+        &gt;&gt;&gt; print(f&quot;Ready! {snapshot.node_counts}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="create_and_wait">create_and_wait</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">create_and_wait</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    name: <span class="hljs-built_in">str</span>,
+    *,
+    mapping_version: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    ttl: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    inactivity_timeout: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">600</span>,
+    poll_interval: <span class="hljs-built_in">int</span> = <span class="hljs-number">5</span>,
+    on_progress: <span class="hljs-type">Callable</span>[[<span class="hljs-built_in">str</span>, <span class="hljs-built_in">int</span>, <span class="hljs-built_in">int</span>], <span class="hljs-literal">None</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Snapshot:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Create a snapshot and wait for it to become ready.
+
+    Convenience method combining create() and wait_until_ready().
+
+    Args:
+        mapping_id: Source mapping ID
+        name: Display name
+        mapping_version: Mapping version (defaults to current)
+        description: Optional description
+        ttl: Time-to-live (ISO 8601 duration)
+        inactivity_timeout: Inactivity timeout (ISO 8601 duration)
+        timeout: Maximum wait time in seconds
+        poll_interval: Time between status checks
+        on_progress: Optional callback(phase, completed_steps, total_steps)
+
+    Returns:
+        Snapshot object with status=&#x27;ready&#x27;
+
+    Example:
+        &gt;&gt;&gt; def progress(phase, done, total):
+        ...     print(f&quot;{phase}: {done}/{total}&quot;)
+        &gt;&gt;&gt; snapshot = client.snapshots.create_and_wait(
+        ...     mapping_id=123,
+        ...     name=&quot;Quick Snapshot&quot;,
+        ...     on_progress=progress,
+        ... )
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_progress">get_progress</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_progress</span>(<span class="hljs-params">self, snapshot_id: <span class="hljs-built_in">int</span></span>) -&gt; SnapshotProgress:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get detailed export progress for a snapshot.
+
+    Args:
+        snapshot_id: Snapshot ID
+
+    Returns:
+        SnapshotProgress object with phase, steps, and completion info
+
+    Example:
+        &gt;&gt;&gt; progress = client.snapshots.get_progress(456)
+        &gt;&gt;&gt; print(f&quot;Phase: {progress.phase}&quot;)
+        &gt;&gt;&gt; print(f&quot;Progress: {progress.completed_steps}/{progress.total_steps}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="update-1">update</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">update</span>(<span class="hljs-params">
+    self,
+    snapshot_id: <span class="hljs-built_in">int</span>,
+    *,
+    name: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Snapshot:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Update snapshot metadata.
+
+    Args:
+        snapshot_id: Snapshot ID
+        name: New name (optional)
+        description: New description (optional)
+
+    Returns:
+        Updated Snapshot object
+
+    Example:
+        &gt;&gt;&gt; snapshot = client.snapshots.update(456, name=&quot;Q4 Data Snapshot&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="retry">retry</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">retry</span>(<span class="hljs-params">self, snapshot_id: <span class="hljs-built_in">int</span></span>) -&gt; Snapshot:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Retry a failed snapshot export.
+
+    Args:
+        snapshot_id: ID of the failed snapshot
+
+    Returns:
+        Snapshot object with status=&#x27;pending&#x27;
+
+    Raises:
+        InvalidStateError: If snapshot is not in &#x27;failed&#x27; status
+
+    Example:
+        &gt;&gt;&gt; if snapshot.status == &quot;failed&quot;:
+        ...     snapshot = client.snapshots.retry(snapshot.id)
+        ...     snapshot = client.snapshots.wait_until_ready(snapshot.id)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="set_lifecycle-1">set_lifecycle</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">set_lifecycle</span>(<span class="hljs-params">
+    self,
+    snapshot_id: <span class="hljs-built_in">int</span>,
+    ttl: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    inactivity_timeout: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Snapshot:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Set lifecycle parameters for a snapshot.
+
+    Args:
+        snapshot_id: Snapshot ID
+        ttl: Time-to-live (ISO 8601 duration) or None to clear
+        inactivity_timeout: Inactivity timeout (ISO 8601 duration) or None to clear
+
+    Returns:
+        Updated Snapshot object
+
+    Example:
+        &gt;&gt;&gt; snapshot = client.snapshots.set_lifecycle(456, ttl=&quot;P14D&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<hr>
+<h2 id="4-instanceresource">4. InstanceResource</h2>
+<p>Manage running graph instances.</p>
+<h3 id="methods-2">Methods</h3>
+<h4 id="list-2">list</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list</span>(<span class="hljs-params">
+    self,
+    *,
+    snapshot_id: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    owner: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    status: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    search: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    created_after: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    created_before: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    sort_by: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;created_at&quot;</span>,
+    sort_order: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;desc&quot;</span>,
+    offset: <span class="hljs-built_in">int</span> = <span class="hljs-number">0</span>,
+    limit: <span class="hljs-built_in">int</span> = <span class="hljs-number">50</span>,
+</span>) -&gt; PaginatedList[Instance]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List instances with optional filtering.
+
+    Args:
+        snapshot_id: Filter by snapshot ID
+        owner: Filter by owner username
+        status: Filter by status (starting, running, stopping, failed)
+        search: Search in name and description
+        created_after: Filter by creation date (ISO 8601)
+        created_before: Filter by creation date (ISO 8601)
+        sort_by: Sort field (default: &quot;created_at&quot;)
+        sort_order: Sort order (&quot;asc&quot; or &quot;desc&quot;, default: &quot;desc&quot;)
+        offset: Pagination offset (default: 0)
+        limit: Maximum results (default: 50, max: 1000)
+
+    Returns:
+        PaginatedList[Instance] with items, total, offset, limit attributes
+
+    Example:
+        &gt;&gt;&gt; result = client.instances.list(status=&quot;running&quot;)
+        &gt;&gt;&gt; for i in result.items:
+        ...     print(f&quot;{i.name}: {i.instance_url}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get-2">get</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get</span>(<span class="hljs-params">self, instance_id: <span class="hljs-built_in">int</span></span>) -&gt; Instance:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get a single instance by ID.
+
+    Args:
+        instance_id: Instance ID
+
+    Returns:
+        Instance object
+
+    Raises:
+        NotFoundError: If instance does not exist
+
+    Example:
+        &gt;&gt;&gt; instance = client.instances.get(789)
+        &gt;&gt;&gt; print(f&quot;Status: {instance.status}, URL: {instance.instance_url}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="create-2">create</h4>
+<blockquote>
+<p><strong>DEPRECATED:</strong> This method requires an explicit <code>snapshot_id</code>. Use
+<a href="#create_from_mapping"><code>create_from_mapping()</code></a> or
+<a href="#create_from_mapping_and_wait"><code>create_from_mapping_and_wait()</code></a> instead,
+which manage snapshots automatically.</p>
+</blockquote>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">create</span>(<span class="hljs-params">
+    self,
+    snapshot_id: <span class="hljs-built_in">int</span>,
+    name: <span class="hljs-built_in">str</span>,
+    wrapper_type: WrapperType,
+    *,
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    ttl: <span class="hljs-built_in">int</span> | <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    inactivity_timeout: <span class="hljs-built_in">int</span> | <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Instance:
+    <span class="hljs-string">&quot;&quot;&quot;
+    [DEPRECATED] Create a new graph instance from an explicit snapshot.
+
+    .. deprecated::
+        Use `create_from_mapping()` or `create_from_mapping_and_wait()` instead.
+        These methods manage snapshots automatically.
+
+    Args:
+        snapshot_id: Source snapshot ID (must be &#x27;ready&#x27;)
+        name: Display name
+        wrapper_type: Graph database wrapper type (REQUIRED)
+            - WrapperType.RYUGRAPH: High-performance embedded graph (recommended)
+            - WrapperType.FALKORDB: In-memory graph for smaller datasets
+        description: Optional description
+        ttl: Time-to-live (hours as int, or ISO 8601 duration like &quot;PT24H&quot;)
+        inactivity_timeout: Inactivity timeout (hours as int, or ISO 8601 duration)
+
+    Returns:
+        Instance object with status=&#x27;starting&#x27;
+
+    Raises:
+        NotFoundError: If snapshot does not exist
+        InvalidStateError: If snapshot is not &#x27;ready&#x27;
+        ConcurrencyLimitError: If instance limits exceeded
+
+    Example:
+        &gt;&gt;&gt; # DEPRECATED - Use create_from_mapping_and_wait() instead:
+        &gt;&gt;&gt; from graph_olap_schemas import WrapperType
+        &gt;&gt;&gt; instance = client.instances.create_from_mapping_and_wait(
+        ...     mapping_id=123,
+        ...     name=&quot;Analysis Instance&quot;,
+        ...     wrapper_type=WrapperType.RYUGRAPH,
+        ...     ttl=24,
+        ... )
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="update-2">update</h4>
+<blockquote>
+<p><strong>Internal Use Only:</strong> This method is primarily for internal metadata updates.
+Most users should set the name and description at instance creation time.</p>
+</blockquote>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">update</span>(<span class="hljs-params">
+    self,
+    instance_id: <span class="hljs-built_in">int</span>,
+    *,
+    name: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Instance:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Update instance metadata.
+
+    Note: This is primarily for internal use. Set name and description
+    at creation time via `create_from_mapping_and_wait()` instead.
+
+    Args:
+        instance_id: Instance ID
+        name: New name (optional)
+        description: New description (optional)
+
+    Returns:
+        Updated Instance object
+
+    Example:
+        &gt;&gt;&gt; instance = client.instances.update(789, name=&quot;Renamed Instance&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="terminate">terminate</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">terminate</span>(<span class="hljs-params">self, instance_id: <span class="hljs-built_in">int</span></span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Terminate and delete an instance.
+
+    Immediately deletes the Kubernetes pod and removes the instance from the
+    database. Use this to clean up instances when done.
+
+    Args:
+        instance_id: Instance ID to terminate
+
+    Raises:
+        NotFoundError: If instance does not exist
+
+    Example:
+        &gt;&gt;&gt; client.instances.terminate(789)
+        &gt;&gt;&gt; # Instance is immediately deleted
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="wait_until_running">wait_until_running</h4>
+<blockquote>
+<p><strong>DEPRECATED:</strong> Use <a href="#create_from_mapping_and_wait"><code>create_from_mapping_and_wait()</code></a>
+instead, which handles the entire workflow (snapshot export + instance startup)
+automatically.</p>
+</blockquote>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">wait_until_running</span>(<span class="hljs-params">
+    self,
+    instance_id: <span class="hljs-built_in">int</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+    poll_interval: <span class="hljs-built_in">int</span> = <span class="hljs-number">5</span>,
+</span>) -&gt; Instance:
+    <span class="hljs-string">&quot;&quot;&quot;
+    [DEPRECATED] Wait for an instance to become running.
+
+    .. deprecated::
+        Use `create_from_mapping_and_wait()` instead, which handles
+        the entire workflow automatically.
+
+    Args:
+        instance_id: Instance ID
+        timeout: Maximum wait time in seconds (default: 300)
+        poll_interval: Time between status checks (default: 5)
+
+    Returns:
+        Instance object with status=&#x27;running&#x27;
+
+    Raises:
+        InstanceFailedError: If instance startup failed
+        SDKTimeoutError: If timeout exceeded
+
+    Example:
+        &gt;&gt;&gt; # DEPRECATED - Use create_from_mapping_and_wait() instead:
+        &gt;&gt;&gt; from graph_olap_schemas import WrapperType
+        &gt;&gt;&gt; instance = client.instances.create_from_mapping_and_wait(
+        ...     mapping_id=123,
+        ...     name=&quot;Test&quot;,
+        ...     wrapper_type=WrapperType.RYUGRAPH,
+        ... )
+        &gt;&gt;&gt; print(f&quot;Ready at: {instance.instance_url}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="create_and_wait-1">create_and_wait</h4>
+<blockquote>
+<p><strong>DEPRECATED:</strong> This method requires an explicit <code>snapshot_id</code>. Use
+<a href="#create_from_mapping_and_wait"><code>create_from_mapping_and_wait()</code></a> instead,
+which manages snapshots automatically.</p>
+</blockquote>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">create_and_wait</span>(<span class="hljs-params">
+    self,
+    snapshot_id: <span class="hljs-built_in">int</span>,
+    name: <span class="hljs-built_in">str</span>,
+    wrapper_type: WrapperType,
+    *,
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    ttl: <span class="hljs-built_in">int</span> | <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    inactivity_timeout: <span class="hljs-built_in">int</span> | <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+    poll_interval: <span class="hljs-built_in">int</span> = <span class="hljs-number">5</span>,
+    on_progress: <span class="hljs-type">Callable</span>[[<span class="hljs-built_in">str</span>, <span class="hljs-built_in">int</span>, <span class="hljs-built_in">int</span>], <span class="hljs-literal">None</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Instance:
+    <span class="hljs-string">&quot;&quot;&quot;
+    [DEPRECATED] Create an instance and wait for it to become running.
+
+    .. deprecated::
+        Use `create_from_mapping_and_wait()` instead, which manages
+        snapshots automatically.
+
+    Args:
+        snapshot_id: Source snapshot ID
+        name: Display name
+        wrapper_type: Graph database wrapper type (REQUIRED)
+            - WrapperType.RYUGRAPH: High-performance embedded graph (recommended)
+            - WrapperType.FALKORDB: In-memory graph for smaller datasets
+        description: Optional description
+        ttl: Time-to-live (hours as int, or ISO 8601 duration like &quot;PT24H&quot;)
+        inactivity_timeout: Inactivity timeout (hours as int, or ISO 8601 duration)
+        timeout: Maximum wait time in seconds (default: 300)
+        poll_interval: Time between status checks (default: 5)
+        on_progress: Optional callback(phase, completed_steps, total_steps)
+
+    Returns:
+        Instance object with status=&#x27;running&#x27;
+
+    Example:
+        &gt;&gt;&gt; # DEPRECATED - Use create_from_mapping_and_wait() instead:
+        &gt;&gt;&gt; from graph_olap_schemas import WrapperType
+        &gt;&gt;&gt; instance = client.instances.create_from_mapping_and_wait(
+        ...     mapping_id=123,
+        ...     name=&quot;Quick Analysis&quot;,
+        ...     wrapper_type=WrapperType.FALKORDB,
+        ...     ttl=24,
+        ... )
+        &gt;&gt;&gt; conn = client.instances.connect(instance.id)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="create_from_mapping">create_from_mapping</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">create_from_mapping</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    name: <span class="hljs-built_in">str</span>,
+    wrapper_type: WrapperType,
+    *,
+    mapping_version: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    ttl: <span class="hljs-built_in">int</span> | <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    inactivity_timeout: <span class="hljs-built_in">int</span> | <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Instance:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Create a new graph instance directly from a mapping.
+
+    This is a convenience method that creates a snapshot automatically
+    and queues instance creation. The snapshot is managed internally -
+    users don&#x27;t need to interact with snapshots when using this method.
+
+    The instance will initially have status=&#x27;waiting_for_snapshot&#x27; until
+    the snapshot export completes, then transition to &#x27;starting&#x27;.
+
+    Args:
+        mapping_id: Source mapping ID
+        name: Display name for the instance
+        wrapper_type: Graph database wrapper type (FALKORDB or RYUGRAPH)
+        mapping_version: Mapping version to use (defaults to current version)
+        description: Optional description
+        ttl: Time-to-live (hours as int, or ISO 8601 duration like &quot;PT48H&quot;)
+        inactivity_timeout: Inactivity timeout (hours or ISO 8601)
+
+    Returns:
+        Instance object with status=&#x27;waiting_for_snapshot&#x27;
+
+    Raises:
+        NotFoundError: If mapping doesn&#x27;t exist
+        ConcurrencyLimitError: If instance limits exceeded
+
+    Example:
+        &gt;&gt;&gt; from graph_olap_schemas import WrapperType
+        &gt;&gt;&gt; instance = client.instances.create_from_mapping(
+        ...     mapping_id=123,
+        ...     name=&quot;Quick Analysis&quot;,
+        ...     wrapper_type=WrapperType.FALKORDB,
+        ... )
+        &gt;&gt;&gt; # Instance starts with status=&#x27;waiting_for_snapshot&#x27;
+        &gt;&gt;&gt; print(instance.status)
+        &#x27;waiting_for_snapshot&#x27;
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="create_from_mapping_and_wait">create_from_mapping_and_wait</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">create_from_mapping_and_wait</span>(<span class="hljs-params">
+    self,
+    mapping_id: <span class="hljs-built_in">int</span>,
+    name: <span class="hljs-built_in">str</span>,
+    wrapper_type: WrapperType,
+    *,
+    mapping_version: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    ttl: <span class="hljs-built_in">int</span> | <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    inactivity_timeout: <span class="hljs-built_in">int</span> | <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">900</span>,
+    poll_interval: <span class="hljs-built_in">int</span> = <span class="hljs-number">5</span>,
+    on_progress: <span class="hljs-type">Callable</span>[[<span class="hljs-built_in">str</span>, <span class="hljs-built_in">int</span>, <span class="hljs-built_in">int</span>], <span class="hljs-literal">None</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Instance:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Create an instance from a mapping and wait for it to become running.
+
+    This is the recommended method for most use cases. It handles the
+    entire workflow automatically:
+
+    1. Creates a snapshot from the mapping (managed internally)
+    2. Waits for snapshot export to complete
+    3. Creates the instance and waits for startup
+    4. Returns when the instance is fully ready
+
+    Args:
+        mapping_id: Source mapping ID
+        name: Display name for the instance
+        wrapper_type: Graph database wrapper type (FALKORDB or RYUGRAPH)
+        mapping_version: Mapping version to use (defaults to current)
+        description: Optional description
+        ttl: Time-to-live (hours as int, or ISO 8601 duration)
+        inactivity_timeout: Inactivity timeout (hours or ISO 8601)
+        timeout: Maximum wait time in seconds (default: 900 = 15 minutes)
+        poll_interval: Time between status checks (default: 5)
+        on_progress: Optional callback(phase, completed_steps, total_steps)
+
+    Returns:
+        Instance object with status=&#x27;running&#x27;
+
+    Raises:
+        TimeoutError: If instance doesn&#x27;t start within timeout
+        InstanceFailedError: If instance or snapshot fails
+        NotFoundError: If mapping doesn&#x27;t exist
+        ConcurrencyLimitError: If instance limits exceeded
+
+    Example:
+        &gt;&gt;&gt; from graph_olap_schemas import WrapperType
+        &gt;&gt;&gt; instance = client.instances.create_from_mapping_and_wait(
+        ...     mapping_id=123,
+        ...     name=&quot;Quick Analysis&quot;,
+        ...     wrapper_type=WrapperType.FALKORDB,
+        ...     ttl=48,  # 48 hours
+        ... )
+        &gt;&gt;&gt; # Instance is now running and ready
+        &gt;&gt;&gt; conn = client.instances.connect(instance.id)
+        &gt;&gt;&gt; result = conn.query(&quot;MATCH (n) RETURN count(n)&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="connect">connect</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">connect</span>(<span class="hljs-params">self, instance_id: <span class="hljs-built_in">int</span></span>) -&gt; InstanceConnection:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Create a connection to a running instance.
+
+    The connection provides query execution and algorithm access.
+
+    Args:
+        instance_id: Instance ID (must be &#x27;running&#x27;)
+
+    Returns:
+        InstanceConnection for querying the graph
+
+    Raises:
+        InvalidStateError: If instance is not &#x27;running&#x27;
+
+    Example:
+        &gt;&gt;&gt; conn = client.instances.connect(789)
+        &gt;&gt;&gt; result = conn.query(&quot;MATCH (n) RETURN count(n)&quot;)
+        &gt;&gt;&gt; conn.close()
+
+        &gt;&gt;&gt; # Or use as context manager
+        &gt;&gt;&gt; with client.instances.connect(789) as conn:
+        ...     result = conn.query(&quot;MATCH (n) RETURN count(n)&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_progress-1">get_progress</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_progress</span>(<span class="hljs-params">self, instance_id: <span class="hljs-built_in">int</span></span>) -&gt; InstanceProgress:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get instance startup progress.
+
+    Args:
+        instance_id: Instance ID
+
+    Returns:
+        InstanceProgress object with phase, completed_steps, total_steps
+
+    Example:
+        &gt;&gt;&gt; progress = client.instances.get_progress(789)
+        &gt;&gt;&gt; print(f&quot;Phase: {progress.phase}, {progress.completed_steps}/{progress.total_steps}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_health">get_health</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_health</span>(<span class="hljs-params">self, instance_id: <span class="hljs-built_in">int</span>, *, timeout: <span class="hljs-built_in">float</span> = <span class="hljs-number">5.0</span></span>) -&gt; <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-built_in">object</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get detailed health status of an instance.
+
+    Args:
+        instance_id: Instance ID
+        timeout: Health check timeout in seconds (default: 5.0)
+
+    Returns:
+        Dict with health details including:
+            - status: &quot;healthy&quot; | &quot;unhealthy&quot; | &quot;unknown&quot;
+            - latency_ms: Response time
+            - wrapper_version: Wrapper software version
+            - database_status: Database connection status
+
+    Example:
+        &gt;&gt;&gt; health = client.instances.get_health(789)
+        &gt;&gt;&gt; print(f&quot;Status: {health[&#x27;status&#x27;]}, Latency: {health[&#x27;latency_ms&#x27;]}ms&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="check_health">check_health</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">check_health</span>(<span class="hljs-params">self, instance_id: <span class="hljs-built_in">int</span>, *, timeout: <span class="hljs-built_in">float</span> = <span class="hljs-number">5.0</span></span>) -&gt; <span class="hljs-built_in">bool</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Quick health check for an instance.
+
+    Args:
+        instance_id: Instance ID
+        timeout: Health check timeout in seconds (default: 5.0)
+
+    Returns:
+        True if instance is healthy, False otherwise
+
+    Example:
+        &gt;&gt;&gt; if client.instances.check_health(789):
+        ...     print(&quot;Instance is healthy&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="extend_ttl">extend_ttl</h4>
+<blockquote>
+<p><strong>Prefer setting TTL at creation:</strong> Set the <code>ttl</code> parameter when calling
+<a href="#create_from_mapping_and_wait"><code>create_from_mapping_and_wait()</code></a> to avoid
+needing runtime TTL extension. Use this method only when you need to extend
+an already-running instance.</p>
+</blockquote>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">extend_ttl</span>(<span class="hljs-params">
+    self,
+    instance_id: <span class="hljs-built_in">int</span>,
+    hours: <span class="hljs-built_in">int</span> = <span class="hljs-number">24</span>,
+</span>) -&gt; Instance:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Extend instance TTL by specified hours from current expiry.
+
+    Note: Prefer setting `ttl` at creation time via `create_from_mapping_and_wait()`
+    to avoid needing runtime extension. Use this only for already-running instances.
+
+    Args:
+        instance_id: Instance ID
+        hours: Hours to add to current TTL (default: 24)
+
+    Returns:
+        Updated Instance object
+
+    Raises:
+        ValidationError: If extension exceeds maximum TTL (7 days from creation)
+
+    Example:
+        &gt;&gt;&gt; # Preferred: Set TTL at creation time
+        &gt;&gt;&gt; instance = client.instances.create_from_mapping_and_wait(
+        ...     mapping_id=123, name=&quot;Analysis&quot;, wrapper_type=WrapperType.RYUGRAPH,
+        ...     ttl=48,  # Set 48-hour TTL upfront
+        ... )
+
+        &gt;&gt;&gt; # Extension (for already-running instances only)
+        &gt;&gt;&gt; instance = client.instances.extend_ttl(789, hours=24)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="set_lifecycle-2">set_lifecycle</h4>
+<blockquote>
+<p><strong>Prefer setting lifecycle at creation:</strong> Set <code>ttl</code> and <code>inactivity_timeout</code>
+parameters when calling <a href="#create_from_mapping_and_wait"><code>create_from_mapping_and_wait()</code></a>.
+Use this method only when you need to modify an already-running instance.</p>
+</blockquote>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">set_lifecycle</span>(<span class="hljs-params">
+    self,
+    instance_id: <span class="hljs-built_in">int</span>,
+    ttl: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    inactivity_timeout: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; Instance:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Set lifecycle parameters for an instance.
+
+    Note: Prefer setting `ttl` and `inactivity_timeout` at creation time via
+    `create_from_mapping_and_wait()`. Use this only for already-running instances.
+
+    Args:
+        instance_id: Instance ID
+        ttl: Time-to-live (ISO 8601 duration) or None to clear
+        inactivity_timeout: Inactivity timeout (ISO 8601 duration) or None to clear
+
+    Returns:
+        Updated Instance object
+
+    Example:
+        &gt;&gt;&gt; # Preferred: Set lifecycle at creation time
+        &gt;&gt;&gt; instance = client.instances.create_from_mapping_and_wait(
+        ...     mapping_id=123, name=&quot;Analysis&quot;, wrapper_type=WrapperType.RYUGRAPH,
+        ...     ttl=48,               # 48 hours
+        ...     inactivity_timeout=2,  # 2 hours
+        ... )
+
+        &gt;&gt;&gt; # Runtime modification (for already-running instances only)
+        &gt;&gt;&gt; instance = client.instances.set_lifecycle(789, ttl=&quot;PT48H&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="update_cpu">update_cpu</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">update_cpu</span>(<span class="hljs-params">self, instance_id: <span class="hljs-built_in">int</span>, cpu_cores: <span class="hljs-built_in">int</span></span>) -&gt; Instance:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Update CPU cores for a running instance.
+
+    Uses Kubernetes in-place resize to change CPU without restarting.
+
+    Args:
+        instance_id: Instance ID
+        cpu_cores: CPU cores (1-8). Sets request=N cores, limit=2N cores for burst capacity.
+
+    Returns:
+        Updated Instance object
+
+    Raises:
+        InvalidStateError: If instance is not running
+        ValidationError: If cpu_cores is out of range (1-8)
+
+    Example:
+        &gt;&gt;&gt; instance = client.instances.update_cpu(789, cpu_cores=4)
+        &gt;&gt;&gt; print(f&quot;Updated to {instance.cpu_cores} cores&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<hr>
+<h2 id="5-instanceconnection">5. InstanceConnection</h2>
+<p>Connection to a running graph instance for queries and algorithms.</p>
+<h3 id="class-definition-1">Class Definition</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">InstanceConnection</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Connection to a running graph instance.
+
+    Provides methods for executing Cypher queries and graph algorithms.
+    Supports both synchronous and context manager usage.
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="query-methods">Query Methods</h3>
+<h4 id="query">query</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">query</span>(<span class="hljs-params">
+    self,
+    cypher: <span class="hljs-built_in">str</span>,
+    parameters: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    *,
+    timeout: <span class="hljs-built_in">float</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    coerce_types: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+</span>) -&gt; QueryResult:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Execute a Cypher query.
+
+    Args:
+        cypher: Cypher query string
+        parameters: Query parameters (optional)
+        timeout: Override default timeout in seconds (optional)
+        coerce_types: Convert DATE/TIMESTAMP/INTERVAL to Python types (default: True)
+
+    Returns:
+        QueryResult with columns, rows, and metadata
+
+    Raises:
+        QueryTimeoutError: If query exceeds timeout
+        RyugraphError: If Cypher syntax is invalid
+
+    Example:
+        &gt;&gt;&gt; result = conn.query(
+        ...     &quot;MATCH (c:Customer) WHERE c.city = $city RETURN c.name, c.age&quot;,
+        ...     parameters={&quot;city&quot;: &quot;London&quot;},
+        ... )
+        &gt;&gt;&gt; for row in result:
+        ...     print(row[&quot;c.name&quot;], row[&quot;c.age&quot;])
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="query_df">query_df</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">query_df</span>(<span class="hljs-params">
+    self,
+    cypher: <span class="hljs-built_in">str</span>,
+    parameters: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    *,
+    backend: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;polars&quot;</span>,
+</span>) -&gt; <span class="hljs-string">&quot;pl.DataFrame | pd.DataFrame&quot;</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Execute a Cypher query and return as DataFrame directly.
+
+    Args:
+        cypher: Cypher query string
+        parameters: Query parameters (optional)
+        backend: DataFrame backend - &quot;polars&quot; (default) or &quot;pandas&quot;
+
+    Returns:
+        polars.DataFrame or pandas.DataFrame depending on backend
+
+    Example:
+        &gt;&gt;&gt; # Polars (default)
+        &gt;&gt;&gt; df = conn.query_df(&quot;MATCH (n:Customer) RETURN n.name, n.age&quot;)
+        &gt;&gt;&gt; df.filter(pl.col(&quot;n.age&quot;) &gt; 30)
+        &gt;&gt;&gt;
+        &gt;&gt;&gt; # Pandas
+        &gt;&gt;&gt; df = conn.query_df(&quot;MATCH (n:Customer) RETURN n.name&quot;, backend=&quot;pandas&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="query_scalar">query_scalar</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">query_scalar</span>(<span class="hljs-params">
+    self,
+    cypher: <span class="hljs-built_in">str</span>,
+    parameters: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; <span class="hljs-type">Any</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Execute a query expecting a single scalar value.
+
+    Args:
+        cypher: Cypher query returning a single value
+        parameters: Query parameters (optional)
+
+    Returns:
+        The single scalar value (int, float, str, etc.)
+
+    Raises:
+        ValueError: If result has multiple rows or columns
+
+    Example:
+        &gt;&gt;&gt; count = conn.query_scalar(&quot;MATCH (n) RETURN count(n)&quot;)
+        &gt;&gt;&gt; avg = conn.query_scalar(&quot;MATCH (n:Customer) RETURN avg(n.age)&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="query_one">query_one</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">query_one</span>(<span class="hljs-params">
+    self,
+    cypher: <span class="hljs-built_in">str</span>,
+    parameters: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>] | <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Execute a query expecting a single row.
+
+    Args:
+        cypher: Cypher query returning single row
+        parameters: Query parameters (optional)
+
+    Returns:
+        Dict of column-&gt;value for first row, or None if empty
+
+    Example:
+        &gt;&gt;&gt; user = conn.query_one(
+        ...     &quot;MATCH (u:User {id: $id}) RETURN u.*&quot;,
+        ...     {&quot;id&quot;: 123},
+        ... )
+        &gt;&gt;&gt; if user:
+        ...     print(user[&quot;name&quot;])
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="schema-and-status-methods">Schema and Status Methods</h3>
+<h4 id="get_schema">get_schema</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_schema</span>(<span class="hljs-params">self</span>) -&gt; Schema:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get the graph schema (node and relationship tables).
+
+    Returns:
+        Schema object with nodes and relationships definitions
+
+    Example:
+        &gt;&gt;&gt; schema = conn.get_schema()
+        &gt;&gt;&gt; for label, info in schema.nodes.items():
+        ...     print(f&quot;:{label} - {info[&#x27;properties&#x27;]}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_lock">get_lock</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_lock</span>(<span class="hljs-params">self</span>) -&gt; LockStatus:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Check if the instance is locked by an algorithm.
+
+    Returns:
+        LockStatus with lock information
+
+    Example:
+        &gt;&gt;&gt; lock = conn.get_lock()
+        &gt;&gt;&gt; if lock.locked:
+        ...     print(f&quot;Locked by {lock.holder_name} for {lock.algorithm}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="status">status</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">status</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">dict</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get detailed instance status.
+
+    Returns:
+        Status dict with:
+            - memory_usage_bytes: Current memory usage
+            - disk_usage_bytes: Current disk usage
+            - uptime_seconds: Instance uptime
+            - graph_stats: {node_count, edge_count}
+            - lock: Lock status information
+
+    Example:
+        &gt;&gt;&gt; status = conn.status()
+        &gt;&gt;&gt; print(f&quot;Memory: {status[&#x27;memory_usage_bytes&#x27;] / 1024**3:.2f} GB&quot;)
+        &gt;&gt;&gt; print(f&quot;Nodes: {status[&#x27;graph_stats&#x27;][&#x27;node_count&#x27;]:,}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="algorithm-managers">Algorithm Managers</h3>
+<p>The connection provides access to algorithm managers:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Native Ryugraph algorithms</span>
+algo: AlgorithmManager
+
+<span class="hljs-comment"># NetworkX algorithms</span>
+networkx: NetworkXManager</code></pre>
+<h4 id="algorithmmanager-connalgo">AlgorithmManager (conn.algo)</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">algorithms</span>(<span class="hljs-params">self, category: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span></span>) -&gt; <span class="hljs-built_in">list</span>[<span class="hljs-built_in">dict</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List available native Ryugraph algorithms.
+
+    Args:
+        category: Filter by category (centrality, community, pathfinding)
+
+    Returns:
+        List of algorithm info dicts
+
+    Example:
+        &gt;&gt;&gt; algos = conn.algo.algorithms()
+        &gt;&gt;&gt; for algo in algos:
+        ...     print(f&quot;{algo[&#x27;name&#x27;]}: {algo[&#x27;description&#x27;]}&quot;)
+    &quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">algorithm_info</span>(<span class="hljs-params">self, algorithm: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">dict</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get detailed info for an algorithm.
+
+    Args:
+        algorithm: Algorithm name
+
+    Returns:
+        Dict with name, category, description, parameters
+
+    Example:
+        &gt;&gt;&gt; info = conn.algo.algorithm_info(&quot;pagerank&quot;)
+        &gt;&gt;&gt; for param in info[&#x27;parameters&#x27;]:
+        ...     print(f&quot;  {param[&#x27;name&#x27;]}: {param[&#x27;description&#x27;]}&quot;)
+    &quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">run</span>(<span class="hljs-params">
+    self,
+    algorithm: <span class="hljs-built_in">str</span>,
+    node_label: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    property_name: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    *,
+    edge_type: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    params: <span class="hljs-built_in">dict</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Run any native Ryugraph algorithm.
+
+    Args:
+        algorithm: Algorithm name (e.g., &quot;pagerank&quot;, &quot;wcc&quot;)
+        node_label: Target node label
+        property_name: Property to store results
+        edge_type: Filter to specific edge type
+        params: Algorithm-specific parameters
+        timeout: Max wait time in seconds
+        wait: Wait for completion (default: True)
+
+    Returns:
+        AlgorithmExecution with status and results
+
+    Example:
+        &gt;&gt;&gt; exec = conn.algo.run(
+        ...     &quot;pagerank&quot;,
+        ...     node_label=&quot;Customer&quot;,
+        ...     property_name=&quot;pr_score&quot;,
+        ...     params={&quot;damping_factor&quot;: 0.85},
+        ... )
+    &quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">pagerank</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    damping: <span class="hljs-built_in">float</span> = <span class="hljs-number">0.85</span>,
+    iterations: <span class="hljs-built_in">int</span> = <span class="hljs-number">20</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run PageRank algorithm.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">wcc</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run Weakly Connected Components.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">louvain</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run Louvain community detection.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">scc</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run Strongly Connected Components (Tarjan&#x27;s).&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">kcore</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    k: <span class="hljs-built_in">int</span> = <span class="hljs-number">1</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run k-core decomposition.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">label_propagation</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    max_iterations: <span class="hljs-built_in">int</span> = <span class="hljs-number">100</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run label propagation community detection.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">triangle_count</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Count triangles for each node.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">shortest_path</span>(<span class="hljs-params">
+    self,
+    source_id: <span class="hljs-built_in">str</span>,
+    target_id: <span class="hljs-built_in">str</span>,
+    weight_property: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; <span class="hljs-built_in">dict</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Find shortest path between two nodes (synchronous).
+
+    Args:
+        source_id: Source node ID
+        target_id: Target node ID
+        weight_property: Edge property for weighted path
+
+    Returns:
+        Dict with path, length, and total_weight (if weighted)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="networkxmanager-connnetworkx">NetworkXManager (conn.networkx)</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">algorithms</span>(<span class="hljs-params">
+    self,
+    category: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    search: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; <span class="hljs-built_in">list</span>[AlgorithmInfo]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List available NetworkX algorithms.
+
+    Args:
+        category: Filter by category
+        search: Search algorithm names
+
+    Returns:
+        List of AlgorithmInfo objects
+
+    Example:
+        &gt;&gt;&gt; algos = conn.networkx.algorithms(category=&quot;centrality&quot;)
+        &gt;&gt;&gt; algos = conn.networkx.algorithms(search=&quot;community&quot;)
+    &quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">algorithm_info</span>(<span class="hljs-params">self, name: <span class="hljs-built_in">str</span></span>) -&gt; AlgorithmInfo:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get detailed information about a NetworkX algorithm.
+
+    Args:
+        name: Algorithm name
+
+    Returns:
+        AlgorithmInfo with parameters and documentation
+    &quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">categories</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">list</span>[<span class="hljs-built_in">str</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;Get available algorithm categories.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">run</span>(<span class="hljs-params">
+    self,
+    algorithm: <span class="hljs-built_in">str</span>,
+    *,
+    node_label: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    property_name: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    params: <span class="hljs-built_in">dict</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    edge_types: <span class="hljs-built_in">list</span>[<span class="hljs-built_in">str</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    directed: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">False</span>,
+    weight_property: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    source: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    target: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    subgraph_query: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Run any NetworkX algorithm by name.
+
+    Args:
+        algorithm: NetworkX algorithm name
+        node_label: Filter to specific node type
+        property_name: Property to store results (omit to return directly)
+        params: Algorithm-specific parameters
+        edge_types: Filter to specific edge types
+        directed: Treat graph as directed
+        weight_property: Edge property for weights
+        source: Source node ID (for path algorithms)
+        target: Target node ID (for path algorithms)
+        subgraph_query: Cypher query to select subset
+        wait: Wait for completion
+        timeout: Max wait time in seconds
+
+    Returns:
+        AlgorithmExecution with results
+
+    Example:
+        &gt;&gt;&gt; result = conn.networkx.run(
+        ...     &quot;betweenness_centrality&quot;,
+        ...     node_label=&quot;Customer&quot;,
+        ...     property_name=&quot;betweenness&quot;,
+        ...     params={&quot;k&quot;: 100},
+        ... )
+    &quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">degree_centrality</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run degree centrality.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">betweenness_centrality</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    normalized: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    k: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run betweenness centrality.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">closeness_centrality</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    normalized: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run closeness centrality.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">eigenvector_centrality</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    max_iter: <span class="hljs-built_in">int</span> = <span class="hljs-number">100</span>,
+    tol: <span class="hljs-built_in">float</span> = <span class="hljs-number">1e-6</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run eigenvector centrality.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">clustering_coefficient</span>(<span class="hljs-params">
+    self,
+    node_label: <span class="hljs-built_in">str</span>,
+    property_name: <span class="hljs-built_in">str</span>,
+    wait: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    timeout: <span class="hljs-built_in">int</span> = <span class="hljs-number">300</span>,
+</span>) -&gt; AlgorithmExecution:
+    <span class="hljs-string">&quot;&quot;&quot;Run clustering coefficient.&quot;&quot;&quot;</span></code></pre>
+<h3 id="connection-lifecycle">Connection Lifecycle</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">close</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Close the connection and release resources.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">__enter__</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-string">&quot;InstanceConnection&quot;</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Enter context manager.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">__exit__</span>(<span class="hljs-params">self, *args</span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Exit context manager and close connection.&quot;&quot;&quot;</span></code></pre>
+<hr>
+<h2 id="6-queryresult">6. QueryResult</h2>
+<p>Result of a Cypher query with multiple output format options.</p>
+<h3 id="class-definition-2">Class Definition</h3>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">QueryResult</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Result of a Cypher query.
+
+    Analysts can convert results to their preferred format:
+    - DataFrames (polars/pandas) for tabular analysis
+    - Dicts for programmatic access
+    - NetworkX for graph algorithms
+    - Scalar for single values
+
+    Attributes:
+        columns: Column names
+        column_types: Ryugraph types (STRING, INT64, DATE, etc.)
+        rows: List of row values
+        row_count: Number of rows
+        execution_time_ms: Query execution time
+    &quot;&quot;&quot;</span>
+    columns: <span class="hljs-built_in">list</span>[<span class="hljs-built_in">str</span>]
+    column_types: <span class="hljs-built_in">list</span>[<span class="hljs-built_in">str</span>]
+    rows: <span class="hljs-built_in">list</span>[<span class="hljs-built_in">list</span>]
+    row_count: <span class="hljs-built_in">int</span>
+    execution_time_ms: <span class="hljs-built_in">int</span></code></pre>
+<h3 id="dataframe-conversion">DataFrame Conversion</h3>
+<h4 id="to_polars">to_polars</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">to_polars</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-string">&quot;pl.DataFrame&quot;</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Convert to Polars DataFrame.
+
+    Returns:
+        polars.DataFrame with typed columns
+
+    Example:
+        &gt;&gt;&gt; df = result.to_polars()
+        &gt;&gt;&gt; df.filter(pl.col(&quot;age&quot;) &gt; 30).head()
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="to_pandas">to_pandas</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">to_pandas</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-string">&quot;pd.DataFrame&quot;</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Convert to Pandas DataFrame.
+
+    Returns:
+        pandas.DataFrame
+
+    Example:
+        &gt;&gt;&gt; df = result.to_pandas()
+        &gt;&gt;&gt; df[df[&quot;age&quot;] &gt; 30].head()
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="dictjson-conversion">Dict/JSON Conversion</h3>
+<h4 id="to_dicts">to_dicts</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">to_dicts</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">list</span>[<span class="hljs-built_in">dict</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Convert to list of dictionaries.
+
+    Returns:
+        List of dicts, one per row
+
+    Example:
+        &gt;&gt;&gt; rows = result.to_dicts()
+        &gt;&gt;&gt; rows[0]  # {&#x27;name&#x27;: &#x27;Alice&#x27;, &#x27;age&#x27;: 30}
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="to_json">to_json</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">to_json</span>(<span class="hljs-params">self, path: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>, indent: <span class="hljs-built_in">int</span> = <span class="hljs-number">2</span></span>) -&gt; <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Convert to JSON string or write to file.
+
+    Args:
+        path: Optional file path to write to
+        indent: JSON indentation (default: 2)
+
+    Returns:
+        JSON string if path is None, else None
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="scalar-extraction">Scalar Extraction</h3>
+<h4 id="scalar">scalar</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">scalar</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-type">Any</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Extract single scalar value.
+
+    Use for queries that return a single value like COUNT(*), SUM(), etc.
+
+    Returns:
+        The single value (or None if empty)
+
+    Raises:
+        ValueError: If result has multiple rows or columns
+
+    Example:
+        &gt;&gt;&gt; count = result.scalar()
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="first">first</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">first</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">dict</span> | <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get first row as dict, or None if empty.
+
+    Example:
+        &gt;&gt;&gt; user = result.first()
+        &gt;&gt;&gt; if user:
+        ...     print(user[&quot;name&quot;])
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="graph-conversion">Graph Conversion</h3>
+<h4 id="to_networkx">to_networkx</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">to_networkx</span>(<span class="hljs-params">self, directed: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span></span>) -&gt; <span class="hljs-string">&quot;nx.Graph&quot;</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Convert to NetworkX graph.
+
+    Works when query returns nodes and relationships.
+    Nodes are identified by _id, properties become attributes.
+
+    Args:
+        directed: If True, return DiGraph; else Graph
+
+    Returns:
+        NetworkX Graph or DiGraph
+
+    Example:
+        &gt;&gt;&gt; result = conn.query(&quot;MATCH (a)-[r]-&gt;(b) RETURN a, r, b&quot;)
+        &gt;&gt;&gt; G = result.to_networkx()
+        &gt;&gt;&gt; nx.pagerank(G)
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="export-methods">Export Methods</h3>
+<h4 id="to_csv">to_csv</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">to_csv</span>(<span class="hljs-params">self, path: <span class="hljs-built_in">str</span>, **kwargs</span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Export to CSV file.
+
+    Args:
+        path: Output file path
+        **kwargs: Passed to polars write_csv()
+
+    Example:
+        &gt;&gt;&gt; result.to_csv(&quot;output.csv&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="to_parquet">to_parquet</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">to_parquet</span>(<span class="hljs-params">self, path: <span class="hljs-built_in">str</span>, **kwargs</span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Export to Parquet file.
+
+    Args:
+        path: Output file path
+        **kwargs: Passed to polars write_parquet()
+
+    Example:
+        &gt;&gt;&gt; result.to_parquet(&quot;output.parquet&quot;, compression=&quot;snappy&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="visualization-methods">Visualization Methods</h3>
+<h4 id="show">show</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">show</span>(<span class="hljs-params">
+    self,
+    as_type: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    **kwargs,
+</span>) -&gt; <span class="hljs-type">Any</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Smart visualization - automatically picks the best display format.
+
+    Auto-detects if data contains graphs or tabular data and chooses
+    appropriate visualization based on data size.
+
+    Args:
+        as_type: Force visualization type (&quot;table&quot;, &quot;graph&quot;, &quot;chart&quot;, &quot;json&quot;)
+        **kwargs: Passed to underlying visualization
+
+    Size-Based Auto-Selection:
+        - Tabular data, &lt;=100 rows: Simple HTML table
+        - Tabular data, &gt;100 rows: Interactive DataTable (itables)
+        - Graph data, &lt;=5K nodes: PyVis interactive graph
+        - Graph data, 5K-50K nodes: ipycytoscape
+        - Graph data, &gt;50K nodes: Graphistry
+
+    Example:
+        &gt;&gt;&gt; result.show()  # Auto-detect best visualization
+        &gt;&gt;&gt; result.show(&quot;table&quot;)  # Force table view
+        &gt;&gt;&gt; result.show(&quot;graph&quot;, layout=&quot;dagre&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="to_itables">to_itables</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">to_itables</span>(<span class="hljs-params">self, **kwargs</span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Display as interactive DataTable using itables.
+
+    Provides sorting, filtering, search, and pagination.
+
+    Args:
+        **kwargs: Passed to itables.show()
+
+    Example:
+        &gt;&gt;&gt; result.to_itables(lengthMenu=[25, 50, 100])
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="to_pyvis">to_pyvis</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">to_pyvis</span>(<span class="hljs-params">
+    self,
+    height: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;600px&quot;</span>,
+    notebook: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    **kwargs,
+</span>) -&gt; <span class="hljs-string">&quot;Network&quot;</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Display as interactive PyVis network.
+
+    Args:
+        height: Visualization height
+        notebook: Configure for Jupyter
+        **kwargs: Additional PyVis options
+
+    Returns:
+        pyvis.network.Network
+
+    Example:
+        &gt;&gt;&gt; net = result.to_pyvis()
+        &gt;&gt;&gt; net.show(&quot;graph.html&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="to_cytoscape">to_cytoscape</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">to_cytoscape</span>(<span class="hljs-params">
+    self,
+    layout: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;cose&quot;</span>,
+    directed: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">True</span>,
+    node_color_property: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    node_size_property: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    **kwargs,
+</span>) -&gt; <span class="hljs-string">&quot;CytoscapeWidget&quot;</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Display as ipycytoscape widget.
+
+    Args:
+        layout: Layout algorithm (&quot;cose&quot;, &quot;dagre&quot;, &quot;klay&quot;, etc.)
+        directed: Show directed edges
+        node_color_property: Property for color mapping
+        node_size_property: Property for size mapping
+
+    Returns:
+        ipycytoscape.CytoscapeWidget
+    &quot;&quot;&quot;</span></code></pre>
+<h3 id="iteration-support">Iteration Support</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">__iter__</span>(<span class="hljs-params">self</span>) -&gt; Iterator[<span class="hljs-built_in">dict</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;Iterate over rows as dicts.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">__len__</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">int</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Return row count.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">__getitem__</span>(<span class="hljs-params">self, index: <span class="hljs-built_in">int</span></span>) -&gt; <span class="hljs-built_in">dict</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Get row by index as dict.&quot;&quot;&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">__bool__</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">bool</span>:
+    <span class="hljs-string">&quot;&quot;&quot;True if result has rows.&quot;&quot;&quot;</span></code></pre>
+<hr>
+<h2 id="7-common-types">7. Common Types</h2>
+<h3 id="wrappertype">WrapperType</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">WrapperType</span>(<span class="hljs-built_in">str</span>, Enum):
+    <span class="hljs-string">&quot;&quot;&quot;
+    Supported graph database wrapper types.
+
+    Import from graph_olap_schemas package (not graph_olap).
+    &quot;&quot;&quot;</span>
+    RYUGRAPH = <span class="hljs-string">&quot;ryugraph&quot;</span>   <span class="hljs-comment"># High-performance embedded graph database (recommended)</span>
+    FALKORDB = <span class="hljs-string">&quot;falkordb&quot;</span>   <span class="hljs-comment"># In-memory graph for smaller datasets</span></code></pre>
+<p><strong>Usage:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-comment"># Use enum value for instance creation (recommended)</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=<span class="hljs-number">123</span>,
+    name=<span class="hljs-string">&quot;My Instance&quot;</span>,
+    wrapper_type=WrapperType.RYUGRAPH,
+)
+
+<span class="hljs-comment"># String values also accepted (but enum preferred for type safety)</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=<span class="hljs-number">123</span>,
+    name=<span class="hljs-string">&quot;My Instance&quot;</span>,
+    wrapper_type=<span class="hljs-string">&quot;falkordb&quot;</span>,  <span class="hljs-comment"># Also works</span>
+)</code></pre>
+<p><strong>Wrapper Comparison:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>RYUGRAPH</th>
+<th>FALKORDB</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Storage</td>
+<td>Disk-backed</td>
+<td>In-memory</td>
+</tr>
+<tr>
+<td>Max Graph Size</td>
+<td>Large (100M+ nodes)</td>
+<td>Medium (~10M nodes)</td>
+</tr>
+<tr>
+<td>Query Performance</td>
+<td>Excellent</td>
+<td>Very fast (memory)</td>
+</tr>
+<tr>
+<td>Startup Time</td>
+<td>Slower (data loading)</td>
+<td>Fast</td>
+</tr>
+<tr>
+<td>Use Case</td>
+<td>Production analytics</td>
+<td>Quick exploration</td>
+</tr>
+</tbody></table>
+<h3 id="paginatedlist">PaginatedList</h3>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">PaginatedList</span>[T]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Paginated list result from list() methods.
+
+    All list() methods return this type for consistent pagination.
+    &quot;&quot;&quot;</span>
+    items: <span class="hljs-built_in">list</span>[T]    <span class="hljs-comment"># List of items for current page</span>
+    total: <span class="hljs-built_in">int</span>        <span class="hljs-comment"># Total number of items across all pages</span>
+    offset: <span class="hljs-built_in">int</span>       <span class="hljs-comment"># Current offset</span>
+    limit: <span class="hljs-built_in">int</span>        <span class="hljs-comment"># Page size</span>
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__iter__</span>(<span class="hljs-params">self</span>):
+        <span class="hljs-string">&quot;&quot;&quot;Iterate over items in current page.&quot;&quot;&quot;</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-built_in">iter</span>(<span class="hljs-variable language_">self</span>.items)
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__len__</span>(<span class="hljs-params">self</span>):
+        <span class="hljs-string">&quot;&quot;&quot;Number of items in current page.&quot;&quot;&quot;</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-built_in">len</span>(<span class="hljs-variable language_">self</span>.items)</code></pre>
+<p><strong>Usage:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># List returns PaginatedList, not list</span>
+result = client.mappings.<span class="hljs-built_in">list</span>(limit=<span class="hljs-number">10</span>)
+
+<span class="hljs-comment"># Access items directly</span>
+<span class="hljs-keyword">for</span> mapping <span class="hljs-keyword">in</span> result.items:
+    <span class="hljs-built_in">print</span>(mapping.name)
+
+<span class="hljs-comment"># Or iterate (iterates over items)</span>
+<span class="hljs-keyword">for</span> mapping <span class="hljs-keyword">in</span> result:
+    <span class="hljs-built_in">print</span>(mapping.name)
+
+<span class="hljs-comment"># Check pagination info</span>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Showing <span class="hljs-subst">{<span class="hljs-built_in">len</span>(result)}</span> of <span class="hljs-subst">{result.total}</span> total&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Offset: <span class="hljs-subst">{result.offset}</span>, Limit: <span class="hljs-subst">{result.limit}</span>&quot;</span>)
+
+<span class="hljs-comment"># Fetch next page</span>
+<span class="hljs-keyword">if</span> result.offset + result.limit &lt; result.total:
+    next_page = client.mappings.<span class="hljs-built_in">list</span>(offset=result.offset + result.limit, limit=<span class="hljs-number">10</span>)</code></pre>
+<hr>
+<h2 id="8-data-models">8. Data Models</h2>
+<h3 id="mapping-models">Mapping Models</h3>
+<h4 id="nodedefinition">NodeDefinition</h4>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">NodeDefinition</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Node table definition for graph mapping.&quot;&quot;&quot;</span>
+    label: <span class="hljs-built_in">str</span>                   <span class="hljs-comment"># Node label (e.g., &quot;Customer&quot;)</span>
+    sql: <span class="hljs-built_in">str</span>                     <span class="hljs-comment"># SQL query to extract data</span>
+    primary_key: <span class="hljs-built_in">dict</span>            <span class="hljs-comment"># {&quot;name&quot;: str, &quot;type&quot;: str}</span>
+    properties: <span class="hljs-built_in">list</span>[<span class="hljs-built_in">dict</span>]       <span class="hljs-comment"># [{&quot;name&quot;: str, &quot;type&quot;: str}, ...]</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;NodeDefinition&quot;</span>: ...
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">to_dict</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">dict</span>: ...</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="hljs language-python">node = NodeDefinition(
+    label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    sql=<span class="hljs-string">&quot;SELECT id, name, email FROM customers&quot;</span>,
+    primary_key={<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;id&quot;</span>, <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;STRING&quot;</span>},
+    properties=[
+        {<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;name&quot;</span>, <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;STRING&quot;</span>},
+        {<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;email&quot;</span>, <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;STRING&quot;</span>},
+    ],
+)</code></pre>
+<h4 id="edgedefinition">EdgeDefinition</h4>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">EdgeDefinition</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Edge table definition for graph mapping.&quot;&quot;&quot;</span>
+    <span class="hljs-built_in">type</span>: <span class="hljs-built_in">str</span>                    <span class="hljs-comment"># Edge type (e.g., &quot;PURCHASED&quot;)</span>
+    from_node: <span class="hljs-built_in">str</span>               <span class="hljs-comment"># Source node label</span>
+    to_node: <span class="hljs-built_in">str</span>                 <span class="hljs-comment"># Target node label</span>
+    sql: <span class="hljs-built_in">str</span>                     <span class="hljs-comment"># SQL query to extract data</span>
+    from_key: <span class="hljs-built_in">str</span>                <span class="hljs-comment"># Foreign key to source node</span>
+    to_key: <span class="hljs-built_in">str</span>                  <span class="hljs-comment"># Foreign key to target node</span>
+    properties: <span class="hljs-built_in">list</span>[<span class="hljs-built_in">dict</span>]       <span class="hljs-comment"># [{&quot;name&quot;: str, &quot;type&quot;: str}, ...]</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;EdgeDefinition&quot;</span>: ...
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">to_dict</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">dict</span>: ...</code></pre>
+<p><strong>Example:</strong></p>
+<pre><code class="hljs language-python">edge = EdgeDefinition(
+    <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;PURCHASED&quot;</span>,
+    from_node=<span class="hljs-string">&quot;Customer&quot;</span>,
+    to_node=<span class="hljs-string">&quot;Product&quot;</span>,
+    sql=<span class="hljs-string">&quot;SELECT customer_id, product_id, amount FROM orders&quot;</span>,
+    from_key=<span class="hljs-string">&quot;customer_id&quot;</span>,
+    to_key=<span class="hljs-string">&quot;product_id&quot;</span>,
+    properties=[{<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;amount&quot;</span>, <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;DOUBLE&quot;</span>}],
+)</code></pre>
+<h4 id="mappingversion">MappingVersion</h4>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">MappingVersion</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Immutable mapping version.&quot;&quot;&quot;</span>
+    mapping_id: <span class="hljs-built_in">int</span>
+    version: <span class="hljs-built_in">int</span>
+    change_description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    node_definitions: <span class="hljs-built_in">list</span>[NodeDefinition]
+    edge_definitions: <span class="hljs-built_in">list</span>[EdgeDefinition]
+    created_at: datetime
+    created_by: <span class="hljs-built_in">str</span>              <span class="hljs-comment"># User ID</span>
+    created_by_name: <span class="hljs-built_in">str</span>         <span class="hljs-comment"># Display name</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;MappingVersion&quot;</span>: ...</code></pre>
+<h4 id="mapping">Mapping</h4>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">Mapping</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Graph mapping definition.&quot;&quot;&quot;</span>
+    <span class="hljs-built_in">id</span>: <span class="hljs-built_in">int</span>
+    owner_id: <span class="hljs-built_in">str</span>
+    owner_name: <span class="hljs-built_in">str</span>
+    name: <span class="hljs-built_in">str</span>
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    current_version: <span class="hljs-built_in">int</span>
+    created_at: datetime
+    updated_at: datetime
+    ttl: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    inactivity_timeout: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    snapshot_count: <span class="hljs-built_in">int</span>
+    version: MappingVersion | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>  <span class="hljs-comment"># Included in get() response</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;Mapping&quot;</span>: ...
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_repr_html_</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">str</span>:
+        <span class="hljs-string">&quot;&quot;&quot;Rich HTML display for Jupyter notebooks.&quot;&quot;&quot;</span></code></pre>
+<h3 id="snapshot-model">Snapshot Model</h3>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">Snapshot</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Data snapshot from mapping export.&quot;&quot;&quot;</span>
+    <span class="hljs-built_in">id</span>: <span class="hljs-built_in">int</span>
+    mapping_id: <span class="hljs-built_in">int</span>
+    mapping_name: <span class="hljs-built_in">str</span>
+    mapping_version: <span class="hljs-built_in">int</span>
+    owner_id: <span class="hljs-built_in">str</span>
+    owner_name: <span class="hljs-built_in">str</span>
+    name: <span class="hljs-built_in">str</span>
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    gcs_path: <span class="hljs-built_in">str</span>
+    size_bytes: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span>
+    node_counts: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-built_in">int</span>] | <span class="hljs-literal">None</span>   <span class="hljs-comment"># {&quot;Customer&quot;: 1000, &quot;Product&quot;: 500}</span>
+    edge_counts: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-built_in">int</span>] | <span class="hljs-literal">None</span>   <span class="hljs-comment"># {&quot;PURCHASED&quot;: 5000}</span>
+    status: <span class="hljs-built_in">str</span>                           <span class="hljs-comment"># pending, creating, ready, failed</span>
+    error_message: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    created_at: datetime
+    updated_at: datetime
+    ttl: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    inactivity_timeout: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    instance_count: <span class="hljs-built_in">int</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;Snapshot&quot;</span>: ...
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_repr_html_</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">str</span>:
+        <span class="hljs-string">&quot;&quot;&quot;Rich HTML display for Jupyter notebooks.&quot;&quot;&quot;</span></code></pre>
+<h3 id="instance-model">Instance Model</h3>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">Instance</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Running graph instance.&quot;&quot;&quot;</span>
+    <span class="hljs-built_in">id</span>: <span class="hljs-built_in">int</span>
+    snapshot_id: <span class="hljs-built_in">int</span>
+    snapshot_name: <span class="hljs-built_in">str</span>
+    owner_id: <span class="hljs-built_in">str</span>
+    owner_name: <span class="hljs-built_in">str</span>
+    name: <span class="hljs-built_in">str</span>
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    instance_url: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    status: <span class="hljs-built_in">str</span>                   <span class="hljs-comment"># starting, running, stopping, failed</span>
+    error_message: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    created_at: datetime
+    updated_at: datetime
+    started_at: datetime | <span class="hljs-literal">None</span>
+    last_activity_at: datetime | <span class="hljs-literal">None</span>
+    ttl: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    inactivity_timeout: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    memory_usage_bytes: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span>
+    disk_usage_bytes: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;Instance&quot;</span>: ...
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_repr_html_</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">str</span>:
+        <span class="hljs-string">&quot;&quot;&quot;Rich HTML display for Jupyter notebooks.&quot;&quot;&quot;</span></code></pre>
+<h3 id="schema-model">Schema Model</h3>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">Schema</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Graph schema with node and relationship tables.&quot;&quot;&quot;</span>
+    nodes: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-built_in">dict</span>]          <span class="hljs-comment"># {label: {primary_key, properties}}</span>
+    relationships: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-built_in">dict</span>]  <span class="hljs-comment"># {type: {from, to, properties}}</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;Schema&quot;</span>: ...
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_repr_html_</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">str</span>:
+        <span class="hljs-string">&quot;&quot;&quot;Rich HTML display for Jupyter notebooks.&quot;&quot;&quot;</span></code></pre>
+<h3 id="algorithm-models">Algorithm Models</h3>
+<h4 id="algorithmexecution">AlgorithmExecution</h4>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">AlgorithmExecution</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Algorithm execution status and result.&quot;&quot;&quot;</span>
+    execution_id: <span class="hljs-built_in">str</span>
+    algorithm: <span class="hljs-built_in">str</span>
+    status: <span class="hljs-built_in">str</span>                    <span class="hljs-comment"># running, completed, failed</span>
+    started_at: datetime
+    completed_at: datetime | <span class="hljs-literal">None</span>
+    duration_seconds: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span>
+    result: <span class="hljs-built_in">dict</span> | <span class="hljs-literal">None</span>            <span class="hljs-comment"># Algorithm-specific results</span>
+    error: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;AlgorithmExecution&quot;</span>: ...</code></pre>
+<p><strong>Result dict contents vary by algorithm:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># PageRank, centrality algorithms</span>
+result = {
+    <span class="hljs-string">&quot;nodes_updated&quot;</span>: <span class="hljs-number">1000</span>,
+    <span class="hljs-string">&quot;iterations&quot;</span>: <span class="hljs-number">15</span>,
+    <span class="hljs-string">&quot;converged&quot;</span>: <span class="hljs-literal">True</span>,
+}
+
+<span class="hljs-comment"># Connected components</span>
+result = {
+    <span class="hljs-string">&quot;nodes_updated&quot;</span>: <span class="hljs-number">1000</span>,
+    <span class="hljs-string">&quot;component_count&quot;</span>: <span class="hljs-number">5</span>,
+}
+
+<span class="hljs-comment"># Shortest path (synchronous)</span>
+result = {
+    <span class="hljs-string">&quot;path&quot;</span>: [<span class="hljs-string">&quot;A&quot;</span>, <span class="hljs-string">&quot;B&quot;</span>, <span class="hljs-string">&quot;C&quot;</span>],
+    <span class="hljs-string">&quot;length&quot;</span>: <span class="hljs-number">2</span>,
+    <span class="hljs-string">&quot;total_weight&quot;</span>: <span class="hljs-number">15.5</span>,  <span class="hljs-comment"># If weighted</span>
+}</code></pre>
+<h4 id="lockstatus">LockStatus</h4>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">LockStatus</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Instance lock status.&quot;&quot;&quot;</span>
+    locked: <span class="hljs-built_in">bool</span>
+    holder_id: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    holder_name: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    algorithm: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>
+    acquired_at: datetime | <span class="hljs-literal">None</span>
+    duration_seconds: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;LockStatus&quot;</span>: ...</code></pre>
+<h3 id="progress-models">Progress Models</h3>
+<h4 id="snapshotprogress">SnapshotProgress</h4>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">SnapshotProgress</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Snapshot export progress.&quot;&quot;&quot;</span>
+    <span class="hljs-built_in">id</span>: <span class="hljs-built_in">int</span>
+    status: <span class="hljs-built_in">str</span>
+    phase: <span class="hljs-built_in">str</span>                     <span class="hljs-comment"># initializing, exporting_nodes, exporting_edges, finalizing</span>
+    started_at: datetime | <span class="hljs-literal">None</span>
+    completed_at: datetime | <span class="hljs-literal">None</span>
+    duration_seconds: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span>
+    steps: <span class="hljs-built_in">list</span>[<span class="hljs-built_in">dict</span>] | <span class="hljs-literal">None</span>       <span class="hljs-comment"># [{name, status, started_at, completed_at}]</span>
+    completed_steps: <span class="hljs-built_in">int</span>
+    total_steps: <span class="hljs-built_in">int</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;SnapshotProgress&quot;</span>: ...</code></pre>
+<h4 id="instanceprogress">InstanceProgress</h4>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">InstanceProgress</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Instance startup progress.&quot;&quot;&quot;</span>
+    <span class="hljs-built_in">id</span>: <span class="hljs-built_in">int</span>
+    status: <span class="hljs-built_in">str</span>
+    phase: <span class="hljs-built_in">str</span>                     <span class="hljs-comment"># scheduling, downloading, loading, ready</span>
+    started_at: datetime | <span class="hljs-literal">None</span>
+    ready_at: datetime | <span class="hljs-literal">None</span>
+    startup_duration_seconds: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span>
+    steps: <span class="hljs-built_in">list</span>[<span class="hljs-built_in">dict</span>] | <span class="hljs-literal">None</span>
+    completed_steps: <span class="hljs-built_in">int</span>
+    total_steps: <span class="hljs-built_in">int</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;InstanceProgress&quot;</span>: ...</code></pre>
+<h3 id="favorite-model">Favorite Model</h3>
+<pre><code class="hljs language-python"><span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">Favorite</span>:
+    <span class="hljs-string">&quot;&quot;&quot;User favorite/bookmark.&quot;&quot;&quot;</span>
+    resource_type: <span class="hljs-built_in">str</span>             <span class="hljs-comment"># mapping, snapshot, instance</span>
+    resource_id: <span class="hljs-built_in">int</span>
+    resource_name: <span class="hljs-built_in">str</span>
+    resource_owner: <span class="hljs-built_in">str</span>
+    created_at: datetime
+    resource_exists: <span class="hljs-built_in">bool</span>          <span class="hljs-comment"># False if resource was deleted</span>
+
+<span class="hljs-meta">    @classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">from_dict</span>(<span class="hljs-params">cls, data: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-string">&quot;Favorite&quot;</span>: ...</code></pre>
+<hr>
+<h2 id="9-favoriteresource">9. FavoriteResource</h2>
+<p>Manage user favorites/bookmarks.</p>
+<h3 id="methods-3">Methods</h3>
+<h4 id="list-3">list</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list</span>(<span class="hljs-params">self, resource_type: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span></span>) -&gt; <span class="hljs-built_in">list</span>[Favorite]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List current user&#x27;s favorites.
+
+    Args:
+        resource_type: Filter by type (mapping, snapshot, instance)
+
+    Returns:
+        List of Favorite objects
+
+    Example:
+        &gt;&gt;&gt; favorites = client.favorites.list()
+        &gt;&gt;&gt; mapping_favorites = client.favorites.list(resource_type=&quot;mapping&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="add">add</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">add</span>(<span class="hljs-params">self, resource_type: <span class="hljs-built_in">str</span>, resource_id: <span class="hljs-built_in">int</span></span>) -&gt; Favorite:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Add a resource to favorites.
+
+    Args:
+        resource_type: Type of resource (mapping, snapshot, instance)
+        resource_id: ID of the resource
+
+    Returns:
+        Created Favorite object
+
+    Raises:
+        ConflictError: If already favorited
+        NotFoundError: If resource doesn&#x27;t exist
+
+    Example:
+        &gt;&gt;&gt; client.favorites.add(&quot;mapping&quot;, 123)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="remove">remove</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">remove</span>(<span class="hljs-params">self, resource_type: <span class="hljs-built_in">str</span>, resource_id: <span class="hljs-built_in">int</span></span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Remove a resource from favorites.
+
+    Args:
+        resource_type: Type of resource
+        resource_id: ID of the resource
+
+    Raises:
+        NotFoundError: If favorite doesn&#x27;t exist
+
+    Example:
+        &gt;&gt;&gt; client.favorites.remove(&quot;mapping&quot;, 123)
+    &quot;&quot;&quot;</span></code></pre>
+<hr>
+<h2 id="10-opsresource">10. OpsResource</h2>
+<p>Operations configuration (requires Ops role).</p>
+<h3 id="methods-4">Methods</h3>
+<h4 id="get_lifecycle_config">get_lifecycle_config</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_lifecycle_config</span>(<span class="hljs-params">self</span>) -&gt; LifecycleConfig:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get lifecycle configuration for all resource types.
+
+    Returns:
+        LifecycleConfig with mapping, snapshot, and instance settings
+
+    Example:
+        &gt;&gt;&gt; config = client.ops.get_lifecycle_config()
+        &gt;&gt;&gt; print(config.instance.default_ttl)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="update_lifecycle_config">update_lifecycle_config</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">update_lifecycle_config</span>(<span class="hljs-params">
+    self,
+    *,
+    mapping: ResourceLifecycleConfig | <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    snapshot: ResourceLifecycleConfig | <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    instance: ResourceLifecycleConfig | <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>] | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; <span class="hljs-built_in">bool</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Update lifecycle configuration for resource types.
+
+    Only provided values are updated; omitted values remain unchanged.
+
+    Args:
+        mapping: Lifecycle config for mappings
+        snapshot: Lifecycle config for snapshots
+        instance: Lifecycle config for instances
+
+    Returns:
+        True if update succeeded
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops role
+        ValidationError: If values are invalid
+
+    Example:
+        &gt;&gt;&gt; # Update instance default TTL
+        &gt;&gt;&gt; client.ops.update_lifecycle_config(
+        ...     instance={&quot;default_ttl&quot;: &quot;PT24H&quot;}
+        ... )
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_concurrency_config">get_concurrency_config</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_concurrency_config</span>(<span class="hljs-params">self</span>) -&gt; ConcurrencyConfig:
+    <span class="hljs-string">&quot;&quot;&quot;Get instance concurrency limits.&quot;&quot;&quot;</span></code></pre>
+<h4 id="update_concurrency_config">update_concurrency_config</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">update_concurrency_config</span>(<span class="hljs-params">
+    self,
+    *,
+    per_analyst: <span class="hljs-built_in">int</span>,
+    cluster_total: <span class="hljs-built_in">int</span>,
+</span>) -&gt; ConcurrencyConfig:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Update concurrency limits configuration.
+
+    Args:
+        per_analyst: Max instances per analyst (1-100)
+        cluster_total: Max instances cluster-wide (1-1000)
+
+    Returns:
+        Updated ConcurrencyConfig
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops role
+        ValidationError: If values out of range
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_maintenance_mode">get_maintenance_mode</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_maintenance_mode</span>(<span class="hljs-params">self</span>) -&gt; MaintenanceMode:
+    <span class="hljs-string">&quot;&quot;&quot;Get maintenance mode status.&quot;&quot;&quot;</span></code></pre>
+<h4 id="set_maintenance_mode">set_maintenance_mode</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">set_maintenance_mode</span>(<span class="hljs-params">
+    self,
+    enabled: <span class="hljs-built_in">bool</span>,
+    message: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;&quot;</span>,
+</span>) -&gt; MaintenanceMode:
+    <span class="hljs-string">&quot;&quot;&quot;Enable or disable maintenance mode.&quot;&quot;&quot;</span></code></pre>
+<h4 id="get_cluster_instances">get_cluster_instances</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_cluster_instances</span>(<span class="hljs-params">self</span>) -&gt; ClusterInstances:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get cluster-wide instance summary.
+
+    Returns total instances, breakdowns by status and owner,
+    and current capacity limits.
+
+    Returns:
+        ClusterInstances with counts and limits
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops role
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_export_config">get_export_config</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_export_config</span>(<span class="hljs-params">self</span>) -&gt; ExportConfig:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get export configuration.
+
+    Returns:
+        ExportConfig with max duration settings
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops role
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="update_export_config">update_export_config</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">update_export_config</span>(<span class="hljs-params">
+    self,
+    *,
+    max_duration_seconds: <span class="hljs-built_in">int</span>,
+</span>) -&gt; ExportConfig:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Update export configuration.
+
+    Args:
+        max_duration_seconds: Max export job duration (60-86400 seconds)
+
+    Returns:
+        Updated ExportConfig
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops role
+        ValidationError: If duration out of range
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_cluster_health">get_cluster_health</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_cluster_health</span>(<span class="hljs-params">self</span>) -&gt; ClusterHealth:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get cluster health status.
+
+    Checks connectivity to database, kubernetes, and starburst.
+
+    Returns:
+        ClusterHealth with overall status and component details
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops role
+
+    Example:
+        &gt;&gt;&gt; health = client.ops.get_cluster_health()
+        &gt;&gt;&gt; for name, comp in health.components.items():
+        ...     print(f&quot;{name}: {comp.status} ({comp.latency_ms}ms)&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_metrics">get_metrics</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_metrics</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">str</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get Prometheus metrics from control plane.
+
+    Returns metrics for background jobs, reconciliation loops,
+    lifecycle enforcement, and general system health.
+
+    Returns:
+        Prometheus metrics in text/plain format
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops role
+
+    Example:
+        &gt;&gt;&gt; metrics = client.ops.get_metrics()
+        &gt;&gt;&gt; assert &#x27;job_name=&quot;reconciliation&quot;&#x27; in metrics
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="trigger_job">trigger_job</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">trigger_job</span>(<span class="hljs-params">self, job_name: <span class="hljs-built_in">str</span>, reason: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;manual-trigger&quot;</span></span>) -&gt; <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Manually trigger background job execution.
+
+    Requires Ops or admin role. Rate limited to 1 trigger per job per minute.
+
+    Args:
+        job_name: Job to trigger (reconciliation, lifecycle, export_reconciliation, schema_cache)
+        reason: Reason for manual trigger (audit log)
+
+    Returns:
+        Job trigger confirmation with status
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops or admin role
+        RateLimitError: If job triggered too recently (&lt; 60s)
+        NotFoundError: If job name is invalid
+
+    Example:
+        &gt;&gt;&gt; client.ops.trigger_job(&quot;reconciliation&quot;, reason=&quot;smoke-test&quot;)
+        {&#x27;job_name&#x27;: &#x27;reconciliation&#x27;, &#x27;triggered_at&#x27;: &#x27;...&#x27;, &#x27;status&#x27;: &#x27;queued&#x27;}
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_job_status">get_job_status</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_job_status</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get status of all background jobs.
+
+    Returns:
+        Job status information including next run times
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops or admin role
+
+    Example:
+        &gt;&gt;&gt; status = client.ops.get_job_status()
+        &gt;&gt;&gt; for job in status[&#x27;jobs&#x27;]:
+        ...     print(f&quot;{job[&#x27;name&#x27;]}: next run at {job[&#x27;next_run&#x27;]}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_state">get_state</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_state</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get system state summary.
+
+    Returns counts of instances, snapshots, export jobs by status.
+
+    Returns:
+        System state with resource counts
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops or admin role
+
+    Example:
+        &gt;&gt;&gt; state = client.ops.get_state()
+        &gt;&gt;&gt; print(f&quot;Instances: {state[&#x27;instances&#x27;][&#x27;total&#x27;]}&quot;)
+        &gt;&gt;&gt; print(f&quot;By status: {state[&#x27;instances&#x27;][&#x27;by_status&#x27;]}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_export_jobs">get_export_jobs</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_export_jobs</span>(<span class="hljs-params">
+    self,
+    status: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    limit: <span class="hljs-built_in">int</span> = <span class="hljs-number">100</span>
+</span>) -&gt; <span class="hljs-built_in">list</span>[<span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>]]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get export jobs for debugging.
+
+    Args:
+        status: Filter by status (pending, claimed, completed, failed)
+        limit: Max jobs to return (default 100, max 1000)
+
+    Returns:
+        List of export job details
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Ops or admin role
+        ValidationError: If status is invalid
+
+    Example:
+        &gt;&gt;&gt; claimed = client.ops.get_export_jobs(status=&quot;claimed&quot;)
+        &gt;&gt;&gt; for job in claimed:
+        ...     print(f&quot;Job {job[&#x27;id&#x27;]} claimed by {job[&#x27;claimed_by&#x27;]}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<hr>
+<h2 id="11-healthresource">11. HealthResource</h2>
+<p>Health and status checks.</p>
+<h3 id="methods-5">Methods</h3>
+<h4 id="check">check</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">check</span>(<span class="hljs-params">self</span>) -&gt; HealthStatus:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Basic health check.
+
+    Returns simple health status without checking dependencies.
+    No authentication required.
+
+    Returns:
+        HealthStatus with status and version
+
+    Example:
+        &gt;&gt;&gt; health = client.health.check()
+        &gt;&gt;&gt; print(f&quot;Status: {health.status}, Version: {health.version}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="ready">ready</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">ready</span>(<span class="hljs-params">self</span>) -&gt; HealthStatus:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Readiness check with database connectivity.
+
+    Checks database connectivity in addition to basic health.
+    No authentication required.
+
+    Returns:
+        HealthStatus with status, version, and database status
+
+    Example:
+        &gt;&gt;&gt; ready = client.health.ready()
+        &gt;&gt;&gt; print(f&quot;Status: {ready.status}, DB: {ready.database}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<blockquote>
+<p><strong>Note:</strong> For detailed cluster health with component breakdown, use <code>client.ops.get_cluster_health()</code> instead.</p>
+</blockquote>
+<hr>
+<h2 id="12-schemaresource">12. SchemaResource</h2>
+<p>Browse Starburst schema metadata.</p>
+<p>All operations use cached metadata (refreshed every 24h). Performance is ~5ms per API call (HTTP overhead), ~1μs for cache lookup.</p>
+<h3 id="methods-6">Methods</h3>
+<h4 id="list_catalogs">list_catalogs</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list_catalogs</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">list</span>[Catalog]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List all cached Starburst catalogs.
+
+    Returns:
+        List of Catalog objects (sorted by name)
+
+    Example:
+        &gt;&gt;&gt; catalogs = client.schema.list_catalogs()
+        &gt;&gt;&gt; for cat in catalogs:
+        ...     print(f&quot;{cat.catalog_name}: {cat.schema_count} schemas&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="list_schemas">list_schemas</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list_schemas</span>(<span class="hljs-params">self, catalog: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">list</span>[Schema]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List all schemas in a catalog.
+
+    Args:
+        catalog: Catalog name (e.g., &quot;analytics&quot;)
+
+    Returns:
+        List of Schema objects
+
+    Raises:
+        NotFoundError: Catalog not found in cache
+
+    Example:
+        &gt;&gt;&gt; schemas = client.schema.list_schemas(&quot;analytics&quot;)
+        &gt;&gt;&gt; for sch in schemas:
+        ...     print(f&quot;{sch.schema_name}: {sch.table_count} tables&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="list_tables">list_tables</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list_tables</span>(<span class="hljs-params">self, catalog: <span class="hljs-built_in">str</span>, schema: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">list</span>[Table]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    List all tables in a schema.
+
+    Args:
+        catalog: Catalog name
+        schema: Schema name
+
+    Returns:
+        List of Table objects
+
+    Raises:
+        NotFoundError: Schema not found in cache
+
+    Example:
+        &gt;&gt;&gt; tables = client.schema.list_tables(&quot;analytics&quot;, &quot;public&quot;)
+        &gt;&gt;&gt; for tbl in tables:
+        ...     print(f&quot;{tbl.table_name} ({tbl.table_type})&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="list_columns">list_columns</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">list_columns</span>(<span class="hljs-params">self, catalog: <span class="hljs-built_in">str</span>, schema: <span class="hljs-built_in">str</span>, table: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">list</span>[Column]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get all columns for a table.
+
+    Args:
+        catalog: Catalog name
+        schema: Schema name
+        table: Table name
+
+    Returns:
+        List of Column objects (sorted by ordinal_position)
+
+    Raises:
+        NotFoundError: Table not found in cache
+
+    Example:
+        &gt;&gt;&gt; columns = client.schema.list_columns(&quot;analytics&quot;, &quot;public&quot;, &quot;users&quot;)
+        &gt;&gt;&gt; for col in columns:
+        ...     print(f&quot;{col.column_name}: {col.data_type}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="search_tables">search_tables</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">search_tables</span>(<span class="hljs-params">self, pattern: <span class="hljs-built_in">str</span>, limit: <span class="hljs-built_in">int</span> = <span class="hljs-number">100</span></span>) -&gt; <span class="hljs-built_in">list</span>[Table]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Search tables by name pattern (prefix match, case-insensitive).
+
+    Args:
+        pattern: Search pattern (e.g., &quot;customer&quot; matches &quot;customers&quot;, &quot;customer_orders&quot;)
+        limit: Maximum results (default: 100, max: 1000)
+
+    Returns:
+        List of Table objects matching pattern
+
+    Example:
+        &gt;&gt;&gt; results = client.schema.search_tables(&quot;customer&quot;, limit=50)
+        &gt;&gt;&gt; for tbl in results:
+        ...     print(f&quot;{tbl.catalog_name}.{tbl.schema_name}.{tbl.table_name}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="search_columns">search_columns</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">search_columns</span>(<span class="hljs-params">self, pattern: <span class="hljs-built_in">str</span>, limit: <span class="hljs-built_in">int</span> = <span class="hljs-number">100</span></span>) -&gt; <span class="hljs-built_in">list</span>[Column]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Search columns by name pattern (prefix match, case-insensitive).
+
+    Args:
+        pattern: Search pattern (e.g., &quot;email&quot; matches &quot;email&quot;, &quot;email_address&quot;)
+        limit: Maximum results (default: 100, max: 1000)
+
+    Returns:
+        List of Column objects matching pattern
+
+    Example:
+        &gt;&gt;&gt; results = client.schema.search_columns(&quot;email&quot;, limit=50)
+        &gt;&gt;&gt; for col in results:
+        ...     print(f&quot;{col.catalog_name}.{col.schema_name}.{col.table_name}.{col.column_name}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="admin_refresh">admin_refresh</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">admin_refresh</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">dict</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Trigger cache refresh (admin only).
+
+    Starts background task to fetch latest metadata from Starburst.
+    Returns immediately.
+
+    Returns:
+        Dict with status message
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have admin role
+
+    Example:
+        &gt;&gt;&gt; result = client.schema.admin_refresh()
+        &gt;&gt;&gt; print(result[&quot;status&quot;])
+    &quot;&quot;&quot;</span></code></pre>
+<h4 id="get_stats">get_stats</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_stats</span>(<span class="hljs-params">self</span>) -&gt; CacheStats:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Get cache statistics (admin only).
+
+    Returns:
+        CacheStats object with counts and metadata
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have admin role
+
+    Example:
+        &gt;&gt;&gt; stats = client.schema.get_stats()
+        &gt;&gt;&gt; print(f&quot;Tables: {stats.total_tables}&quot;)
+        &gt;&gt;&gt; print(f&quot;Last refresh: {stats.last_refresh}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<hr>
+<h2 id="13-adminresource">13. AdminResource</h2>
+<p>Admin-only privileged operations. Requires admin role.</p>
+<h3 id="methods-7">Methods</h3>
+<h4 id="bulk_delete">bulk_delete</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">bulk_delete</span>(<span class="hljs-params">
+    self,
+    resource_type: <span class="hljs-built_in">str</span>,
+    filters: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>],
+    reason: <span class="hljs-built_in">str</span>,
+    expected_count: <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+    dry_run: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">False</span>,
+</span>) -&gt; <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Bulk delete resources with safety filters.
+
+    Safety features:
+    - At least one filter required
+    - Max 100 deletions per request
+    - Expected count validation
+    - Dry run mode available
+    - Full audit logging
+
+    Args:
+        resource_type: Resource type (instance, snapshot, mapping)
+        filters: Filters to match resources (at least one required):
+            - name_prefix: Match resources starting with prefix
+            - created_by: Match resources created by username
+            - older_than_hours: Match resources older than N hours
+            - status: Match resources with specific status
+        reason: Reason for deletion (audit log)
+        expected_count: Expected number of resources to delete (safety check).
+            Must match actual count or operation fails. Get from dry_run first.
+        dry_run: If True, return what would be deleted without deleting
+
+    Returns:
+        Deletion results with counts and IDs
+
+    Raises:
+        ForbiddenError: If user doesn&#x27;t have Admin role
+        ValidationError: If no filters provided, matched &gt; 100, or count mismatch
+
+    Example:
+        &gt;&gt;&gt; # Step 1: Dry run to get count
+        &gt;&gt;&gt; result = client.admin.bulk_delete(
+        ...     resource_type=&quot;instance&quot;,
+        ...     filters={
+        ...         &quot;name_prefix&quot;: &quot;E2ETest-&quot;,
+        ...         &quot;older_than_hours&quot;: 24
+        ...     },
+        ...     reason=&quot;cleanup-old-test-instances&quot;,
+        ...     dry_run=True
+        ... )
+        &gt;&gt;&gt; print(f&quot;Would delete {result[&#x27;matched_count&#x27;]} instances&quot;)
+        &gt;&gt;&gt;
+        &gt;&gt;&gt; # Step 2: Actually delete with expected_count
+        &gt;&gt;&gt; result = client.admin.bulk_delete(
+        ...     resource_type=&quot;instance&quot;,
+        ...     filters={
+        ...         &quot;name_prefix&quot;: &quot;E2ETest-&quot;,
+        ...         &quot;older_than_hours&quot;: 24
+        ...     },
+        ...     reason=&quot;cleanup-old-test-instances&quot;,
+        ...     expected_count=result[&#x27;matched_count&#x27;],  # Safety check!
+        ...     dry_run=False
+        ... )
+        &gt;&gt;&gt; print(f&quot;Deleted: {result[&#x27;deleted_count&#x27;]}&quot;)
+    &quot;&quot;&quot;</span></code></pre>
+<hr>
+<h2 id="14-exceptions">14. Exceptions</h2>
+<h3 id="exception-hierarchy">Exception Hierarchy</h3>
+<pre><code class="hljs language-python">GraphOLAPError                    <span class="hljs-comment"># Base exception</span>
+    AuthenticationError           <span class="hljs-comment"># Invalid or missing API key</span>
+    PermissionDeniedError         <span class="hljs-comment"># User lacks permission</span>
+        ForbiddenError            <span class="hljs-comment"># Access forbidden (403)</span>
+    NotFoundError                 <span class="hljs-comment"># Resource not found</span>
+    ValidationError               <span class="hljs-comment"># Request validation failed</span>
+    ConflictError                 <span class="hljs-comment"># Operation conflicts with state</span>
+        ResourceLockedError       <span class="hljs-comment"># Instance locked by algorithm</span>
+        ConcurrencyLimitError     <span class="hljs-comment"># Instance limit exceeded</span>
+        DependencyError           <span class="hljs-comment"># Resource has dependencies</span>
+        InvalidStateError         <span class="hljs-comment"># Invalid for current state</span>
+    TimeoutError                  <span class="hljs-comment"># Operation timed out</span>
+        QueryTimeoutError         <span class="hljs-comment"># Cypher query timeout</span>
+        AlgorithmTimeoutError     <span class="hljs-comment"># Algorithm execution timeout</span>
+        SDKTimeoutError           <span class="hljs-comment"># SDK wait timeout</span>
+    RyugraphError                 <span class="hljs-comment"># Ryugraph/Cypher error</span>
+    AlgorithmNotFoundError        <span class="hljs-comment"># Unknown algorithm</span>
+    AlgorithmFailedError          <span class="hljs-comment"># Algorithm execution failed</span>
+    SnapshotFailedError           <span class="hljs-comment"># Snapshot export failed</span>
+    InstanceFailedError           <span class="hljs-comment"># Instance startup failed</span>
+    ServerError                   <span class="hljs-comment"># Server-side error (5xx)</span>
+        ServiceUnavailableError   <span class="hljs-comment"># Service unavailable (503)</span></code></pre>
+<h3 id="exception-details">Exception Details</h3>
+<h4 id="resourcelockederror">ResourceLockedError</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">ResourceLockedError</span>(<span class="hljs-title class_ inherited__">ConflictError</span>):
+    <span class="hljs-string">&quot;&quot;&quot;Instance is locked by an algorithm.&quot;&quot;&quot;</span>
+
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">holder_name</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>:
+        <span class="hljs-string">&quot;&quot;&quot;Name of the user holding the lock.&quot;&quot;&quot;</span>
+
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">algorithm</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>:
+        <span class="hljs-string">&quot;&quot;&quot;Algorithm name that acquired the lock.&quot;&quot;&quot;</span></code></pre>
+<h4 id="concurrencylimiterror">ConcurrencyLimitError</h4>
+<pre><code class="hljs language-python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">ConcurrencyLimitError</span>(<span class="hljs-title class_ inherited__">ConflictError</span>):
+    <span class="hljs-string">&quot;&quot;&quot;Instance creation limit exceeded.&quot;&quot;&quot;</span>
+
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">limit_type</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>:
+        <span class="hljs-string">&quot;&quot;&quot;Type of limit (per_analyst or cluster_total).&quot;&quot;&quot;</span>
+
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">current_count</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span>:
+        <span class="hljs-string">&quot;&quot;&quot;Current instance count.&quot;&quot;&quot;</span>
+
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">max_allowed</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">int</span> | <span class="hljs-literal">None</span>:
+        <span class="hljs-string">&quot;&quot;&quot;Maximum allowed instances.&quot;&quot;&quot;</span></code></pre>
+<hr>
+<h2 id="13-type-coercion">13. Type Coercion</h2>
+<p>QueryResult automatically coerces values based on column_types:</p>
+<table>
+<thead>
+<tr>
+<th>Ryugraph Type</th>
+<th>Python Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>STRING</td>
+<td>str</td>
+<td>UTF-8 text</td>
+</tr>
+<tr>
+<td>INT64, INT32, INT16, INT8</td>
+<td>int</td>
+<td>Integers</td>
+</tr>
+<tr>
+<td>DOUBLE, FLOAT</td>
+<td>float</td>
+<td>Floating point</td>
+</tr>
+<tr>
+<td>BOOL</td>
+<td>bool</td>
+<td>Boolean</td>
+</tr>
+<tr>
+<td>DATE</td>
+<td>datetime.date</td>
+<td>Calendar date</td>
+</tr>
+<tr>
+<td>TIMESTAMP</td>
+<td>datetime.datetime</td>
+<td>Date and time</td>
+</tr>
+<tr>
+<td>INTERVAL</td>
+<td>datetime.timedelta</td>
+<td>Duration</td>
+</tr>
+<tr>
+<td>BLOB</td>
+<td>bytes</td>
+<td>Binary data (base64 decoded)</td>
+</tr>
+<tr>
+<td>LIST<T></td>
+<td>list</td>
+<td>Recursive coercion</td>
+</tr>
+<tr>
+<td>NODE</td>
+<td>dict</td>
+<td>With _id, _label, properties</td>
+</tr>
+<tr>
+<td>REL</td>
+<td>dict</td>
+<td>With _id, _type, _start, _end, properties</td>
+</tr>
+<tr>
+<td>PATH</td>
+<td>list</td>
+<td>Alternating nodes and rels</td>
+</tr>
+</tbody></table>
+<p>Disable coercion to get raw values:</p>
+<pre><code class="hljs language-python">result = conn.query(<span class="hljs-string">&quot;SELECT created_at FROM ...&quot;</span>, coerce_types=<span class="hljs-literal">False</span>)
+<span class="hljs-comment"># result.rows[0][0] = &quot;2024-01-15T10:30:00Z&quot; (string)</span>
+
+result = conn.query(<span class="hljs-string">&quot;SELECT created_at FROM ...&quot;</span>, coerce_types=<span class="hljs-literal">True</span>)
+<span class="hljs-comment"># result.rows[0][0] = datetime(2024, 1, 15, 10, 30, 0) (datetime)</span></code></pre>
+<hr>
+<h2 id="14-complete-example">14. Complete Example</h2>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> (
+    GraphOLAPClient,
+    NodeDefinition,
+    EdgeDefinition,
+)
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-comment"># Initialize client</span>
+client = GraphOLAPClient.from_env()
+
+<span class="hljs-keyword">try</span>:
+    <span class="hljs-comment"># Create a mapping</span>
+    mapping = client.mappings.create(
+        name=<span class="hljs-string">&quot;Customer Network&quot;</span>,
+        node_definitions=[
+            NodeDefinition(
+                label=<span class="hljs-string">&quot;Customer&quot;</span>,
+                sql=<span class="hljs-string">&quot;SELECT id, name, city FROM customers&quot;</span>,
+                primary_key={<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;id&quot;</span>, <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;STRING&quot;</span>},
+                properties=[
+                    {<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;name&quot;</span>, <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;STRING&quot;</span>},
+                    {<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;city&quot;</span>, <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;STRING&quot;</span>},
+                ],
+            ),
+        ],
+        edge_definitions=[
+            EdgeDefinition(
+                <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;KNOWS&quot;</span>,
+                from_node=<span class="hljs-string">&quot;Customer&quot;</span>,
+                to_node=<span class="hljs-string">&quot;Customer&quot;</span>,
+                sql=<span class="hljs-string">&quot;SELECT from_id, to_id FROM relationships&quot;</span>,
+                from_key=<span class="hljs-string">&quot;from_id&quot;</span>,
+                to_key=<span class="hljs-string">&quot;to_id&quot;</span>,
+                properties=[],
+            ),
+        ],
+    )
+
+    <span class="hljs-comment"># Create instance directly from mapping (snapshot managed internally)</span>
+    instance = client.instances.create_from_mapping_and_wait(
+        mapping_id=mapping.<span class="hljs-built_in">id</span>,
+        name=<span class="hljs-string">&quot;Analysis Instance&quot;</span>,
+        wrapper_type=WrapperType.RYUGRAPH,  <span class="hljs-comment"># Required: RYUGRAPH or FALKORDB</span>
+        ttl=<span class="hljs-number">24</span>,  <span class="hljs-comment"># 24 hours (can also use &quot;PT24H&quot;)</span>
+    )
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance ready: <span class="hljs-subst">{instance.status}</span>&quot;</span>)
+
+    <span class="hljs-comment"># Connect and query</span>
+    <span class="hljs-keyword">with</span> client.instances.connect(instance.<span class="hljs-built_in">id</span>) <span class="hljs-keyword">as</span> conn:
+        <span class="hljs-comment"># Basic query</span>
+        count = conn.query_scalar(<span class="hljs-string">&quot;MATCH (n) RETURN count(n)&quot;</span>)
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Total nodes: <span class="hljs-subst">{count}</span>&quot;</span>)
+
+        <span class="hljs-comment"># Query to DataFrame</span>
+        df = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+            MATCH (c:Customer)
+            RETURN c.name, c.city
+            ORDER BY c.name
+            LIMIT 10
+        &quot;&quot;&quot;</span>)
+        <span class="hljs-built_in">print</span>(df)
+
+        <span class="hljs-comment"># Run PageRank</span>
+        <span class="hljs-built_in">exec</span> = conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;PageRank: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.result[<span class="hljs-string">&#x27;nodes_updated&#x27;</span>]}</span> nodes updated&quot;</span>)
+
+        <span class="hljs-comment"># Query top customers</span>
+        top = conn.query_df(<span class="hljs-string">&quot;&quot;&quot;
+            MATCH (c:Customer)
+            RETURN c.name, c.pr_score
+            ORDER BY c.pr_score DESC
+            LIMIT 5
+        &quot;&quot;&quot;</span>)
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Top customers by PageRank:&quot;</span>)
+        <span class="hljs-built_in">print</span>(top)
+
+        <span class="hljs-comment"># Visualize network</span>
+        result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+            MATCH (a:Customer)-[r:KNOWS]-&gt;(b:Customer)
+            RETURN a, r, b
+            LIMIT 100
+        &quot;&quot;&quot;</span>)
+        result.show()  <span class="hljs-comment"># Interactive visualization</span>
+
+    <span class="hljs-comment"># Clean up</span>
+    client.instances.terminate(instance.<span class="hljs-built_in">id</span>)
+
+<span class="hljs-keyword">finally</span>:
+    client.close()</code></pre>
+<hr>
+<h2 id="version-history">Version History</h2>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date</th>
+<th>Changes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1.0.0</td>
+<td>TBD</td>
+<td>Initial release</td>
+</tr>
+</tbody></table>
+
+  </div>
+
+  <!-- Mermaid with ELK layout support -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+
+    // Register ELK layout engine
+    mermaid.registerLayoutLoaders(elkLayouts);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+    
+  </script>
+</body>
+</html>

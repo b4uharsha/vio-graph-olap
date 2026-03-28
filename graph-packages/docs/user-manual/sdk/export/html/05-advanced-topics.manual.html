@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05-advanced-topics.manual</title>
+
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+
+  <style>
+    :root {
+      --max-width: 900px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+      --color-text: #24292f;
+      --color-bg: #ffffff;
+      --color-border: #d0d7de;
+      --color-link: #0969da;
+      --color-code-bg: #f6f8fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 2em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    p {
+      margin: 1em 0;
+    }
+
+    pre {
+      background: var(--color-code-bg);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      line-height: 1.45;
+    }
+
+    pre.mermaid {
+      background: transparent;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+    }
+
+    :not(pre) > code {
+      background: var(--color-code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 0 1em;
+      border-left: 4px solid var(--color-border);
+      color: #57606a;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+
+    th, td {
+      border: 1px solid var(--color-border);
+      padding: 0.5em 1em;
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-code-bg);
+      font-weight: 600;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a.image-link {
+      display: block;
+      cursor: zoom-in;
+    }
+
+    a.image-link:hover img {
+      opacity: 0.9;
+      outline: 2px solid var(--color-link);
+      outline-offset: 2px;
+    }
+
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    li {
+      margin: 0.25em 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 2em 0;
+    }
+
+    details {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      background: var(--color-code-bg);
+      border-radius: 6px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .container {
+        max-width: none;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="sdk-advanced-topics">SDK Advanced Topics</h1>
+<p>Advanced patterns and techniques for the Graph OLAP Python SDK.</p>
+<hr>
+<h2 id="1-ipython-magic-commands">1. IPython Magic Commands</h2>
+<p>The SDK provides IPython magic commands for streamlined notebook workflows.
+Load the extension once per session for instant access to graph queries.</p>
+<h3 id="loading-the-extension">Loading the Extension</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Load the graph_olap IPython extension</span>
+%load_ext graph_olap
+
+<span class="hljs-comment"># Verify it loaded successfully</span>
+%graph_query RETURN <span class="hljs-number">1</span> AS test</code></pre>
+<h3 id="line-magic-quick-queries">Line Magic: Quick Queries</h3>
+<p>Use <code>%graph_query</code> for single-line Cypher queries with immediate results:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Count all nodes</span>
+%graph_query MATCH (n) RETURN count(n) AS total_nodes
+
+<span class="hljs-comment"># Quick lookup by ID</span>
+%graph_query MATCH (c:Customer {<span class="hljs-built_in">id</span>: <span class="hljs-string">&#x27;C001&#x27;</span>}) RETURN c.name, c.email
+
+<span class="hljs-comment"># Aggregation queries</span>
+%graph_query MATCH (c:Customer)-[:PURCHASED]-&gt;(p:Product) RETURN c.name, count(p) AS purchases ORDER BY purchases DESC LIMIT <span class="hljs-number">5</span></code></pre>
+<h3 id="cell-magic-multi-line-queries">Cell Magic: Multi-Line Queries</h3>
+<p>Use <code>%%cypher</code> for complex, multi-line queries with formatting:</p>
+<pre><code class="hljs language-python">%%cypher
+MATCH (c:Customer)-[p:PURCHASED]-&gt;(prod:Product)
+WHERE prod.category = <span class="hljs-string">&#x27;Electronics&#x27;</span>
+WITH c, count(p) AS purchases, <span class="hljs-built_in">sum</span>(p.amount) AS total_spent
+WHERE purchases &gt;= <span class="hljs-number">3</span>
+RETURN c.name AS customer,
+       purchases,
+       total_spent,
+       total_spent / purchases AS avg_order_value
+ORDER BY total_spent DESC
+LIMIT <span class="hljs-number">10</span></code></pre>
+<h3 id="magic-command-options">Magic Command Options</h3>
+<p>Both magic commands support options for output control:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Return as Polars DataFrame (default)</span>
+%graph_query --<span class="hljs-built_in">format</span> polars MATCH (n:Customer) RETURN n.name, n.age LIMIT <span class="hljs-number">100</span>
+
+<span class="hljs-comment"># Return as Pandas DataFrame</span>
+%graph_query --<span class="hljs-built_in">format</span> pandas MATCH (n:Customer) RETURN n.name, n.age LIMIT <span class="hljs-number">100</span>
+
+<span class="hljs-comment"># Return raw QueryResult object</span>
+%graph_query --<span class="hljs-built_in">format</span> raw MATCH (n:Customer) RETURN n.name, n.age LIMIT <span class="hljs-number">100</span>
+
+<span class="hljs-comment"># Set query timeout (milliseconds)</span>
+%graph_query --timeout <span class="hljs-number">30000</span> MATCH (n)-[*<span class="hljs-number">1.</span><span class="hljs-number">.5</span>]-(m) RETURN count(*) AS paths</code></pre>
+<p>Cell magic options:</p>
+<pre><code class="hljs language-python">%%cypher --<span class="hljs-built_in">format</span> pandas --timeout <span class="hljs-number">60000</span>
+MATCH path = shortestPath((a:Customer {<span class="hljs-built_in">id</span>: $source})-[*]-(b:Customer {<span class="hljs-built_in">id</span>: $target}))
+RETURN path</code></pre>
+<h3 id="using-parameters">Using Parameters</h3>
+<p>Pass parameters to magic commands using the <code>--params</code> option:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Line magic with parameters (JSON format)</span>
+%graph_query --params {<span class="hljs-string">&quot;city&quot;</span>: <span class="hljs-string">&quot;London&quot;</span>, <span class="hljs-string">&quot;min_age&quot;</span>: <span class="hljs-number">25</span>} MATCH (c:Customer) WHERE c.city = $city AND c.age &gt;= $min_age RETURN c.name
+
+<span class="hljs-comment"># Cell magic with parameters</span>
+%%cypher --params {<span class="hljs-string">&quot;category&quot;</span>: <span class="hljs-string">&quot;Electronics&quot;</span>, <span class="hljs-string">&quot;min_purchases&quot;</span>: <span class="hljs-number">5</span>}
+MATCH (c:Customer)-[p:PURCHASED]-&gt;(prod:Product)
+WHERE prod.category = $category
+WITH c, count(p) AS purchases
+WHERE purchases &gt;= $min_purchases
+RETURN c.name, purchases</code></pre>
+<h3 id="connection-context">Connection Context</h3>
+<p>The magic commands use the current notebook connection:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> notebook
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-comment"># Establish connection (required before using magics)</span>
+client = notebook.connect()
+<span class="hljs-comment"># Create instance directly from mapping (snapshot managed internally)</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=<span class="hljs-number">1</span>,
+    name=<span class="hljs-string">&quot;Analysis&quot;</span>,
+    wrapper_type=WrapperType.RYUGRAPH,
+)
+conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)
+
+<span class="hljs-comment"># Set connection for magics</span>
+%graph_connect conn
+
+<span class="hljs-comment"># Now magics use this connection</span>
+%graph_query MATCH (n) RETURN labels(n)[<span class="hljs-number">0</span>] AS label, count(*) AS count</code></pre>
+<hr>
+<h2 id="2-error-handling">2. Error Handling</h2>
+<p>The SDK provides a comprehensive exception hierarchy that maps directly to
+API error responses. All exceptions inherit from <code>GraphOLAPError</code>.</p>
+<h3 id="exception-hierarchy">Exception Hierarchy</h3>
+<pre><code class="hljs">GraphOLAPError (base)
+|
++-- AuthenticationError
+|   Invalid or missing API key (HTTP 401)
+|
++-- PermissionDeniedError
+|   |   User lacks permission for operation
+|   |
+|   +-- ForbiddenError
+|       Access forbidden, lacks required role (HTTP 403)
+|
++-- NotFoundError
+|   Resource not found (HTTP 404)
+|
++-- ValidationError
+|   Request validation failed (HTTP 422)
+|
++-- ConflictError
+|   |   Operation conflicts with current state (HTTP 409)
+|   |
+|   +-- ResourceLockedError
+|   |   Instance locked by running algorithm
+|   |
+|   +-- ConcurrencyLimitError
+|   |   Instance creation limit exceeded (HTTP 429)
+|   |
+|   +-- DependencyError
+|   |   Resource has dependencies preventing deletion
+|   |
+|   +-- InvalidStateError
+|       Operation invalid for current resource state
+|
++-- TimeoutError
+|   |   Operation timed out
+|   |
+|   +-- QueryTimeoutError
+|   |   Cypher query exceeded timeout
+|   |
+|   +-- AlgorithmTimeoutError
+|       Algorithm execution exceeded timeout
+|
++-- RyugraphError
+|   Cypher syntax or execution error
+|
++-- AlgorithmNotFoundError
+|   Unknown algorithm name
+|
++-- AlgorithmFailedError
+|   Algorithm execution failed
+|
++-- SnapshotFailedError
+|   Snapshot export failed
+|
++-- InstanceFailedError
+|   Instance startup failed
+|
++-- ServerError
+    |   Server-side error (HTTP 5xx)
+    |
+    +-- ServiceUnavailableError
+        Service temporarily unavailable (HTTP 503)</code></pre>
+<h3 id="basic-exception-handling">Basic Exception Handling</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> (
+    GraphOLAPError,
+    NotFoundError,
+    ValidationError,
+    ResourceLockedError,
+)
+
+client = GraphOLAPClient.from_env()
+
+<span class="hljs-comment"># Catch specific exceptions</span>
+<span class="hljs-keyword">try</span>:
+    mapping = client.mappings.get(<span class="hljs-number">999</span>)
+<span class="hljs-keyword">except</span> NotFoundError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Mapping not found: <span class="hljs-subst">{e}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Details: <span class="hljs-subst">{e.details}</span>&quot;</span>)
+
+<span class="hljs-comment"># Catch category of exceptions</span>
+<span class="hljs-keyword">try</span>:
+    instance = client.instances.create_from_mapping_and_wait(
+        mapping_id=<span class="hljs-number">1</span>,
+        name=<span class="hljs-string">&quot;Test&quot;</span>,
+        wrapper_type=WrapperType.RYUGRAPH,  <span class="hljs-comment"># Required: RYUGRAPH or FALKORDB</span>
+    )
+<span class="hljs-keyword">except</span> ConflictError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-comment"># Handles ResourceLockedError, ConcurrencyLimitError, etc.</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Conflict error: <span class="hljs-subst">{e}</span>&quot;</span>)
+
+<span class="hljs-comment"># Catch all SDK errors</span>
+<span class="hljs-keyword">try</span>:
+    result = conn.query(<span class="hljs-string">&quot;MATCH (n) RETURN n&quot;</span>)
+<span class="hljs-keyword">except</span> GraphOLAPError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;SDK error: <span class="hljs-subst">{e}</span>&quot;</span>)</code></pre>
+<h3 id="handling-resource-locks">Handling Resource Locks</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> ResourceLockedError
+<span class="hljs-keyword">import</span> time
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">run_algorithm_with_retry</span>(<span class="hljs-params">conn, max_retries=<span class="hljs-number">3</span>, wait_seconds=<span class="hljs-number">30</span></span>):
+    <span class="hljs-string">&quot;&quot;&quot;Run algorithm with retry on lock conflict.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">for</span> attempt <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(max_retries):
+        <span class="hljs-keyword">try</span>:
+            <span class="hljs-keyword">return</span> conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)
+        <span class="hljs-keyword">except</span> ResourceLockedError <span class="hljs-keyword">as</span> e:
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance locked by <span class="hljs-subst">{e.holder_name}</span> running <span class="hljs-subst">{e.algorithm}</span>&quot;</span>)
+            <span class="hljs-keyword">if</span> attempt &lt; max_retries - <span class="hljs-number">1</span>:
+                <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Waiting <span class="hljs-subst">{wait_seconds}</span>s before retry...&quot;</span>)
+                time.sleep(wait_seconds)
+            <span class="hljs-keyword">else</span>:
+                <span class="hljs-keyword">raise</span>
+
+<span class="hljs-comment"># Check lock status before running</span>
+lock = conn.get_lock()
+<span class="hljs-keyword">if</span> lock.locked:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance locked until algorithm completes&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  Holder: <span class="hljs-subst">{lock.holder_name}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  Algorithm: <span class="hljs-subst">{lock.algorithm}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  Acquired: <span class="hljs-subst">{lock.acquired_at}</span>&quot;</span>)
+<span class="hljs-keyword">else</span>:
+    exec_result = conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)</code></pre>
+<h3 id="handling-concurrency-limits">Handling Concurrency Limits</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> ConcurrencyLimitError
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-keyword">try</span>:
+    instance = client.instances.create_from_mapping_and_wait(
+        mapping_id=mapping.<span class="hljs-built_in">id</span>,
+        name=<span class="hljs-string">&quot;Analysis Instance&quot;</span>,
+        wrapper_type=WrapperType.RYUGRAPH,  <span class="hljs-comment"># Required: RYUGRAPH or FALKORDB</span>
+    )
+<span class="hljs-keyword">except</span> ConcurrencyLimitError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Limit type: <span class="hljs-subst">{e.limit_type}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Current count: <span class="hljs-subst">{e.current_count}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Maximum allowed: <span class="hljs-subst">{e.max_allowed}</span>&quot;</span>)
+
+    <span class="hljs-comment"># List existing instances to find one to terminate</span>
+    instances = client.instances.<span class="hljs-built_in">list</span>(status=<span class="hljs-string">&quot;running&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;You have <span class="hljs-subst">{<span class="hljs-built_in">len</span>(instances.items)}</span> running instances&quot;</span>)</code></pre>
+<h3 id="handling-query-errors">Handling Query Errors</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> RyugraphError, QueryTimeoutError
+
+<span class="hljs-keyword">try</span>:
+    result = conn.query(
+        <span class="hljs-string">&quot;MATCH (n)-[*1..10]-(m) RETURN count(*)&quot;</span>,
+        timeout=<span class="hljs-number">30.0</span>,
+    )
+<span class="hljs-keyword">except</span> QueryTimeoutError:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Query timed out. Try:&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;  - Adding LIMIT clause&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;  - Reducing path length&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;  - Filtering by node labels&quot;</span>)
+<span class="hljs-keyword">except</span> RyugraphError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Cypher error: <span class="hljs-subst">{e}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Details: <span class="hljs-subst">{e.details}</span>&quot;</span>)  <span class="hljs-comment"># May include syntax location</span></code></pre>
+<h3 id="retry-patterns-with-tenacity">Retry Patterns with Tenacity</h3>
+<p>The SDK uses tenacity for internal retries. You can use it for your own retry logic:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> tenacity <span class="hljs-keyword">import</span> (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+    before_sleep_log,
+)
+<span class="hljs-keyword">import</span> logging
+
+logger = logging.getLogger(__name__)
+
+<span class="hljs-meta">@retry(<span class="hljs-params">
+    retry=retry_if_exception_type(<span class="hljs-params">ResourceLockedError</span>),
+    stop=stop_after_attempt(<span class="hljs-params"><span class="hljs-number">5</span></span>),
+    wait=wait_exponential(<span class="hljs-params">multiplier=<span class="hljs-number">10</span>, <span class="hljs-built_in">min</span>=<span class="hljs-number">10</span>, <span class="hljs-built_in">max</span>=<span class="hljs-number">120</span></span>),
+    before_sleep=before_sleep_log(<span class="hljs-params">logger, logging.WARNING</span>),
+    reraise=<span class="hljs-literal">True</span>,
+</span>)</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">run_pagerank</span>(<span class="hljs-params">conn</span>):
+    <span class="hljs-string">&quot;&quot;&quot;Run PageRank with automatic retry on lock.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">return</span> conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)
+
+<span class="hljs-comment"># Retry on transient server errors</span>
+<span class="hljs-meta">@retry(<span class="hljs-params">
+    retry=retry_if_exception_type(<span class="hljs-params">ServiceUnavailableError</span>),
+    stop=stop_after_attempt(<span class="hljs-params"><span class="hljs-number">3</span></span>),
+    wait=wait_exponential(<span class="hljs-params">multiplier=<span class="hljs-number">1</span>, <span class="hljs-built_in">min</span>=<span class="hljs-number">2</span>, <span class="hljs-built_in">max</span>=<span class="hljs-number">30</span></span>),
+    reraise=<span class="hljs-literal">True</span>,
+</span>)</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">get_mapping_with_retry</span>(<span class="hljs-params">client, mapping_id</span>):
+    <span class="hljs-string">&quot;&quot;&quot;Get mapping with retry on 503.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">return</span> client.mappings.get(mapping_id)</code></pre>
+<h3 id="context-manager-for-error-handling">Context Manager for Error Handling</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> contextlib <span class="hljs-keyword">import</span> contextmanager
+<span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> GraphOLAPError
+
+<span class="hljs-meta">@contextmanager</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">safe_graph_operation</span>(<span class="hljs-params">operation_name</span>):
+    <span class="hljs-string">&quot;&quot;&quot;Context manager for safe graph operations with logging.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">try</span>:
+        <span class="hljs-keyword">yield</span>
+    <span class="hljs-keyword">except</span> NotFoundError <span class="hljs-keyword">as</span> e:
+        logger.warning(<span class="hljs-string">f&quot;<span class="hljs-subst">{operation_name}</span>: Resource not found - <span class="hljs-subst">{e}</span>&quot;</span>)
+        <span class="hljs-keyword">raise</span>
+    <span class="hljs-keyword">except</span> ValidationError <span class="hljs-keyword">as</span> e:
+        logger.error(<span class="hljs-string">f&quot;<span class="hljs-subst">{operation_name}</span>: Validation failed - <span class="hljs-subst">{e}</span>&quot;</span>)
+        logger.error(<span class="hljs-string">f&quot;Details: <span class="hljs-subst">{e.details}</span>&quot;</span>)
+        <span class="hljs-keyword">raise</span>
+    <span class="hljs-keyword">except</span> GraphOLAPError <span class="hljs-keyword">as</span> e:
+        logger.error(<span class="hljs-string">f&quot;<span class="hljs-subst">{operation_name}</span>: SDK error - <span class="hljs-subst">{e}</span>&quot;</span>)
+        <span class="hljs-keyword">raise</span>
+
+<span class="hljs-comment"># Usage</span>
+<span class="hljs-keyword">with</span> safe_graph_operation(<span class="hljs-string">&quot;Create instance&quot;</span>):
+    instance = client.instances.create_from_mapping_and_wait(
+        mapping_id=mapping.<span class="hljs-built_in">id</span>,
+        name=<span class="hljs-string">&quot;Analysis Instance&quot;</span>,
+        wrapper_type=WrapperType.RYUGRAPH,
+    )</code></pre>
+<hr>
+<h2 id="3-performance-tips">3. Performance Tips</h2>
+<h3 id="query-optimization">Query Optimization</h3>
+<p><strong>Always use LIMIT for exploratory queries:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># BAD: Returns all nodes (potentially millions)</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN n&quot;</span>)
+
+<span class="hljs-comment"># GOOD: Limit results for exploration</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN n LIMIT 100&quot;</span>)
+
+<span class="hljs-comment"># BETTER: Count first, then decide</span>
+count = conn.query_scalar(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN count(n)&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Total customers: <span class="hljs-subst">{count}</span>&quot;</span>)
+
+<span class="hljs-keyword">if</span> count &lt; <span class="hljs-number">10000</span>:
+    result = conn.query(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN n&quot;</span>)</code></pre>
+<p><strong>Use projections instead of returning full nodes:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># BAD: Returns entire node with all properties</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (c:Customer) RETURN c LIMIT 1000&quot;</span>)
+
+<span class="hljs-comment"># GOOD: Return only needed properties</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)
+    RETURN c.id, c.name, c.email
+    LIMIT 1000
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-comment"># Memory savings can be 10x or more for property-rich nodes</span></code></pre>
+<p><strong>Use parameterized queries for repeated patterns:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># BAD: String interpolation (no query plan caching, SQL injection risk)</span>
+<span class="hljs-keyword">for</span> city <span class="hljs-keyword">in</span> cities:
+    result = conn.query(<span class="hljs-string">f&quot;MATCH (c:Customer {{city: &#x27;<span class="hljs-subst">{city}</span>&#x27;}}) RETURN c&quot;</span>)
+
+<span class="hljs-comment"># GOOD: Parameterized query (plan caching, safe)</span>
+<span class="hljs-keyword">for</span> city <span class="hljs-keyword">in</span> cities:
+    result = conn.query(
+        <span class="hljs-string">&quot;MATCH (c:Customer {city: $city}) RETURN c&quot;</span>,
+        parameters={<span class="hljs-string">&quot;city&quot;</span>: city}
+    )</code></pre>
+<p><strong>Filter early in the query:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># BAD: Filter after pattern matching</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)-[p:PURCHASED]-&gt;(prod:Product)
+    WITH c, prod, p
+    WHERE prod.category = &#x27;Electronics&#x27;
+    RETURN c.name, prod.name, p.amount
+&quot;&quot;&quot;</span>)
+
+<span class="hljs-comment"># GOOD: Filter inline during matching</span>
+result = conn.query(<span class="hljs-string">&quot;&quot;&quot;
+    MATCH (c:Customer)-[p:PURCHASED]-&gt;(prod:Product {category: &#x27;Electronics&#x27;})
+    RETURN c.name, prod.name, p.amount
+&quot;&quot;&quot;</span>)</code></pre>
+<h3 id="connection-pooling-and-reuse">Connection Pooling and Reuse</h3>
+<p><strong>Reuse client and connection objects:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># BAD: Creating new client for each operation</span>
+<span class="hljs-keyword">for</span> mapping_id <span class="hljs-keyword">in</span> mapping_ids:
+    client = GraphOLAPClient.from_env()
+    mapping = client.mappings.get(mapping_id)
+    client.close()
+
+<span class="hljs-comment"># GOOD: Reuse client</span>
+client = GraphOLAPClient.from_env()
+<span class="hljs-keyword">try</span>:
+    <span class="hljs-keyword">for</span> mapping_id <span class="hljs-keyword">in</span> mapping_ids:
+        mapping = client.mappings.get(mapping_id)
+<span class="hljs-keyword">finally</span>:
+    client.close()
+
+<span class="hljs-comment"># BEST: Use context manager</span>
+<span class="hljs-keyword">with</span> GraphOLAPClient.from_env() <span class="hljs-keyword">as</span> client:
+    <span class="hljs-keyword">for</span> mapping_id <span class="hljs-keyword">in</span> mapping_ids:
+        mapping = client.mappings.get(mapping_id)</code></pre>
+<p><strong>Reuse instance connections:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># BAD: Reconnecting for each query</span>
+<span class="hljs-keyword">for</span> query <span class="hljs-keyword">in</span> queries:
+    conn = client.instances.connect(instance_id)
+    result = conn.query(query)
+    conn.close()
+
+<span class="hljs-comment"># GOOD: Reuse connection</span>
+conn = client.instances.connect(instance_id)
+<span class="hljs-keyword">try</span>:
+    <span class="hljs-keyword">for</span> query <span class="hljs-keyword">in</span> queries:
+        result = conn.query(query)
+<span class="hljs-keyword">finally</span>:
+    conn.close()
+
+<span class="hljs-comment"># Using context manager</span>
+<span class="hljs-keyword">with</span> client.instances.connect(instance_id) <span class="hljs-keyword">as</span> conn:
+    <span class="hljs-keyword">for</span> query <span class="hljs-keyword">in</span> queries:
+        result = conn.query(query)</code></pre>
+<h3 id="algorithm-efficiency">Algorithm Efficiency</h3>
+<p><strong>Specify node labels to reduce scope:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># BAD: Operates on all nodes</span>
+<span class="hljs-built_in">exec</span> = conn.algo.pagerank(node_label=<span class="hljs-literal">None</span>, property_name=<span class="hljs-string">&quot;pr&quot;</span>)
+
+<span class="hljs-comment"># GOOD: Operate on specific label</span>
+<span class="hljs-built_in">exec</span> = conn.algo.pagerank(node_label=<span class="hljs-string">&quot;Customer&quot;</span>, property_name=<span class="hljs-string">&quot;pr&quot;</span>)</code></pre>
+<p><strong>Use edge_type to filter relationships:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Process only PURCHASED relationships for customer analysis</span>
+<span class="hljs-built_in">exec</span> = conn.algo.pagerank(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;purchase_influence&quot;</span>,
+    edge_type=<span class="hljs-string">&quot;PURCHASED&quot;</span>
+)</code></pre>
+<p><strong>Batch related algorithm executions:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Run complementary algorithms in sequence on same subgraph</span>
+algorithms = [
+    (<span class="hljs-string">&quot;pagerank&quot;</span>, {<span class="hljs-string">&quot;node_label&quot;</span>: <span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;property_name&quot;</span>: <span class="hljs-string">&quot;pr_score&quot;</span>}),
+    (<span class="hljs-string">&quot;louvain&quot;</span>, {<span class="hljs-string">&quot;node_label&quot;</span>: <span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;property_name&quot;</span>: <span class="hljs-string">&quot;community&quot;</span>}),
+    (<span class="hljs-string">&quot;connected_components&quot;</span>, {<span class="hljs-string">&quot;node_label&quot;</span>: <span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;property_name&quot;</span>: <span class="hljs-string">&quot;component&quot;</span>}),
+]
+
+<span class="hljs-keyword">for</span> algo_name, params <span class="hljs-keyword">in</span> algorithms:
+    <span class="hljs-built_in">exec</span> = conn.algo.run(algo_name, **params)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;<span class="hljs-subst">{algo_name}</span>: Updated <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.nodes_updated}</span> nodes&quot;</span>)</code></pre>
+<h3 id="dataframe-format-selection">DataFrame Format Selection</h3>
+<p><strong>Choose Polars for large datasets:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Polars is faster and more memory-efficient for large results</span>
+df = conn.query_df(
+    <span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.id, c.name, c.age&quot;</span>,
+    backend=<span class="hljs-string">&quot;polars&quot;</span>  <span class="hljs-comment"># Default</span>
+)
+
+<span class="hljs-comment"># Fast filtering without copying data</span>
+filtered = df.<span class="hljs-built_in">filter</span>(pl.col(<span class="hljs-string">&quot;age&quot;</span>) &gt; <span class="hljs-number">25</span>)
+
+<span class="hljs-comment"># Lazy evaluation for complex pipelines</span>
+lazy_df = df.lazy().<span class="hljs-built_in">filter</span>(pl.col(<span class="hljs-string">&quot;age&quot;</span>) &gt; <span class="hljs-number">25</span>).group_by(<span class="hljs-string">&quot;age&quot;</span>).agg(pl.count())
+result = lazy_df.collect()</code></pre>
+<p><strong>Use Pandas when needed for compatibility:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Pandas for libraries that require it (sklearn, matplotlib, etc.)</span>
+df = conn.query_df(
+    <span class="hljs-string">&quot;MATCH (c:Customer) RETURN c.id, c.name, c.age&quot;</span>,
+    backend=<span class="hljs-string">&quot;pandas&quot;</span>
+)
+
+<span class="hljs-comment"># Works with sklearn</span>
+<span class="hljs-keyword">from</span> sklearn.preprocessing <span class="hljs-keyword">import</span> StandardScaler
+scaler = StandardScaler()
+df[<span class="hljs-string">&quot;age_scaled&quot;</span>] = scaler.fit_transform(df[[<span class="hljs-string">&quot;age&quot;</span>]])</code></pre>
+<p><strong>Convert between formats efficiently:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Start with Polars for processing</span>
+df_polars = conn.query_df(<span class="hljs-string">&quot;MATCH (n) RETURN n.id, n.value&quot;</span>)
+
+<span class="hljs-comment"># Convert to Pandas only when needed</span>
+df_pandas = df_polars.to_pandas()
+
+<span class="hljs-comment"># Or use Arrow for zero-copy when possible</span>
+arrow_table = df_polars.to_arrow()</code></pre>
+<h3 id="memory-management">Memory Management</h3>
+<p><strong>Process large results in chunks:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Get total count first</span>
+total = conn.query_scalar(<span class="hljs-string">&quot;MATCH (n:Transaction) RETURN count(n)&quot;</span>)
+
+<span class="hljs-comment"># Process in chunks</span>
+chunk_size = <span class="hljs-number">10000</span>
+<span class="hljs-keyword">for</span> offset <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">0</span>, total, chunk_size):
+    result = conn.query(<span class="hljs-string">f&quot;&quot;&quot;
+        MATCH (t:Transaction)
+        RETURN t.id, t.amount, t.date
+        ORDER BY t.id
+        SKIP <span class="hljs-subst">{offset}</span>
+        LIMIT <span class="hljs-subst">{chunk_size}</span>
+    &quot;&quot;&quot;</span>)
+
+    df = result.to_polars()
+    <span class="hljs-comment"># Process chunk...</span>
+    <span class="hljs-keyword">del</span> df  <span class="hljs-comment"># Free memory</span></code></pre>
+<p><strong>Use streaming for very large exports:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Query with YIELD for streaming (if supported)</span>
+<span class="hljs-comment"># Otherwise, use chunked processing as above</span></code></pre>
+<hr>
+<h2 id="4-troubleshooting">4. Troubleshooting</h2>
+<h3 id="common-issues-and-solutions">Common Issues and Solutions</h3>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Cause</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ConnectionError: Connection refused</code></td>
+<td>Instance not ready</td>
+<td>Call <code>wait_until_running()</code> before <code>connect()</code></td>
+</tr>
+<tr>
+<td><code>ResourceLockedError</code></td>
+<td>Algorithm running</td>
+<td>Check <code>conn.get_lock()</code>, wait for completion</td>
+</tr>
+<tr>
+<td><code>QueryTimeoutError</code></td>
+<td>Query too complex</td>
+<td>Add <code>LIMIT</code>, optimize query, increase timeout</td>
+</tr>
+<tr>
+<td><code>ConcurrencyLimitError</code></td>
+<td>Too many instances</td>
+<td>Terminate unused instances</td>
+</tr>
+<tr>
+<td><code>InvalidStateError</code></td>
+<td>Wrong resource state</td>
+<td>Check status before operations</td>
+</tr>
+<tr>
+<td><code>NotFoundError</code></td>
+<td>Resource deleted</td>
+<td>Verify resource exists</td>
+</tr>
+<tr>
+<td><code>RyugraphError</code></td>
+<td>Cypher syntax error</td>
+<td>Check query syntax</td>
+</tr>
+<tr>
+<td><code>AuthenticationError</code></td>
+<td>Invalid API key</td>
+<td>Verify <code>GRAPH_OLAP_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>PermissionDeniedError</code></td>
+<td>Insufficient permissions</td>
+<td>Check user role</td>
+</tr>
+<tr>
+<td><code>SnapshotFailedError</code></td>
+<td>Internal export failed</td>
+<td>Check mapping SQL, Starburst connectivity</td>
+</tr>
+<tr>
+<td><code>InstanceFailedError</code></td>
+<td>Pod startup failed</td>
+<td>Check snapshot status, cluster resources</td>
+</tr>
+</tbody></table>
+<h3 id="connection-issues">Connection Issues</h3>
+<p><strong>Instance not ready:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-comment"># Problem: Connection refused if you don&#x27;t wait for instance to be ready</span>
+instance = client.instances.create_from_mapping(
+    mapping_id=<span class="hljs-number">1</span>,
+    name=<span class="hljs-string">&quot;Test&quot;</span>,
+    wrapper_type=WrapperType.RYUGRAPH,  <span class="hljs-comment"># Required: RYUGRAPH or FALKORDB</span>
+)
+conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)  <span class="hljs-comment"># Fails! (instance still starting)</span>
+
+<span class="hljs-comment"># Solution: Use create_from_mapping_and_wait which waits for ready state</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=<span class="hljs-number">1</span>,
+    name=<span class="hljs-string">&quot;Test&quot;</span>,
+    wrapper_type=WrapperType.RYUGRAPH,  <span class="hljs-comment"># Required: RYUGRAPH or FALKORDB</span>
+    timeout=<span class="hljs-number">900</span>,  <span class="hljs-comment"># 15 minutes max (includes snapshot export time)</span>
+)
+conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)  <span class="hljs-comment"># Works!</span></code></pre>
+<p><strong>Instance shows running but connection fails:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> InvalidStateError
+
+<span class="hljs-comment"># Check instance health</span>
+<span class="hljs-keyword">try</span>:
+    health = client.instances.get_health(instance.<span class="hljs-built_in">id</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Health status: <span class="hljs-subst">{health}</span>&quot;</span>)
+<span class="hljs-keyword">except</span> ConnectionError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance not reachable: <span class="hljs-subst">{e}</span>&quot;</span>)
+
+    <span class="hljs-comment"># May need to wait longer for network setup</span>
+    <span class="hljs-keyword">import</span> time
+    time.sleep(<span class="hljs-number">10</span>)
+
+    <span class="hljs-comment"># Retry</span>
+    health = client.instances.get_health(instance.<span class="hljs-built_in">id</span>)</code></pre>
+<h3 id="algorithm-issues">Algorithm Issues</h3>
+<p><strong>Algorithm lock conflicts:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Check current lock before running algorithm</span>
+lock = conn.get_lock()
+<span class="hljs-keyword">if</span> lock.locked:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance locked by: <span class="hljs-subst">{lock.holder_name}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Running algorithm: <span class="hljs-subst">{lock.algorithm}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Started at: <span class="hljs-subst">{lock.acquired_at}</span>&quot;</span>)
+
+    <span class="hljs-comment"># Option 1: Wait for completion</span>
+    <span class="hljs-keyword">import</span> time
+    <span class="hljs-keyword">while</span> conn.get_lock().locked:
+        time.sleep(<span class="hljs-number">5</span>)
+
+    <span class="hljs-comment"># Option 2: Use a different instance</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Consider using a different instance&quot;</span>)</code></pre>
+<p><strong>Algorithm timeout:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> AlgorithmTimeoutError
+
+<span class="hljs-keyword">try</span>:
+    <span class="hljs-built_in">exec</span> = conn.algo.pagerank(
+        <span class="hljs-string">&quot;Customer&quot;</span>,
+        <span class="hljs-string">&quot;pr_score&quot;</span>,
+        timeout=<span class="hljs-number">600</span>,  <span class="hljs-comment"># 10 minutes</span>
+    )
+<span class="hljs-keyword">except</span> AlgorithmTimeoutError:
+    <span class="hljs-comment"># Algorithm may still be running</span>
+    <span class="hljs-comment"># Check status endpoint</span>
+    status = conn.algo.get_status(<span class="hljs-built_in">exec</span>.execution_id)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Algorithm status: <span class="hljs-subst">{status}</span>&quot;</span>)</code></pre>
+<h3 id="query-issues">Query Issues</h3>
+<p><strong>Cypher syntax errors:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> RyugraphError
+
+<span class="hljs-keyword">try</span>:
+    result = conn.query(<span class="hljs-string">&quot;MATCH (n:Customer RETURN n&quot;</span>)  <span class="hljs-comment"># Missing )</span>
+<span class="hljs-keyword">except</span> RyugraphError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Cypher error: <span class="hljs-subst">{e}</span>&quot;</span>)
+    <span class="hljs-comment"># Check e.details for position information</span></code></pre>
+<p><strong>Query returns unexpected results:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Debug by checking schema first</span>
+schema = conn.get_schema()
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Node labels:&quot;</span>, <span class="hljs-built_in">list</span>(schema.node_labels.keys()))
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Relationship types:&quot;</span>, <span class="hljs-built_in">list</span>(schema.relationship_types.keys()))
+
+<span class="hljs-comment"># Check if label exists</span>
+<span class="hljs-keyword">if</span> <span class="hljs-string">&quot;Customer&quot;</span> <span class="hljs-keyword">not</span> <span class="hljs-keyword">in</span> schema.node_labels:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;WARNING: Customer label not in graph!&quot;</span>)
+
+<span class="hljs-comment"># Verify property names</span>
+customer_props = schema.node_labels.get(<span class="hljs-string">&quot;Customer&quot;</span>, {})
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Customer properties:&quot;</span>, customer_props)</code></pre>
+<h3 id="instance-creation-issues">Instance Creation Issues</h3>
+<p><strong>Instance stuck in waiting_for_snapshot:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> notebook
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-comment"># Wake Starburst cluster if using Galaxy</span>
+notebook.wake_starburst(timeout=<span class="hljs-number">120</span>)
+
+<span class="hljs-comment"># Create instance directly from mapping (snapshot managed internally)</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=mapping.<span class="hljs-built_in">id</span>,
+    name=<span class="hljs-string">&quot;My Instance&quot;</span>,
+    wrapper_type=WrapperType.RYUGRAPH,
+    timeout=<span class="hljs-number">600</span>,
+)</code></pre>
+<p><strong>Instance creation failed (internal snapshot failed):</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> InstanceFailedError
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-keyword">try</span>:
+    instance = client.instances.create_from_mapping_and_wait(
+        mapping_id=mapping.<span class="hljs-built_in">id</span>,
+        name=<span class="hljs-string">&quot;Test Instance&quot;</span>,
+        wrapper_type=WrapperType.RYUGRAPH,
+    )
+<span class="hljs-keyword">except</span> InstanceFailedError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-comment"># Get instance details for error message</span>
+    instance = client.instances.get(instance_id)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Failed: <span class="hljs-subst">{instance.error_message}</span>&quot;</span>)
+
+    <span class="hljs-comment"># Common causes:</span>
+    <span class="hljs-comment"># - Invalid SQL in mapping</span>
+    <span class="hljs-comment"># - Starburst connectivity issues</span>
+    <span class="hljs-comment"># - Missing tables or columns</span></code></pre>
+<h3 id="environment-issues">Environment Issues</h3>
+<p><strong>Missing environment variables:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">import</span> os
+
+required_vars = [
+    <span class="hljs-string">&quot;GRAPH_OLAP_API_URL&quot;</span>,
+    <span class="hljs-string">&quot;GRAPH_OLAP_API_KEY&quot;</span>,
+]
+
+missing = [v <span class="hljs-keyword">for</span> v <span class="hljs-keyword">in</span> required_vars <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> os.environ.get(v)]
+<span class="hljs-keyword">if</span> missing:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Missing environment variables: <span class="hljs-subst">{missing}</span>&quot;</span>)</code></pre>
+<hr>
+<h2 id="5-logging-and-debugging">5. Logging and Debugging</h2>
+<h3 id="enable-debug-logging">Enable Debug Logging</h3>
+<p>The SDK uses Python&#39;s standard logging module:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">import</span> logging
+
+<span class="hljs-comment"># Enable debug logging for all SDK modules</span>
+logging.basicConfig(level=logging.DEBUG)
+
+<span class="hljs-comment"># Or configure specific loggers</span>
+logging.getLogger(<span class="hljs-string">&quot;graph_olap&quot;</span>).setLevel(logging.DEBUG)
+logging.getLogger(<span class="hljs-string">&quot;graph_olap.http&quot;</span>).setLevel(logging.DEBUG)
+logging.getLogger(<span class="hljs-string">&quot;httpx&quot;</span>).setLevel(logging.DEBUG)  <span class="hljs-comment"># HTTP request details</span></code></pre>
+<h3 id="structured-logging-configuration">Structured Logging Configuration</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">import</span> logging
+<span class="hljs-keyword">import</span> sys
+
+<span class="hljs-comment"># Create formatter with timestamp and module</span>
+formatter = logging.Formatter(
+    <span class="hljs-string">&quot;%(asctime)s - %(name)s - %(levelname)s - %(message)s&quot;</span>
+)
+
+<span class="hljs-comment"># Console handler</span>
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(formatter)
+
+<span class="hljs-comment"># File handler for persistent logs</span>
+file_handler = logging.FileHandler(<span class="hljs-string">&quot;graph_olap.log&quot;</span>)
+file_handler.setFormatter(formatter)
+
+<span class="hljs-comment"># Configure SDK logger</span>
+logger = logging.getLogger(<span class="hljs-string">&quot;graph_olap&quot;</span>)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(console_handler)
+logger.addHandler(file_handler)</code></pre>
+<h3 id="request-tracing">Request Tracing</h3>
+<p>Track requests with unique IDs for debugging:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">import</span> uuid
+<span class="hljs-keyword">import</span> logging
+
+logger = logging.getLogger(__name__)
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">traced_query</span>(<span class="hljs-params">conn, cypher, parameters=<span class="hljs-literal">None</span></span>):
+    <span class="hljs-string">&quot;&quot;&quot;Execute query with request tracing.&quot;&quot;&quot;</span>
+    request_id = <span class="hljs-built_in">str</span>(uuid.uuid4())[:<span class="hljs-number">8</span>]
+
+    logger.info(<span class="hljs-string">f&quot;[<span class="hljs-subst">{request_id}</span>] Executing query: <span class="hljs-subst">{cypher[:<span class="hljs-number">100</span>]}</span>...&quot;</span>)
+    <span class="hljs-keyword">if</span> parameters:
+        logger.debug(<span class="hljs-string">f&quot;[<span class="hljs-subst">{request_id}</span>] Parameters: <span class="hljs-subst">{parameters}</span>&quot;</span>)
+
+    <span class="hljs-keyword">try</span>:
+        result = conn.query(cypher, parameters)
+        logger.info(<span class="hljs-string">f&quot;[<span class="hljs-subst">{request_id}</span>] Query completed: <span class="hljs-subst">{result.row_count}</span> rows&quot;</span>)
+        <span class="hljs-keyword">return</span> result
+    <span class="hljs-keyword">except</span> Exception <span class="hljs-keyword">as</span> e:
+        logger.error(<span class="hljs-string">f&quot;[<span class="hljs-subst">{request_id}</span>] Query failed: <span class="hljs-subst">{e}</span>&quot;</span>)
+        <span class="hljs-keyword">raise</span>
+
+<span class="hljs-comment"># Usage</span>
+result = traced_query(conn, <span class="hljs-string">&quot;MATCH (n:Customer) RETURN n LIMIT 10&quot;</span>)</code></pre>
+<h3 id="debugging-http-requests">Debugging HTTP Requests</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">import</span> logging
+<span class="hljs-keyword">import</span> httpx
+
+<span class="hljs-comment"># Enable httpx logging for detailed request/response info</span>
+logging.getLogger(<span class="hljs-string">&quot;httpx&quot;</span>).setLevel(logging.DEBUG)
+
+<span class="hljs-comment"># Or use custom event hooks</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">log_request</span>(<span class="hljs-params">request</span>):
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Request: <span class="hljs-subst">{request.method}</span> <span class="hljs-subst">{request.url}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Headers: <span class="hljs-subst">{<span class="hljs-built_in">dict</span>(request.headers)}</span>&quot;</span>)
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">log_response</span>(<span class="hljs-params">response</span>):
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Response: <span class="hljs-subst">{response.status_code}</span>&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Body preview: <span class="hljs-subst">{response.text[:<span class="hljs-number">500</span>]}</span>...&quot;</span>)
+
+<span class="hljs-comment"># Note: For production, use structured logging instead of print</span></code></pre>
+<h3 id="performance-profiling">Performance Profiling</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">import</span> time
+<span class="hljs-keyword">from</span> functools <span class="hljs-keyword">import</span> wraps
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">timed</span>(<span class="hljs-params">func</span>):
+    <span class="hljs-string">&quot;&quot;&quot;Decorator to time function execution.&quot;&quot;&quot;</span>
+<span class="hljs-meta">    @wraps(<span class="hljs-params">func</span>)</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">wrapper</span>(<span class="hljs-params">*args, **kwargs</span>):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        elapsed = time.perf_counter() - start
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;<span class="hljs-subst">{func.__name__}</span> took <span class="hljs-subst">{elapsed:<span class="hljs-number">.3</span>f}</span>s&quot;</span>)
+        <span class="hljs-keyword">return</span> result
+    <span class="hljs-keyword">return</span> wrapper
+
+<span class="hljs-comment"># Usage</span>
+<span class="hljs-meta">@timed</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">analyze_customers</span>(<span class="hljs-params">conn</span>):
+    result = conn.query(<span class="hljs-string">&quot;MATCH (c:Customer) RETURN c LIMIT 1000&quot;</span>)
+    df = result.to_polars()
+    <span class="hljs-keyword">return</span> df.group_by(<span class="hljs-string">&quot;city&quot;</span>).agg(pl.count())
+
+<span class="hljs-comment"># Or inline timing</span>
+start = time.perf_counter()
+result = conn.query(<span class="hljs-string">&quot;MATCH (n)-[r]-&gt;(m) RETURN count(*)&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Query took <span class="hljs-subst">{time.perf_counter() - start:<span class="hljs-number">.3</span>f}</span>s&quot;</span>)</code></pre>
+<h3 id="debug-mode-for-testing">Debug Mode for Testing</h3>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> notebook
+<span class="hljs-keyword">from</span> graph_olap.testing <span class="hljs-keyword">import</span> TestPersona
+
+<span class="hljs-comment"># Enable verbose output for test context</span>
+<span class="hljs-keyword">import</span> logging
+logging.getLogger(<span class="hljs-string">&quot;graph_olap.testing&quot;</span>).setLevel(logging.DEBUG)
+
+<span class="hljs-comment"># Create test context with debug info</span>
+ctx = notebook.test(<span class="hljs-string">&quot;DebugTest&quot;</span>, persona=TestPersona.ANALYST_ALICE)
+
+<span class="hljs-comment"># Resources are tracked and logged</span>
+mapping = ctx.mapping(node_definitions=[...])  <span class="hljs-comment"># Logs: &quot;Tracking mapping 123 (DebugTest-Mapping-abc123)&quot;</span>
+
+<span class="hljs-comment"># Cleanup shows what was cleaned</span>
+results = ctx.cleanup()  <span class="hljs-comment"># Logs cleanup actions</span>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Cleaned: <span class="hljs-subst">{results}</span>&quot;</span>)</code></pre>
+<h3 id="inspecting-sdk-objects">Inspecting SDK Objects</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Inspect instance details</span>
+instance = client.instances.get(<span class="hljs-number">123</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance ID: <span class="hljs-subst">{instance.<span class="hljs-built_in">id</span>}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Name: <span class="hljs-subst">{instance.name}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Status: <span class="hljs-subst">{instance.status}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;URL: <span class="hljs-subst">{instance.instance_url}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Created: <span class="hljs-subst">{instance.created_at}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Expires: <span class="hljs-subst">{instance.expires_at}</span>&quot;</span>)
+
+<span class="hljs-comment"># Inspect query result metadata</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (n) RETURN n LIMIT 10&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Columns: <span class="hljs-subst">{result.columns}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Column types: <span class="hljs-subst">{result.column_types}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Row count: <span class="hljs-subst">{result.row_count}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Execution time: <span class="hljs-subst">{result.execution_time_ms}</span>ms&quot;</span>)
+
+<span class="hljs-comment"># Inspect algorithm execution</span>
+<span class="hljs-built_in">exec</span> = conn.algo.pagerank(<span class="hljs-string">&quot;Customer&quot;</span>, <span class="hljs-string">&quot;pr_score&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Execution ID: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.execution_id}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Status: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.status}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Nodes updated: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.nodes_updated}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Duration: <span class="hljs-subst">{<span class="hljs-built_in">exec</span>.duration_ms}</span>ms&quot;</span>)</code></pre>
+<h3 id="common-debug-patterns">Common Debug Patterns</h3>
+<p><strong>Verify connection is working:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">verify_connection</span>(<span class="hljs-params">conn</span>):
+    <span class="hljs-string">&quot;&quot;&quot;Verify connection with diagnostic info.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">try</span>:
+        <span class="hljs-comment"># Test basic query</span>
+        result = conn.query(<span class="hljs-string">&quot;RETURN 1 AS test&quot;</span>)
+        <span class="hljs-keyword">assert</span> result.scalar() == <span class="hljs-number">1</span>
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Basic query: OK&quot;</span>)
+
+        <span class="hljs-comment"># Test schema access</span>
+        schema = conn.get_schema()
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Schema: <span class="hljs-subst">{<span class="hljs-built_in">len</span>(schema.node_labels)}</span> node labels&quot;</span>)
+
+        <span class="hljs-comment"># Test lock status</span>
+        lock = conn.get_lock()
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Lock status: <span class="hljs-subst">{<span class="hljs-string">&#x27;locked&#x27;</span> <span class="hljs-keyword">if</span> lock.locked <span class="hljs-keyword">else</span> <span class="hljs-string">&#x27;unlocked&#x27;</span>}</span>&quot;</span>)
+
+        <span class="hljs-comment"># Test instance status</span>
+        status = conn.status()
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Memory usage: <span class="hljs-subst">{status.get(<span class="hljs-string">&#x27;memory_usage&#x27;</span>, <span class="hljs-string">&#x27;N/A&#x27;</span>)}</span>&quot;</span>)
+
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">True</span>
+    <span class="hljs-keyword">except</span> Exception <span class="hljs-keyword">as</span> e:
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Connection verification failed: <span class="hljs-subst">{e}</span>&quot;</span>)
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">False</span>
+
+<span class="hljs-comment"># Usage</span>
+<span class="hljs-keyword">if</span> verify_connection(conn):
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Connection verified successfully&quot;</span>)</code></pre>
+<p><strong>Debug query results:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">debug_query</span>(<span class="hljs-params">conn, cypher, parameters=<span class="hljs-literal">None</span></span>):
+    <span class="hljs-string">&quot;&quot;&quot;Execute query with full debugging output.&quot;&quot;&quot;</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Query: <span class="hljs-subst">{cypher}</span>&quot;</span>)
+    <span class="hljs-keyword">if</span> parameters:
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Parameters: <span class="hljs-subst">{parameters}</span>&quot;</span>)
+
+    result = conn.query(cypher, parameters)
+
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;\nColumns (<span class="hljs-subst">{<span class="hljs-built_in">len</span>(result.columns)}</span>):&quot;</span>)
+    <span class="hljs-keyword">for</span> i, (col, dtype) <span class="hljs-keyword">in</span> <span class="hljs-built_in">enumerate</span>(<span class="hljs-built_in">zip</span>(result.columns, result.column_types)):
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  <span class="hljs-subst">{i}</span>: <span class="hljs-subst">{col}</span> (<span class="hljs-subst">{dtype}</span>)&quot;</span>)
+
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;\nRows: <span class="hljs-subst">{result.row_count}</span>&quot;</span>)
+    <span class="hljs-keyword">if</span> result.row_count &gt; <span class="hljs-number">0</span>:
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nFirst row:&quot;</span>)
+        <span class="hljs-keyword">for</span> col, val <span class="hljs-keyword">in</span> <span class="hljs-built_in">zip</span>(result.columns, result.rows[<span class="hljs-number">0</span>]):
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  <span class="hljs-subst">{col}</span>: <span class="hljs-subst">{val!r}</span>&quot;</span>)
+
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;\nExecution time: <span class="hljs-subst">{result.execution_time_ms}</span>ms&quot;</span>)
+
+    <span class="hljs-keyword">return</span> result</code></pre>
+
+  </div>
+
+  <!-- Mermaid with ELK layout support -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+
+    // Register ELK layout engine
+    mermaid.registerLayoutLoaders(elkLayouts);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+    
+  </script>
+</body>
+</html>

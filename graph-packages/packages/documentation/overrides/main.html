@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block header %}
+{{ super() }}
+<style>
+/* Logout link - header-specific styling */
+.logout-link {
+  position: fixed;
+  top: 0.6rem;
+  right: 4rem;
+  z-index: 100;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  color: var(--md-primary-bg-color);
+  background: transparent;
+  border: 1px solid var(--md-primary-bg-color);
+  border-radius: 0.25rem;
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+.logout-link:hover {
+  opacity: 1;
+  background: rgba(255,255,255,0.1);
+}
+</style>
+<a href="/oauth2/sign_out?rd=https://sparklesparkle.auth0.com/v2/logout?client_id=4bwyG2Jg5nLc2oc4cbKeYNkrCFECn7bg%26returnTo=https://docs.sparklingideas.co.uk" class="logout-link">Logout</a>
+{% endblock %}

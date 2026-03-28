@@ -1,0 +1,46 @@
+{{- if .Values.jupyterConfig.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "jupyter-labs.fullname" . }}-config
+  labels:
+    {{- include "jupyter-labs.labels" . | nindent 4 }}
+data:
+  jupyter_notebook_config.py: |
+    # Jupyter Notebook Configuration for k3d Deployment
+
+    c = get_config()
+
+    # Server settings
+    c.ServerApp.ip = '0.0.0.0'
+    c.ServerApp.port = 8888
+    c.ServerApp.token = ''
+    c.ServerApp.password = ''
+    c.ServerApp.allow_root = True
+    c.ServerApp.open_browser = False
+
+    # Base URL for ingress routing
+    # Use "/" for dedicated subdomain, "/jupyter" for shared domain
+    c.ServerApp.base_url = '{{ .Values.jupyterConfig.baseUrl | default "/jupyter" }}'
+
+    # CORS settings (local dev only - DO NOT USE IN PRODUCTION)
+    c.NotebookApp.allow_origin = '*'
+    c.NotebookApp.allow_credentials = True
+
+    # Notebook directory
+    c.ServerApp.root_dir = '/home/jovyan/work'
+
+    # Disable authentication (local only)
+    c.NotebookApp.token = ''
+    c.NotebookApp.password = ''
+
+    # Auto-save interval (seconds)
+    c.FileContentsManager.autosave_interval = 60
+
+    # Enable JupyterLab by default
+    c.NotebookApp.default_url = '/lab'
+
+    # Load custom CSS from ~/.jupyter/custom/custom.css
+    # This enables notebook styling without running any cells
+    c.LabApp.custom_css = True
+{{- end }}

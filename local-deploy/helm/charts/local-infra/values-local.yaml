@@ -1,0 +1,55 @@
+# =============================================================================
+# Local Infrastructure - Local OrbStack Values
+# =============================================================================
+#
+# Local development configuration for OrbStack Kubernetes.
+# Provides shared infrastructure that other services depend on:
+#   - PostgreSQL for control-plane database
+#   - Secrets for database connection and API tokens
+#   - Extension server for Ryugraph algorithms
+#
+# Usage:
+#   helm upgrade --install local-infra . \
+#     -n graph-olap-local \
+#     -f values-local.yaml
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# PostgreSQL - Local Development Database
+# -----------------------------------------------------------------------------
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+  database: "control_plane"
+  username: "control_plane"
+  password: "control_plane"
+  internalApiKey: "test-internal-api-key"
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+# -----------------------------------------------------------------------------
+# Extension Server - Algorithm Extensions
+# -----------------------------------------------------------------------------
+extensionServer:
+  enabled: true
+  image:
+    repository: ghcr.io/predictable-labs/extension-repo
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "32Mi"
+      cpu: "25m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"

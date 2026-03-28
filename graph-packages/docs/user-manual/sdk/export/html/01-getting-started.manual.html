@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01-getting-started.manual</title>
+
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+
+  <style>
+    :root {
+      --max-width: 900px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+      --color-text: #24292f;
+      --color-bg: #ffffff;
+      --color-border: #d0d7de;
+      --color-link: #0969da;
+      --color-code-bg: #f6f8fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 2em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    p {
+      margin: 1em 0;
+    }
+
+    pre {
+      background: var(--color-code-bg);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      line-height: 1.45;
+    }
+
+    pre.mermaid {
+      background: transparent;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+    }
+
+    :not(pre) > code {
+      background: var(--color-code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 0 1em;
+      border-left: 4px solid var(--color-border);
+      color: #57606a;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+
+    th, td {
+      border: 1px solid var(--color-border);
+      padding: 0.5em 1em;
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-code-bg);
+      font-weight: 600;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a.image-link {
+      display: block;
+      cursor: zoom-in;
+    }
+
+    a.image-link:hover img {
+      opacity: 0.9;
+      outline: 2px solid var(--color-link);
+      outline-offset: 2px;
+    }
+
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    li {
+      margin: 0.25em 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 2em 0;
+    }
+
+    details {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      background: var(--color-code-bg);
+      border-radius: 6px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .container {
+        max-width: none;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="getting-started-with-the-graph-olap-sdk">Getting Started with the Graph OLAP SDK</h1>
+<p>This guide helps you install and configure the Graph OLAP Python SDK for Jupyter
+notebook-based graph analytics.</p>
+<h2 id="introduction">Introduction</h2>
+<h3 id="what-is-graph-olap-platform">What is Graph OLAP Platform?</h3>
+<p>Graph OLAP Platform is an enterprise analytics solution that enables you to:</p>
+<ul>
+<li><strong>Transform relational data into graphs</strong>: Define mappings from your Starburst
+data warehouse tables to graph structures with nodes and relationships.</li>
+<li><strong>Create point-in-time snapshots</strong>: Export data from Starburst into optimized
+graph format for analysis.</li>
+<li><strong>Run graph instances</strong>: Spin up in-memory graph databases loaded with your
+snapshot data.</li>
+<li><strong>Query and analyze</strong>: Execute Cypher queries and run graph algorithms
+(PageRank, community detection, shortest paths, and more).</li>
+</ul>
+<h3 id="what-is-the-jupyter-sdk">What is the Jupyter SDK?</h3>
+<p>The Graph OLAP SDK (<code>graph-olap-sdk</code>) is the <strong>sole user interface</strong> for the
+Graph OLAP Platform. All platform operations - from creating mappings to running
+graph algorithms - are performed through this Python SDK in Jupyter notebooks.
+There is no separate web console or GUI; the SDK is the complete interface for
+analysts.</p>
+<p>The SDK provides:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Mapping Management</strong></td>
+<td>Full CRUD operations: create, read, update, delete, copy, and list mappings</td>
+</tr>
+<tr>
+<td><strong>Instance Lifecycle</strong></td>
+<td>Create instances from mappings, terminate, update CPU, monitor status</td>
+</tr>
+<tr>
+<td><strong>Graph Queries</strong></td>
+<td>Execute Cypher queries with DataFrame results (Polars/Pandas)</td>
+</tr>
+<tr>
+<td><strong>Graph Algorithms</strong></td>
+<td>Run native algorithms (PageRank, Louvain) and 500+ NetworkX algorithms</td>
+</tr>
+<tr>
+<td><strong>Schema Discovery</strong></td>
+<td>Browse Starburst catalogs, schemas, tables, and columns to design mappings</td>
+</tr>
+<tr>
+<td><strong>Visualization</strong></td>
+<td>Interactive graph visualization with PyVis and Plotly</td>
+</tr>
+<tr>
+<td><strong>Admin Operations</strong></td>
+<td>Bulk delete, cluster health monitoring, configuration (role-based)</td>
+</tr>
+<tr>
+<td><strong>Zero-Config Setup</strong></td>
+<td>Auto-discovery from environment variables in JupyterHub</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Note:</strong> The SDK is notebook-first by design. This ensures all operations are
+reproducible, version-controllable, and seamlessly integrated with data science
+workflows.</p>
+</blockquote>
+<h3 id="key-concepts">Key Concepts</h3>
+<p>Before diving into the SDK, understand these core concepts:</p>
+<pre><code class="hljs">┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Mapping   │────▶│  Instance   │────▶│   Query     │
+│  (Schema)   │     │  (Runtime)  │     │  (Analysis) │
+└─────────────┘     └─────────────┘     └─────────────┘</code></pre>
+<ul>
+<li><strong>Mapping</strong>: Defines which tables become nodes and which become relationships.</li>
+<li><strong>Instance</strong>: A running graph database created from a mapping (snapshot managed internally).</li>
+<li><strong>Connection</strong>: A handle to an instance for executing Cypher queries and algorithms.</li>
+</ul>
+<blockquote>
+<p><strong>Note:</strong> Snapshots are managed internally when creating instances. Use
+<code>client.instances.create_from_mapping()</code> to create instances directly from mappings.</p>
+</blockquote>
+<hr>
+<h2 id="installation-options">Installation Options</h2>
+<p>The SDK offers tiered installation options to match your needs:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Dependencies</th>
+<th>Command</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Minimal</strong></td>
+<td>httpx, pydantic, tenacity</td>
+<td><code>pip install graph-olap-sdk</code></td>
+<td>API operations only</td>
+</tr>
+<tr>
+<td><strong>Analyst</strong></td>
+<td>+ polars, pandas, pyvis, plotly, networkx, itables</td>
+<td><code>pip install graph-olap-sdk[all]</code></td>
+<td>Full notebook analytics</td>
+</tr>
+<tr>
+<td><strong>Interactive</strong></td>
+<td>+ ipywidgets</td>
+<td><code>pip install graph-olap-sdk[all,interactive]</code></td>
+<td>Widget-based UI</td>
+</tr>
+</tbody></table>
+<h3 id="minimal-installation">Minimal Installation</h3>
+<p>For environments where you only need API operations without DataFrame or
+visualization support:</p>
+<pre><code class="hljs language-bash">pip install graph-olap-sdk</code></pre>
+<p><strong>Core dependencies:</strong></p>
+<ul>
+<li><code>httpx&gt;=0.28.1</code> - HTTP client with connection pooling</li>
+<li><code>pydantic&gt;=2.12.5</code> - Data validation and serialization</li>
+<li><code>tenacity&gt;=9.1.2</code> - Retry logic for transient failures</li>
+<li><code>graph-olap-schemas&gt;=1.0.0</code> - Shared type definitions</li>
+</ul>
+<h3 id="analyst-installation-recommended">Analyst Installation (Recommended)</h3>
+<p>For full notebook analytics with DataFrames and visualization:</p>
+<pre><code class="hljs language-bash">pip install graph-olap-sdk[all]</code></pre>
+<p><strong>Additional dependencies:</strong></p>
+<ul>
+<li><code>polars&gt;=1.36.1</code> - Fast DataFrame library (default)</li>
+<li><code>pandas&gt;=2.3.3</code> - Traditional DataFrame support</li>
+<li><code>networkx&gt;=3.6.1</code> - Graph analysis library</li>
+<li><code>pyvis&gt;=0.3.2</code> - Interactive graph visualization</li>
+<li><code>plotly&gt;=6.5.0</code> - Interactive charts and graphs</li>
+<li><code>itables&gt;=2.6.2</code> - Interactive DataFrames in notebooks</li>
+</ul>
+<h3 id="verifying-installation">Verifying Installation</h3>
+<p>After installation, verify the SDK is working:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">import</span> graph_olap
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Graph OLAP SDK version: <span class="hljs-subst">{graph_olap.__version__}</span>&quot;</span>)</code></pre>
+<hr>
+<h2 id="quick-start-example">Quick Start Example</h2>
+<p>This section demonstrates the most common workflow: connecting to the platform,
+creating resources, and running queries.</p>
+<h3 id="simplest-approach-zero-config-notebook">Simplest Approach: Zero-Config Notebook</h3>
+<p>If you&#39;re in a JupyterHub environment with pre-configured environment variables:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> notebook
+
+<span class="hljs-comment"># Auto-discovers configuration from environment</span>
+client = notebook.connect()
+
+<span class="hljs-comment"># List available mappings</span>
+mappings = client.mappings.<span class="hljs-built_in">list</span>()
+<span class="hljs-keyword">for</span> mapping <span class="hljs-keyword">in</span> mappings.items:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;- <span class="hljs-subst">{mapping.name}</span> (ID: <span class="hljs-subst">{mapping.<span class="hljs-built_in">id</span>}</span>)&quot;</span>)</code></pre>
+<h3 id="explicit-configuration">Explicit Configuration</h3>
+<p>For explicit control over connection settings:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+
+<span class="hljs-comment"># Create client with explicit configuration</span>
+client = GraphOLAPClient(
+    api_url=<span class="hljs-string">&quot;https://graph-olap.example.com&quot;</span>,
+    api_key=<span class="hljs-string">&quot;your-api-key-here&quot;</span>,
+)
+
+<span class="hljs-comment"># Or load from environment with overrides</span>
+client = GraphOLAPClient.from_env(
+    timeout=<span class="hljs-number">60.0</span>,      <span class="hljs-comment"># Override default 30s timeout</span>
+    max_retries=<span class="hljs-number">5</span>,     <span class="hljs-comment"># Override default 3 retries</span>
+)</code></pre>
+<h3 id="complete-workflow-example">Complete Workflow Example</h3>
+<p>Here&#39;s a complete workflow from mapping to analysis:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+<span class="hljs-comment"># 1. Connect to the platform</span>
+client = GraphOLAPClient.from_env()
+
+<span class="hljs-comment"># 2. Find an existing mapping</span>
+mappings = client.mappings.<span class="hljs-built_in">list</span>(search=<span class="hljs-string">&quot;customer&quot;</span>)
+mapping = mappings.items[<span class="hljs-number">0</span>]
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Using mapping: <span class="hljs-subst">{mapping.name}</span>&quot;</span>)
+
+<span class="hljs-comment"># 3. Create an instance directly from mapping (snapshot managed internally)</span>
+instance = client.instances.create_from_mapping_and_wait(
+    mapping_id=mapping.<span class="hljs-built_in">id</span>,
+    name=<span class="hljs-string">&quot;Customer Analysis Instance&quot;</span>,
+    wrapper_type=WrapperType.FALKORDB,  <span class="hljs-comment"># or WrapperType.RYUGRAPH</span>
+    ttl=<span class="hljs-number">24</span>,  <span class="hljs-comment"># Auto-terminate after 24 hours</span>
+    timeout=<span class="hljs-number">600</span>,  <span class="hljs-comment"># Wait up to 10 minutes for export + startup</span>
+)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Instance running: <span class="hljs-subst">{instance.<span class="hljs-built_in">id</span>}</span>&quot;</span>)
+
+<span class="hljs-comment"># 4. Connect and query</span>
+conn = client.instances.connect(instance.<span class="hljs-built_in">id</span>)
+
+<span class="hljs-comment"># Simple query</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN n.name, n.id LIMIT 10&quot;</span>)
+<span class="hljs-built_in">print</span>(result.to_polars())
+
+<span class="hljs-comment"># 5. Run algorithms</span>
+conn.algo.pagerank(
+    node_label=<span class="hljs-string">&quot;Customer&quot;</span>,
+    property_name=<span class="hljs-string">&quot;influence_score&quot;</span>,
+    damping=<span class="hljs-number">0.85</span>,
+)
+
+<span class="hljs-comment"># Query the results</span>
+top_customers = conn.query_df(
+    <span class="hljs-string">&quot;MATCH (c:Customer) &quot;</span>
+    <span class="hljs-string">&quot;RETURN c.name, c.influence_score &quot;</span>
+    <span class="hljs-string">&quot;ORDER BY c.influence_score DESC &quot;</span>
+    <span class="hljs-string">&quot;LIMIT 10&quot;</span>
+)
+<span class="hljs-built_in">print</span>(top_customers)
+
+<span class="hljs-comment"># 6. Clean up when done</span>
+client.instances.terminate(instance.<span class="hljs-built_in">id</span>)
+client.close()</code></pre>
+<h3 id="using-quick-start-helper">Using Quick Start Helper</h3>
+<p>For rapid prototyping, use the <code>quick_start</code> method:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> GraphOLAPClient
+<span class="hljs-keyword">from</span> graph_olap_schemas <span class="hljs-keyword">import</span> WrapperType
+
+client = GraphOLAPClient.from_env()
+
+<span class="hljs-comment"># Creates instance from mapping in one call (snapshot managed internally)</span>
+conn = client.quick_start(
+    mapping_id=<span class="hljs-number">1</span>,
+    wrapper_type=WrapperType.FALKORDB,
+    instance_name=<span class="hljs-string">&quot;Quick Instance&quot;</span>,
+)
+
+<span class="hljs-comment"># Ready to query immediately</span>
+count = conn.query_scalar(<span class="hljs-string">&quot;MATCH (n) RETURN count(n)&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Total nodes: <span class="hljs-subst">{count}</span>&quot;</span>)
+
+<span class="hljs-comment"># Remember to terminate when done!</span>
+client.instances.terminate(conn.instance_id)</code></pre>
+<hr>
+<h2 id="authentication-setup">Authentication Setup</h2>
+<p>The SDK supports multiple authentication modes for different environments.</p>
+<h3 id="environment-variables">Environment Variables</h3>
+<p>The recommended approach is to use environment variables:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GRAPH_OLAP_API_URL</code></td>
+<td>Base URL for the control plane API</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>GRAPH_OLAP_API_KEY</code></td>
+<td>API key for Bearer token authentication</td>
+<td>Production</td>
+</tr>
+<tr>
+<td><code>GRAPH_OLAP_INTERNAL_API_KEY</code></td>
+<td>Internal API key (X-Internal-Api-Key header)</td>
+<td>Internal services</td>
+</tr>
+<tr>
+<td><code>GRAPH_OLAP_USERNAME</code></td>
+<td>Username for development/testing</td>
+<td>Development</td>
+</tr>
+</tbody></table>
+<p><strong>Example <code>.env</code> file:</strong></p>
+<pre><code class="hljs language-bash">GRAPH_OLAP_API_URL=https://graph-olap.example.com
+GRAPH_OLAP_API_KEY=sk-your-api-key-here</code></pre>
+<h3 id="authentication-modes">Authentication Modes</h3>
+<p>The SDK supports three authentication modes with clear priority rules:</p>
+<h4 id="1-api-key-production">1. API Key (Production)</h4>
+<p>Standard Bearer token authentication for production environments:</p>
+<pre><code class="hljs language-python">client = GraphOLAPClient(
+    api_url=<span class="hljs-string">&quot;https://graph-olap.example.com&quot;</span>,
+    api_key=<span class="hljs-string">&quot;sk-your-api-key&quot;</span>,
+)
+<span class="hljs-comment"># Sends: Authorization: Bearer sk-your-api-key</span></code></pre>
+<h4 id="2-internal-api-key-service-to-service">2. Internal API Key (Service-to-Service)</h4>
+<p>For internal services communicating within the platform:</p>
+<pre><code class="hljs language-python">client = GraphOLAPClient(
+    api_url=<span class="hljs-string">&quot;https://graph-olap.internal&quot;</span>,
+    internal_api_key=<span class="hljs-string">&quot;internal-service-key&quot;</span>,
+)
+<span class="hljs-comment"># Sends: X-Internal-Api-Key: internal-service-key</span></code></pre>
+<h4 id="3-username-header-development">3. Username Header (Development)</h4>
+<p>For local development and testing without authentication gateway:</p>
+<pre><code class="hljs language-python">client = GraphOLAPClient(
+    api_url=<span class="hljs-string">&quot;http://localhost:8000&quot;</span>,
+    username=<span class="hljs-string">&quot;test-user&quot;</span>,
+    role=<span class="hljs-string">&quot;analyst&quot;</span>,  <span class="hljs-comment"># Optional: analyst, admin, or ops</span>
+)
+<span class="hljs-comment"># Sends: X-Username: test-user</span>
+<span class="hljs-comment"># Sends: X-User-Role: analyst</span></code></pre>
+<p><strong>Authentication Priority:</strong></p>
+<p>When multiple credentials are provided:</p>
+<ol>
+<li><code>internal_api_key</code> takes precedence over <code>api_key</code></li>
+<li><code>username</code> is always sent if provided (in addition to API key)</li>
+</ol>
+<h3 id="jupyterhub-zero-config">JupyterHub Zero-Config</h3>
+<p>In JupyterHub environments, the SDK auto-discovers configuration:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap <span class="hljs-keyword">import</span> notebook
+
+<span class="hljs-comment"># Environment variables are pre-configured by JupyterHub</span>
+client = notebook.connect()</code></pre>
+<p>The JupyterHub deployment automatically injects:</p>
+<ul>
+<li><code>GRAPH_OLAP_API_URL</code> pointing to the control plane</li>
+<li><code>GRAPH_OLAP_API_KEY</code> with user-specific credentials</li>
+</ul>
+<h3 id="production-environment-notes">Production Environment Notes</h3>
+<blockquote>
+<p><strong>Important</strong>: In production environments with authentication gateways
+(IAP/OIDC), the <code>username</code> and <code>role</code> parameters are <strong>ignored</strong>. The gateway
+strips user-supplied headers and injects validated identity from the
+authenticated session. These parameters are only effective in local
+development and E2E testing.</p>
+</blockquote>
+<hr>
+<h2 id="query-methods-reference">Query Methods Reference</h2>
+<p>Once connected to an instance, you have several query methods available:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>query()</code></td>
+<td><code>QueryResult</code></td>
+<td>Full result with multiple format options</td>
+</tr>
+<tr>
+<td><code>query_df()</code></td>
+<td>DataFrame</td>
+<td>Direct DataFrame (Polars or Pandas)</td>
+</tr>
+<tr>
+<td><code>query_scalar()</code></td>
+<td>Single value</td>
+<td>COUNT, SUM, or single-value queries</td>
+</tr>
+<tr>
+<td><code>query_one()</code></td>
+<td>Dict or None</td>
+<td>Single row as dictionary</td>
+</tr>
+</tbody></table>
+<h3 id="query-examples">Query Examples</h3>
+<pre><code class="hljs language-python">conn = client.instances.connect(instance_id)
+
+<span class="hljs-comment"># Full QueryResult with format options</span>
+result = conn.query(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN n.name, n.age LIMIT 100&quot;</span>)
+polars_df = result.to_polars()
+pandas_df = result.to_pandas()
+
+<span class="hljs-comment"># Direct DataFrame</span>
+df = conn.query_df(
+    <span class="hljs-string">&quot;MATCH (n)-[r]-&gt;(m) RETURN n.name, type(r), m.name&quot;</span>,
+    backend=<span class="hljs-string">&quot;polars&quot;</span>,  <span class="hljs-comment"># or &quot;pandas&quot;</span>
+)
+
+<span class="hljs-comment"># Single scalar value</span>
+count = conn.query_scalar(<span class="hljs-string">&quot;MATCH (n:Customer) RETURN count(n)&quot;</span>)
+
+<span class="hljs-comment"># Single row as dict</span>
+customer = conn.query_one(
+    <span class="hljs-string">&quot;MATCH (c:Customer {id: $id}) RETURN c.name, c.email&quot;</span>,
+    parameters={<span class="hljs-string">&quot;id&quot;</span>: <span class="hljs-string">&quot;C001&quot;</span>}
+)</code></pre>
+<h3 id="using-parameters">Using Parameters</h3>
+<p>Always use parameters for dynamic values to prevent injection:</p>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Good: Using parameters</span>
+result = conn.query(
+    <span class="hljs-string">&quot;MATCH (c:Customer) WHERE c.region = $region RETURN c&quot;</span>,
+    parameters={<span class="hljs-string">&quot;region&quot;</span>: <span class="hljs-string">&quot;APAC&quot;</span>}
+)
+
+<span class="hljs-comment"># Bad: String interpolation (vulnerable to injection)</span>
+region = <span class="hljs-string">&quot;APAC&quot;</span>
+result = conn.query(<span class="hljs-string">f&quot;MATCH (c:Customer) WHERE c.region = &#x27;<span class="hljs-subst">{region}</span>&#x27; RETURN c&quot;</span>)</code></pre>
+<hr>
+<h2 id="error-handling">Error Handling</h2>
+<p>The SDK raises specific exceptions for different error conditions:</p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">from</span> graph_olap.exceptions <span class="hljs-keyword">import</span> (
+    NotFoundError,
+    ValidationError,
+    InvalidStateError,
+    TimeoutError,
+    AuthenticationError,
+)
+
+<span class="hljs-keyword">try</span>:
+    instance = client.instances.get(<span class="hljs-number">999</span>)
+<span class="hljs-keyword">except</span> NotFoundError:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Instance not found&quot;</span>)
+<span class="hljs-keyword">except</span> AuthenticationError:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Invalid API key&quot;</span>)
+<span class="hljs-keyword">except</span> ValidationError <span class="hljs-keyword">as</span> e:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Invalid request: <span class="hljs-subst">{e}</span>&quot;</span>)</code></pre>
+<h3 id="common-exceptions">Common Exceptions</h3>
+<table>
+<thead>
+<tr>
+<th>Exception</th>
+<th>HTTP Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>NotFoundError</code></td>
+<td>404</td>
+<td>Resource doesn&#39;t exist</td>
+</tr>
+<tr>
+<td><code>ValidationError</code></td>
+<td>400/422</td>
+<td>Invalid request parameters</td>
+</tr>
+<tr>
+<td><code>AuthenticationError</code></td>
+<td>401</td>
+<td>Invalid or missing credentials</td>
+</tr>
+<tr>
+<td><code>PermissionDeniedError</code></td>
+<td>403</td>
+<td>Insufficient permissions</td>
+</tr>
+<tr>
+<td><code>InvalidStateError</code></td>
+<td>409</td>
+<td>Resource in wrong state for operation</td>
+</tr>
+<tr>
+<td><code>TimeoutError</code></td>
+<td>-</td>
+<td>Operation exceeded timeout</td>
+</tr>
+<tr>
+<td><code>InstanceFailedError</code></td>
+<td>-</td>
+<td>Instance startup failed</td>
+</tr>
+<tr>
+<td><code>SnapshotFailedError</code></td>
+<td>-</td>
+<td>Snapshot creation failed</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="next-steps">Next Steps</h2>
+<p>Now that you have the SDK installed and configured, explore these topics:</p>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Document</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Core Concepts</strong></td>
+<td><a href="./02-core-concepts.manual.html">02-core-concepts.manual.md</a></td>
+<td>Resource hierarchy and workflows</td>
+</tr>
+<tr>
+<td><strong>API Reference</strong></td>
+<td><a href="./03-api-reference.manual.html">03-api-reference.manual.md</a></td>
+<td>Full SDK API documentation</td>
+</tr>
+<tr>
+<td><strong>Advanced Topics</strong></td>
+<td><a href="./05-advanced-topics.manual.html">05-advanced-topics.manual.md</a></td>
+<td>Connection management, error handling</td>
+</tr>
+<tr>
+<td><strong>Examples</strong></td>
+<td><a href="./06-examples.manual.html">06-examples.manual.md</a></td>
+<td>Complete workflow examples</td>
+</tr>
+</tbody></table>
+<h3 id="getting-help">Getting Help</h3>
+<p>If you encounter issues:</p>
+<ol>
+<li>Check the error message for specific guidance</li>
+<li>Review environment variable configuration</li>
+<li>Verify network connectivity to the API URL</li>
+<li>Check instance status before querying</li>
+</ol>
+<hr>
+<h2 id="appendix-environment-variable-reference">Appendix: Environment Variable Reference</h2>
+<p>Complete list of environment variables recognized by the SDK:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GRAPH_OLAP_API_URL</code></td>
+<td><em>required</em></td>
+<td>Control plane API base URL</td>
+</tr>
+<tr>
+<td><code>GRAPH_OLAP_API_KEY</code></td>
+<td>None</td>
+<td>API key for Bearer authentication</td>
+</tr>
+<tr>
+<td><code>GRAPH_OLAP_INTERNAL_API_KEY</code></td>
+<td>None</td>
+<td>Internal service API key</td>
+</tr>
+<tr>
+<td><code>GRAPH_OLAP_USERNAME</code></td>
+<td>None</td>
+<td>Username header for development</td>
+</tr>
+<tr>
+<td><code>GRAPH_OLAP_IN_CLUSTER_MODE</code></td>
+<td>false</td>
+<td>Use in-cluster DNS for wrapper connections</td>
+</tr>
+<tr>
+<td><code>GRAPH_OLAP_NAMESPACE</code></td>
+<td>e2e-test</td>
+<td>Kubernetes namespace for in-cluster mode</td>
+</tr>
+<tr>
+<td><code>GRAPH_OLAP_SKIP_HEALTH_CHECK</code></td>
+<td>false</td>
+<td>Skip wrapper health checks (port-forward mode)</td>
+</tr>
+</tbody></table>
+<hr>
+<p><em>Document version: 1.0.0 | Last updated: 2025-01</em></p>
+
+  </div>
+
+  <!-- Mermaid with ELK layout support -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+
+    // Register ELK layout engine
+    mermaid.registerLayoutLoaders(elkLayouts);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+    
+  </script>
+</body>
+</html>

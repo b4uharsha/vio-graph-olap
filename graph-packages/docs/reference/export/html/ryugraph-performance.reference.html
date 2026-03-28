@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ryugraph-performance.reference</title>
+
+  <!-- Highlight.js for code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+
+  <style>
+    :root {
+      --max-width: 900px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+      --color-text: #24292f;
+      --color-bg: #ffffff;
+      --color-border: #d0d7de;
+      --color-link: #0969da;
+      --color-code-bg: #f6f8fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 2em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    p {
+      margin: 1em 0;
+    }
+
+    pre {
+      background: var(--color-code-bg);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      line-height: 1.45;
+    }
+
+    pre.mermaid {
+      background: transparent;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+    }
+
+    :not(pre) > code {
+      background: var(--color-code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 0 1em;
+      border-left: 4px solid var(--color-border);
+      color: #57606a;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+
+    th, td {
+      border: 1px solid var(--color-border);
+      padding: 0.5em 1em;
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-code-bg);
+      font-weight: 600;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a.image-link {
+      display: block;
+      cursor: zoom-in;
+    }
+
+    a.image-link:hover img {
+      opacity: 0.9;
+      outline: 2px solid var(--color-link);
+      outline-offset: 2px;
+    }
+
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    li {
+      margin: 0.25em 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 2em 0;
+    }
+
+    details {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      background: var(--color-code-bg);
+      border-radius: 6px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .container {
+        max-width: none;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="ryugraph-performance-reference">RyuGraph Performance Reference</h1>
+<p>This document captures performance characteristics, threading models, and optimal configuration for RyuGraph (KuzuDB fork) in the Graph OLAP Platform context.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Read these documents first:</p>
+<ul>
+<li><a href="./ryugraph-networkx.reference.html">ryugraph-networkx.reference.md</a> - Core RyuGraph/KuzuDB capabilities</li>
+<li><a href="./data-pipeline.reference.html">data-pipeline.reference.md</a> - COPY FROM syntax and data flow</li>
+</ul>
+<h2 id="related-documents">Related Documents</h2>
+<ul>
+<li><a href="../component-designs/ryugraph-wrapper.design.html">ryugraph-wrapper.design.md</a> - Wrapper implementation</li>
+<li><a href="../system-design/system.architecture.design.html">system.architecture.design.md</a> - Pod specifications</li>
+</ul>
+<hr>
+<h2 id="kuzudb-architecture-overview">KuzuDB Architecture Overview</h2>
+<h3 id="storage-model">Storage Model</h3>
+<p>KuzuDB uses a <strong>memory-mapped, disk-backed</strong> storage architecture:</p>
+<pre><code class="hljs">┌─────────────────────────────────────────────────────────┐
+│                    Application                          │
+├─────────────────────────────────────────────────────────┤
+│                    Buffer Pool                          │
+│              (configurable size)                        │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│  │ Page 1  │ │ Page 2  │ │ Page 3  │ │  ...    │       │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │
+├─────────────────────────────────────────────────────────┤
+│              Disk Storage (Persistent)                  │
+│         + Spill Files (Temporary, auto-cleaned)         │
+└─────────────────────────────────────────────────────────┘</code></pre>
+<p><strong>Key characteristics:</strong></p>
+<ul>
+<li><strong>Buffer pool</strong>: In-memory cache for frequently accessed pages</li>
+<li><strong>Disk spilling</strong>: Automatic overflow to disk when buffer pool is full</li>
+<li><strong>Columnar storage</strong>: Data stored in columns for vectorized processing</li>
+<li><strong>MVCC</strong>: Multi-version concurrency control for transactions</li>
+</ul>
+<h3 id="concurrency-model">Concurrency Model</h3>
+<p>KuzuDB uses a <strong>single-writer, multiple-reader</strong> model:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Concurrency</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Read queries</td>
+<td>Parallel</td>
+<td>Multiple connections can read simultaneously</td>
+</tr>
+<tr>
+<td>Write transactions</td>
+<td>Serialized</td>
+<td>Only one write at a time (internal locking)</td>
+</tr>
+<tr>
+<td>COPY FROM</td>
+<td>Serialized</td>
+<td>Each COPY FROM is a write transaction</td>
+</tr>
+</tbody></table>
+<p><strong>Important</strong>: Even with multiple connections, write operations (including COPY FROM) are serialized internally by KuzuDB&#39;s transaction manager.</p>
+<hr>
+<h2 id="copy-from-pipeline-architecture">COPY FROM Pipeline Architecture</h2>
+<h3 id="internal-threading-model">Internal Threading Model</h3>
+<p>From <a href="https://github.com/kuzudb/kuzu/issues/1640">KuzuDB COPY Pipeline documentation</a>:</p>
+<pre><code class="hljs">┌─────────────────────────────────────────────────────────────────┐
+│                    COPY FROM Pipeline                           │
+│                                                                 │
+│   ┌─────────┐    ┌───────────┐    ┌─────────────┐    ┌──────┐  │
+│   │ READER  │───→│ COPY_NODE │───→│ BUILD_INDEX │───→│ SINK │  │
+│   │ Thread1 │    └───────────┘    └─────────────┘    └──────┘  │
+│   ├─────────┤                                                   │
+│   │ READER  │    All READERs share ReaderSharedState            │
+│   │ Thread2 │    (coordinates file chunk distribution)          │
+│   ├─────────┤                                                   │
+│   │ READER  │    Each processes &quot;morsels&quot; (2048 tuples)         │
+│   │ Thread3 │    independently                                  │
+│   └─────────┘                                                   │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+<p><strong>Morsel-driven parallelism</strong>: Work is divided into small chunks (morsels) that are dynamically distributed across threads during runtime. Each thread processes its chunk independently, synchronizing only when necessary.</p>
+<h3 id="node-vs-relationship-loading">Node vs Relationship Loading</h3>
+<p><strong>Node COPY Pipeline:</strong></p>
+<pre><code class="hljs">READER → COPY_NODE → BUILD_INDEX → COPY_SINK</code></pre>
+<p><strong>Relationship COPY Pipeline</strong> (more complex):</p>
+<pre><code class="hljs">Pipeline 1 (child):  READER → INDEX_LOOKUP → REL_SHUFFLE
+Pipeline 2 (parent): DATA_CHUNK_SCAN → COPY_REL_COLUMNS → COPY_REL_LISTS → COPY_SINK</code></pre>
+<p>The REL_SHUFFLE operator accumulates and partitions relationship data for node-group-specific processing.</p>
+<h3 id="serial-vs-non-serial-mode">Serial vs Non-Serial Mode</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Use Case</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Serial</strong></td>
+<td>Node tables with SERIAL primary key</td>
+<td>Sequential reads, one node group at a time</td>
+</tr>
+<tr>
+<td><strong>Non-Serial</strong></td>
+<td>All other tables</td>
+<td>Parallel reads, 2048-tuple chunks</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="io-characteristics">I/O Characteristics</h2>
+<h3 id="time-distribution-during-copy-from-gcs">Time Distribution During COPY FROM GCS</h3>
+<pre><code class="hljs">Time breakdown per operation (approximate):
+
+├── Network I/O (GCS HTTP requests) ─────────────── 70-85%
+│   └── Latency: 50-200ms per request
+│   └── Waiting for bytes over network
+│
+├── Parquet Decoding ───────────────────────────── 10-20%
+│   └── Decompression (snappy/zstd)
+│   └── Column parsing
+│   └── SIMD-optimized, fast
+│
+├── Memory/Buffer Operations ───────────────────── 3-8%
+│   └── Buffer pool allocation
+│   └── Data structure construction
+│
+└── Disk I/O (storage write) ───────────────────── 2-5%
+    └── SSD/NVMe is fast
+    └── Only bottleneck at very high throughput</code></pre>
+<p><strong>Key insight</strong>: COPY FROM GCS is <strong>I/O bound</strong>, not CPU bound. Network latency dominates execution time.</p>
+<h3 id="evidence-benchmarks">Evidence: Benchmarks</h3>
+<p>From <a href="https://blog.kuzudb.com/post/kuzu-0.7.0-release/">KuzuDB 0.7.0 Release</a>:</p>
+<table>
+<thead>
+<tr>
+<th>Buffer Pool</th>
+<th>Load Time (17B edges)</th>
+<th>Relative</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>420 GB</td>
+<td>60 min</td>
+<td>1.0x</td>
+</tr>
+<tr>
+<td>205 GB</td>
+<td>68 min</td>
+<td>1.13x</td>
+</tr>
+<tr>
+<td>102 GB</td>
+<td>70 min</td>
+<td>1.17x</td>
+</tr>
+</tbody></table>
+<p><strong>Analysis</strong>: 4x less memory = only 17% slower. This confirms I/O-bound behavior.</p>
+<p>From <a href="https://github.com/duckdb/duckdb/issues/15140">DuckDB GCS Performance Issue</a>:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sequential HTTP</td>
+<td>100s</td>
+</tr>
+<tr>
+<td>8 parallel threads</td>
+<td>15-17s</td>
+</tr>
+<tr>
+<td><strong>Speedup</strong></td>
+<td><strong>6x</strong></td>
+</tr>
+</tbody></table>
+<p>The bottleneck is <strong>request-level concurrency</strong>, not bandwidth or CPU.</p>
+<hr>
+<h2 id="threading-configuration">Threading Configuration</h2>
+<h3 id="why-more-threads-than-cpus">Why More Threads Than CPUs</h3>
+<p>For I/O-bound workloads, optimal thread count follows:</p>
+<pre><code class="hljs">optimal_threads = CPUs × (1 + wait_time / compute_time)</code></pre>
+<p>For GCS Parquet loading:</p>
+<ul>
+<li>Wait time (network): ~100ms average</li>
+<li>Compute time (decode): ~10ms average</li>
+<li>Ratio: <strong>10:1</strong></li>
+<li>Optimal: <code>CPUs × 4-10</code></li>
+</ul>
+<h3 id="cpu-utilization-patterns">CPU Utilization Patterns</h3>
+<p><strong>With threads = CPUs (suboptimal):</strong></p>
+<pre><code class="hljs">Thread 1: [WAIT GCS ~~~~~~~~][decode][WAIT GCS ~~~~~~~~][decode]
+Thread 2: [WAIT GCS ~~~~~~~~][decode][WAIT GCS ~~~~~~~~][decode]
+Thread 3: [WAIT GCS ~~~~~~~~][decode][WAIT GCS ~~~~~~~~][decode]
+Thread 4: [WAIT GCS ~~~~~~~~][decode][WAIT GCS ~~~~~~~~][decode]
+
+CPU Cores: [idle~~~][busy][idle~~~~~~~~~~~][busy][idle~~~]
+
+Average CPU utilization: ~15-25%  ← CPUs mostly idle!</code></pre>
+<p><strong>With threads = CPUs × 4 (optimal):</strong></p>
+<pre><code class="hljs">Threads 1-4:   [WAIT][decode][WAIT][decode]...
+Threads 5-8:   [WAIT][decode][WAIT][decode]...
+Threads 9-12:  [WAIT][decode][WAIT][decode]...
+Threads 13-16: [WAIT][decode][WAIT][decode]...
+
+CPU Cores: Always have work from threads finishing I/O
+
+Average CPU utilization: ~60-80%  ← Much better!</code></pre>
+<h3 id="recommended-thread-configuration">Recommended Thread Configuration</h3>
+<table>
+<thead>
+<tr>
+<th>Pod vCPUs</th>
+<th><code>max_num_threads</code></th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>8</td>
+<td>8x multiplier for I/O bound</td>
+</tr>
+<tr>
+<td>2</td>
+<td>12-16</td>
+<td>Good parallelism</td>
+</tr>
+<tr>
+<td>4</td>
+<td>16-24</td>
+<td>Matches KuzuDB benchmarks</td>
+</tr>
+<tr>
+<td>8</td>
+<td>24-32</td>
+<td>Diminishing returns beyond this</td>
+</tr>
+</tbody></table>
+<p><strong>Upper bounds:</strong></p>
+<ul>
+<li>GCS rate limits (~5,000 reads/sec per bucket)</li>
+<li>Memory per thread (~10-50MB)</li>
+<li>Kernel scheduling overhead</li>
+</ul>
+<hr>
+<h2 id="buffer-pool-configuration">Buffer Pool Configuration</h2>
+<h3 id="what-buffer-pool-does">What Buffer Pool Does</h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Buffer Pool Usage</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>COPY FROM</td>
+<td>Caches pages being written, handles overflow</td>
+</tr>
+<tr>
+<td>Idle</td>
+<td>Minimal usage</td>
+</tr>
+<tr>
+<td>Queries</td>
+<td>Caches frequently accessed data pages</td>
+</tr>
+<tr>
+<td>Algorithms</td>
+<td><strong>Not used</strong> - NetworkX uses Python heap</td>
+</tr>
+</tbody></table>
+<h3 id="sizing-guidelines">Sizing Guidelines</h3>
+<p><strong>Formula:</strong></p>
+<pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">optimal_buffer_pool</span>(<span class="hljs-params">pod_memory_limit_bytes: <span class="hljs-built_in">int</span></span>) -&gt; <span class="hljs-built_in">int</span>:
+    <span class="hljs-string">&quot;&quot;&quot;
+    Calculate optimal buffer pool size.
+
+    Guidelines:
+    - Min 512MB (KuzuDB minimum effective)
+    - Max 2GB (diminishing returns beyond this for typical workloads)
+    - ~25% of pod limit (leave room for algorithms)
+    &quot;&quot;&quot;</span>
+    min_buffer = <span class="hljs-number">512</span> * <span class="hljs-number">1024</span> * <span class="hljs-number">1024</span>       <span class="hljs-comment"># 512MB</span>
+    max_buffer = <span class="hljs-number">2</span> * <span class="hljs-number">1024</span> * <span class="hljs-number">1024</span> * <span class="hljs-number">1024</span>  <span class="hljs-comment"># 2GB</span>
+    target_ratio = <span class="hljs-number">0.25</span>                   <span class="hljs-comment"># 25% of limit</span>
+
+    calculated = <span class="hljs-built_in">int</span>(pod_memory_limit_bytes * target_ratio)
+    <span class="hljs-keyword">return</span> <span class="hljs-built_in">max</span>(min_buffer, <span class="hljs-built_in">min</span>(calculated, max_buffer))</code></pre>
+<p><strong>Examples:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Pod Memory Limit</th>
+<th>Buffer Pool</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>4 GB</td>
+<td>1 GB</td>
+<td>Leave 3GB for Python/algorithms</td>
+</tr>
+<tr>
+<td>6 GB</td>
+<td>1.5 GB</td>
+<td>Balanced</td>
+</tr>
+<tr>
+<td>8 GB</td>
+<td>2 GB</td>
+<td>Capped at 2GB</td>
+</tr>
+<tr>
+<td>16 GB</td>
+<td>2 GB</td>
+<td>Diminishing returns beyond 2GB</td>
+</tr>
+</tbody></table>
+<h3 id="why-not-larger">Why Not Larger?</h3>
+<p>From benchmarks:</p>
+<ul>
+<li>Buffer pool has <strong>diminishing returns</strong> for COPY FROM (I/O bound)</li>
+<li>Query caching benefits plateau around 2GB for typical graph sizes</li>
+<li>Larger buffer pool = less memory for NetworkX algorithms</li>
+<li>Disk spilling handles overflow efficiently</li>
+</ul>
+<hr>
+<h2 id="write-serialization-impact">Write Serialization Impact</h2>
+<h3 id="what-can-and-cannot-be-parallelized">What Can and Cannot Be Parallelized</h3>
+<p><strong>CAN be parallelized (within single COPY FROM):</strong></p>
+<ul>
+<li>Multiple READER threads fetch files concurrently</li>
+<li>Parquet decoding happens in parallel</li>
+<li>GCS requests are concurrent</li>
+</ul>
+<p><strong>CANNOT be parallelized (between COPY FROM statements):</strong></p>
+<ul>
+<li>Each COPY FROM is a write transaction</li>
+<li>KuzuDB serializes write transactions</li>
+<li>COPY Customer → COPY Product → COPY PURCHASED must be sequential</li>
+</ul>
+<h3 id="correct-loading-pattern">Correct Loading Pattern</h3>
+<pre><code class="hljs language-python"><span class="hljs-comment"># Sequential approach (correct)</span>
+<span class="hljs-keyword">for</span> node_def <span class="hljs-keyword">in</span> node_definitions:
+    <span class="hljs-comment"># Internal parallelism: multiple threads read Parquet files</span>
+    conn.execute(<span class="hljs-string">f&quot;COPY <span class="hljs-subst">{node_def.label}</span> FROM &#x27;gs://.../*.parquet&#x27;&quot;</span>)
+
+<span class="hljs-keyword">for</span> edge_def <span class="hljs-keyword">in</span> edge_definitions:
+    <span class="hljs-comment"># Internal parallelism: multiple threads read Parquet files</span>
+    conn.execute(<span class="hljs-string">f&quot;COPY <span class="hljs-subst">{edge_def.<span class="hljs-built_in">type</span>}</span> FROM &#x27;gs://.../*.parquet&#x27;&quot;</span>)</code></pre>
+<p><strong>Application-level parallelism does NOT help</strong> because:</p>
+<ol>
+<li>Single connection is not thread-safe</li>
+<li>Multiple connections still serialize writes internally</li>
+<li>The only parallelism is WITHIN each COPY FROM</li>
+</ol>
+<hr>
+<h2 id="kubernetes-memory-configuration">Kubernetes Memory Configuration</h2>
+<h3 id="pod-memory-phases">Pod Memory Phases</h3>
+<pre><code class="hljs">Memory Usage Over Pod Lifecycle
+
+  8GB ┤                              ╭──────╮ Algorithm
+      │                              │      │ Execution
+  6GB ┤                         ╭────╯      ╰────╮
+      │        ╭────────╮       │                │
+  4GB ┤   ╭────╯        ╰───────╯                ╰───╮
+      │   │ COPY FROM                                │
+  2GB ┤───╯                                          ╰────
+      │ Startup              Idle      Query    Idle
+  0GB ┼────────────────────────────────────────────────────
+      Time →</code></pre>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Memory Profile</th>
+<th>Duration</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Startup</td>
+<td>~500MB (Python, libs)</td>
+<td>10-30s</td>
+</tr>
+<tr>
+<td>COPY FROM</td>
+<td>1-3GB (buffer pool active)</td>
+<td>30s-5min</td>
+</tr>
+<tr>
+<td>Idle/Queries</td>
+<td>1-2GB (buffer pool + overhead)</td>
+<td>Majority</td>
+</tr>
+<tr>
+<td>Algorithm</td>
+<td>3-8GB <strong>spike</strong> (NetworkX in heap)</td>
+<td>10s-10min</td>
+</tr>
+</tbody></table>
+<h3 id="qos-classes">QoS Classes</h3>
+<p>From <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/">Kubernetes Pod QoS</a>:</p>
+<table>
+<thead>
+<tr>
+<th>QoS Class</th>
+<th>Condition</th>
+<th>Eviction Priority</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Guaranteed</strong></td>
+<td>requests == limits</td>
+<td>Last (highest priority)</td>
+</tr>
+<tr>
+<td><strong>Burstable</strong></td>
+<td>requests &lt; limits</td>
+<td>Middle</td>
+</tr>
+<tr>
+<td><strong>BestEffort</strong></td>
+<td>No requests/limits</td>
+<td>First (lowest priority)</td>
+</tr>
+</tbody></table>
+<h3 id="configuration-strategies">Configuration Strategies</h3>
+<h4 id="strategy-a-guaranteed-production-critical">Strategy A: Guaranteed (Production-Critical)</h4>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">resources:</span>
+  <span class="hljs-attr">requests:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;4Gi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;1000m&quot;</span>
+  <span class="hljs-attr">limits:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;4Gi&quot;</span>    <span class="hljs-comment"># Same = Guaranteed QoS</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;2000m&quot;</span>
+
+<span class="hljs-attr">env:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">BUFFER_POOL_SIZE</span>
+    <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;1610612736&quot;</span>  <span class="hljs-comment"># 1.5GB</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">MAX_THREADS</span>
+    <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;8&quot;</span></code></pre>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>QoS</td>
+<td>Guaranteed</td>
+</tr>
+<tr>
+<td>Pods per 32GB node</td>
+<td>~7</td>
+</tr>
+<tr>
+<td>OOM Risk</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>Higher</td>
+</tr>
+</tbody></table>
+<h4 id="strategy-b-smart-burstable-balanced">Strategy B: Smart Burstable (Balanced)</h4>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">resources:</span>
+  <span class="hljs-attr">requests:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;2Gi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;500m&quot;</span>
+  <span class="hljs-attr">limits:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;6Gi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;2000m&quot;</span>
+
+<span class="hljs-attr">env:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">BUFFER_POOL_SIZE</span>
+    <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;1073741824&quot;</span>  <span class="hljs-comment"># 1GB</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">MAX_THREADS</span>
+    <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;16&quot;</span></code></pre>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>QoS</td>
+<td>Burstable</td>
+</tr>
+<tr>
+<td>Pods per 32GB node</td>
+<td>~12-14</td>
+</tr>
+<tr>
+<td>OOM Risk</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>Moderate</td>
+</tr>
+</tbody></table>
+<h4 id="strategy-c-dedicated-node-pool-recommended">Strategy C: Dedicated Node Pool (Recommended)</h4>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">resources:</span>
+  <span class="hljs-attr">requests:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;3Gi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;1000m&quot;</span>
+  <span class="hljs-attr">limits:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;8Gi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;2000m&quot;</span>
+
+<span class="hljs-attr">env:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">BUFFER_POOL_SIZE</span>
+    <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;2147483648&quot;</span>  <span class="hljs-comment"># 2GB</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">MAX_THREADS</span>
+    <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;16&quot;</span></code></pre>
+<p>With dedicated node pool (n2-highmem-4, 32GB):</p>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>QoS</td>
+<td>Burstable (isolated)</td>
+</tr>
+<tr>
+<td>Pods per node</td>
+<td>3-4</td>
+</tr>
+<tr>
+<td>OOM Risk</td>
+<td>Very Low</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>Optimal</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="gke-node-pool-configuration">GKE Node Pool Configuration</h2>
+<h3 id="recommended-machine-type">Recommended Machine Type</h3>
+<table>
+<thead>
+<tr>
+<th>Machine</th>
+<th>vCPU</th>
+<th>Memory</th>
+<th>Memory/CPU</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>e2-standard-4</td>
+<td>4</td>
+<td>16 GB</td>
+<td>4 GB/vCPU</td>
+<td>Budget</td>
+</tr>
+<tr>
+<td>e2-highmem-4</td>
+<td>4</td>
+<td>32 GB</td>
+<td>8 GB/vCPU</td>
+<td>Good</td>
+</tr>
+<tr>
+<td><strong>n2-highmem-4</strong></td>
+<td>4</td>
+<td>32 GB</td>
+<td>8 GB/vCPU</td>
+<td><strong>Recommended</strong></td>
+</tr>
+<tr>
+<td>n2-highmem-8</td>
+<td>8</td>
+<td>64 GB</td>
+<td>8 GB/vCPU</td>
+<td>Large clusters</td>
+</tr>
+</tbody></table>
+<p><strong>n2-highmem-4</strong> provides the best balance of memory capacity and cost for graph workloads.</p>
+<h3 id="dedicated-node-pool-setup">Dedicated Node Pool Setup</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-comment"># Terraform example</span>
+<span class="hljs-string">resource</span> <span class="hljs-string">&quot;google_container_node_pool&quot;</span> <span class="hljs-string">&quot;graph_instances&quot;</span> {
+  <span class="hljs-string">name</span>    <span class="hljs-string">=</span> <span class="hljs-string">&quot;graph-instances&quot;</span>
+  <span class="hljs-string">cluster</span> <span class="hljs-string">=</span> <span class="hljs-string">google_container_cluster.primary.name</span>
+
+  <span class="hljs-string">node_config</span> {
+    <span class="hljs-string">machine_type</span> <span class="hljs-string">=</span> <span class="hljs-string">&quot;n2-highmem-4&quot;</span>
+
+    <span class="hljs-string">taint</span> {
+      <span class="hljs-string">key</span>    <span class="hljs-string">=</span> <span class="hljs-string">&quot;workload&quot;</span>
+      <span class="hljs-string">value</span>  <span class="hljs-string">=</span> <span class="hljs-string">&quot;graph-instance&quot;</span>
+      <span class="hljs-string">effect</span> <span class="hljs-string">=</span> <span class="hljs-string">&quot;NO_SCHEDULE&quot;</span>
+    }
+
+    <span class="hljs-string">labels</span> <span class="hljs-string">=</span> {
+      <span class="hljs-string">&quot;workload-type&quot;</span> <span class="hljs-string">=</span> <span class="hljs-string">&quot;graph-instance&quot;</span>
+    }
+  }
+
+  <span class="hljs-string">autoscaling</span> {
+    <span class="hljs-string">min_node_count</span> <span class="hljs-string">=</span> <span class="hljs-number">0</span>
+    <span class="hljs-string">max_node_count</span> <span class="hljs-string">=</span> <span class="hljs-number">10</span>
+  }
+}</code></pre>
+<h3 id="pod-tolerations">Pod Tolerations</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">tolerations:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">key:</span> <span class="hljs-string">&quot;workload&quot;</span>
+      <span class="hljs-attr">operator:</span> <span class="hljs-string">&quot;Equal&quot;</span>
+      <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;graph-instance&quot;</span>
+      <span class="hljs-attr">effect:</span> <span class="hljs-string">&quot;NoSchedule&quot;</span>
+  <span class="hljs-attr">nodeSelector:</span>
+    <span class="hljs-attr">workload-type:</span> <span class="hljs-string">graph-instance</span></code></pre>
+<hr>
+<h2 id="recommended-configuration-summary">Recommended Configuration Summary</h2>
+<h3 id="environment-variables">Environment Variables</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">env:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">BUFFER_POOL_SIZE</span>
+    <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;2147483648&quot;</span>    <span class="hljs-comment"># 2GB</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">MAX_THREADS</span>
+    <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;16&quot;</span>            <span class="hljs-comment"># 4x vCPU for I/O-bound GCS</span></code></pre>
+<h3 id="pod-resources">Pod Resources</h3>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">resources:</span>
+  <span class="hljs-attr">requests:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;3Gi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;1000m&quot;</span>
+  <span class="hljs-attr">limits:</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;8Gi&quot;</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;2000m&quot;</span></code></pre>
+<h3 id="memory-budget">Memory Budget</h3>
+<pre><code class="hljs">┌──────────────────────────────────────────────┐
+│        8 GB Pod Memory Limit                 │
+├──────────────────────────────────────────────┤
+│  Python + FastAPI + libs       ~500 MB       │
+│  KuzuDB overhead               ~200 MB       │
+│  Buffer pool                  2,048 MB       │
+│  ──────────────────────────────────────      │
+│  Available for algorithms     ~5,250 MB      │
+└──────────────────────────────────────────────┘</code></pre>
+<h3 id="node-pool">Node Pool</h3>
+<ul>
+<li>Machine type: n2-highmem-4 (32GB RAM, 4 vCPU)</li>
+<li>Pods per node: 3-4 (safe burst capacity)</li>
+<li>Autoscaling: 0-10 nodes</li>
+<li>Taints: Isolate graph workloads</li>
+</ul>
+<hr>
+<h2 id="performance-comparison">Performance Comparison</h2>
+<table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th>COPY FROM</th>
+<th>Queries</th>
+<th>Algorithms</th>
+<th>Stability</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Current (512Mi/4Gi, 2GB buffer)</td>
+<td>Good</td>
+<td>Good</td>
+<td><strong>Risk OOM</strong></td>
+<td>Poor</td>
+</tr>
+<tr>
+<td>Strategy A (4Gi/4Gi, 1.5GB)</td>
+<td>Good</td>
+<td>Good</td>
+<td>Limited</td>
+<td>Excellent</td>
+</tr>
+<tr>
+<td>Strategy B (2Gi/6Gi, 1GB)</td>
+<td>Good</td>
+<td>Moderate</td>
+<td>Good</td>
+<td>Good</td>
+</tr>
+<tr>
+<td><strong>Strategy C (3Gi/8Gi, 2GB)</strong></td>
+<td><strong>Excellent</strong></td>
+<td><strong>Good</strong></td>
+<td><strong>Excellent</strong></td>
+<td><strong>Excellent</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="references">References</h2>
+<h3 id="kuzudb-documentation">KuzuDB Documentation</h3>
+<ul>
+<li><a href="https://github.com/kuzudb/kuzu/issues/1640">KuzuDB COPY Pipeline Architecture</a></li>
+<li><a href="https://blog.kuzudb.com/post/kuzu-0.7.0-release/">KuzuDB 0.7.0 Release - Benchmarks</a></li>
+<li><a href="https://thedataquarry.com/blog/embedded-db-2/">The Data Quarry - Kuzu Performance Analysis</a></li>
+</ul>
+<h3 id="gcpkubernetes-documentation">GCP/Kubernetes Documentation</h3>
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/">Kubernetes Pod QoS Classes</a></li>
+<li><a href="https://cloud.google.com/kubernetes-engine/docs/how-to/pod-bursting-gke">GKE Pod Bursting</a></li>
+<li><a href="https://docs.cloud.google.com/kubernetes-engine/docs/concepts/plan-node-sizes">GKE Node Sizing</a></li>
+</ul>
+<h3 id="related-issues">Related Issues</h3>
+<ul>
+<li><a href="https://github.com/duckdb/duckdb/issues/15140">DuckDB GCS Performance Issue</a> - I/O patterns for cloud storage</li>
+</ul>
+
+  </div>
+
+  <!-- Mermaid with ELK layout support -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+
+    // Register ELK layout engine
+    mermaid.registerLayoutLoaders(elkLayouts);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      }
+    });
+    
+  </script>
+</body>
+</html>

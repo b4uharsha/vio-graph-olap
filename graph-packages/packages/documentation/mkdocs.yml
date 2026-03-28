@@ -1,0 +1,370 @@
+site_name: Graph OLAP Platform Documentation
+site_url: https://docs.graph-olap.example.com
+repo_url: https://github.com/graph-olap/graph-olap
+repo_name: graph-olap/graph-olap
+
+docs_dir: build
+
+# Use .html file URLs instead of directory URLs (e.g., /page.html not /page/)
+# Required for fast build which pre-renders notebooks to .html files
+use_directory_urls: false
+
+theme:
+  name: material
+  custom_dir: overrides
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+
+plugins:
+  - search
+  - mkdocs-jupyter:
+      include_source: true
+      execute: false
+      allow_errors: true
+      include: ["*.ipynb"]
+      ignore: ["*.nbconvert.ipynb", ".ipynb_checkpoints/*"]
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+extra_css:
+  - stylesheets/notebook.css
+  - stylesheets/layout.css
+  - stylesheets/dropdown-nav.css
+
+extra_javascript:
+  - https://unpkg.com/mermaid@11/dist/mermaid.min.js
+  - https://unpkg.com/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.min.js
+  - javascripts/mermaid-init.js
+  - javascripts/toc-toggle.js
+  - javascripts/dropdown-nav.js
+
+nav:
+  - Home: index.md
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # USER GUIDE - For Analysts & Data Scientists
+  # ═══════════════════════════════════════════════════════════════════════════
+  - User Guide:
+    - Overview: user-guide/index.md
+    - SDK Manual:
+      - Getting Started: user-manual/sdk/01-getting-started.manual.md
+      - Core Concepts: user-manual/sdk/02-core-concepts.manual.md
+      - API Reference: user-manual/sdk/03-api-reference.manual.md
+      - Graph Algorithms: user-manual/sdk/04-graph-algorithms.manual.md
+      - Advanced Topics: user-manual/sdk/05-advanced-topics.manual.md
+      - Examples: user-manual/sdk/06-examples.manual.md
+    - Notebooks:
+      - Overview: user-guide/notebooks/index.md
+      - Tutorials:
+        - Overview: notebooks/tutorials/_index.ipynb
+        - Getting Started:
+          - Welcome: notebooks/tutorials/00-start-here/00_welcome.ipynb
+          - Quick Start: notebooks/tutorials/00-start-here/01_quick_start.ipynb
+        - Fundamentals:
+          - Overview: notebooks/tutorials/01-fundamentals/_index.ipynb
+          - Getting Started: notebooks/tutorials/01-fundamentals/01_getting_started.ipynb
+          - Understanding Resources: notebooks/tutorials/01-fundamentals/02_understanding_resources.ipynb
+          - Querying Graphs: notebooks/tutorials/01-fundamentals/03_querying_graphs.ipynb
+          - Graph Algorithms: notebooks/tutorials/01-fundamentals/04_graph_algorithms.ipynb
+          - Exploring Schemas: notebooks/tutorials/01-fundamentals/05_exploring_schemas.ipynb
+          - Managing Favorites: notebooks/tutorials/01-fundamentals/06_managing_favorites.ipynb
+          - Handling Errors: notebooks/tutorials/01-fundamentals/07_handling_errors.ipynb
+          - Complete Workflows: notebooks/tutorials/01-fundamentals/08_complete_workflows.ipynb
+        - Cypher Queries:
+          - Overview: notebooks/tutorials/02-cypher/_index.ipynb
+          - Property Graphs: notebooks/tutorials/02-cypher/01_property_graphs.ipynb
+          - First Queries: notebooks/tutorials/02-cypher/02_first_queries.ipynb
+          - Pattern Matching: notebooks/tutorials/02-cypher/03_pattern_matching.ipynb
+          - Aggregations: notebooks/tutorials/02-cypher/04_aggregations.ipynb
+          - Collections: notebooks/tutorials/02-cypher/05_collections.ipynb
+          - Subqueries: notebooks/tutorials/02-cypher/06_subqueries.ipynb
+          - Algorithm Integration: notebooks/tutorials/02-cypher/07_algorithm_integration.ipynb
+          - Query Optimization: notebooks/tutorials/02-cypher/08_query_optimization.ipynb
+        - Graph Algorithms:
+          - Overview: notebooks/tutorials/03-algorithms/_index.ipynb
+          - Getting Started:
+            - Introduction: notebooks/tutorials/03-algorithms/01_introduction.ipynb
+            - Understanding Results: notebooks/tutorials/03-algorithms/02_understanding_results.ipynb
+            - Performance: notebooks/tutorials/03-algorithms/03_performance.ipynb
+          - Centrality:
+            - Finding Important Nodes: notebooks/tutorials/03-algorithms/04_finding_important_nodes.ipynb
+            - Bridge Detection: notebooks/tutorials/03-algorithms/05_bridge_detection.ipynb
+            - Influence Networks: notebooks/tutorials/03-algorithms/06_influence_networks.ipynb
+            - Centrality Comparison: notebooks/tutorials/03-algorithms/07_centrality_comparison.ipynb
+          - Community Detection:
+            - Finding Communities: notebooks/tutorials/03-algorithms/08_finding_communities.ipynb
+            - Connected Components: notebooks/tutorials/03-algorithms/09_connected_components.ipynb
+            - Hierarchical Communities: notebooks/tutorials/03-algorithms/10_hierarchical_communities.ipynb
+            - Community Quality: notebooks/tutorials/03-algorithms/11_community_quality.ipynb
+          - Pathfinding:
+            - Shortest Paths: notebooks/tutorials/03-algorithms/12_shortest_paths.ipynb
+            - Network Connectivity: notebooks/tutorials/03-algorithms/13_network_connectivity.ipynb
+            - Spanning Trees: notebooks/tutorials/03-algorithms/14_spanning_trees.ipynb
+          - Similarity & Prediction:
+            - Node Similarity: notebooks/tutorials/03-algorithms/15_node_similarity.ipynb
+            - Predicting Connections: notebooks/tutorials/03-algorithms/16_predicting_connections.ipynb
+            - Recommendations: notebooks/tutorials/03-algorithms/17_recommendations.ipynb
+          - Structural Analysis:
+            - Network Density: notebooks/tutorials/03-algorithms/18_network_density.ipynb
+            - Core Decomposition: notebooks/tutorials/03-algorithms/19_core_decomposition.ipynb
+            - Network Metrics: notebooks/tutorials/03-algorithms/20_network_metrics.ipynb
+          - Advanced:
+            - Graph Embeddings: notebooks/tutorials/03-algorithms/21_graph_embeddings.ipynb
+            - Combining Algorithms: notebooks/tutorials/03-algorithms/22_combining_algorithms.ipynb
+            - Case Studies: notebooks/tutorials/03-algorithms/23_case_studies.ipynb
+        - Administration:
+          - Overview: notebooks/tutorials/04-admin-ops/_index.ipynb
+          - Admin Overview: notebooks/tutorials/04-admin-ops/01_admin_overview.ipynb
+          - Bulk Operations: notebooks/tutorials/04-admin-ops/02_bulk_operations.ipynb
+          - Ops Overview: notebooks/tutorials/04-admin-ops/03_ops_overview.ipynb
+          - Platform Configuration: notebooks/tutorials/04-admin-ops/04_platform_configuration.ipynb
+        - Advanced Topics:
+          - Overview: notebooks/tutorials/05-advanced/_index.ipynb
+          - Instance Lifecycle: notebooks/tutorials/05-advanced/01_instance_lifecycle.ipynb
+          - Export Pipeline: notebooks/tutorials/05-advanced/02_export_pipeline.ipynb
+          - Advanced Mappings: notebooks/tutorials/05-advanced/03_advanced_mappings.ipynb
+          - Version Diffing: notebooks/tutorials/05-advanced/04_version_diffing.ipynb
+          - Graph Engines: notebooks/tutorials/05-advanced/05_graph_engines.ipynb
+      - SDK Reference:
+        - Overview: notebooks/reference/sdk/_index.ipynb
+        - GraphOLAP Client: notebooks/reference/sdk/grapholap_client.ipynb
+        - Instance Resource: notebooks/reference/sdk/instance_resource.ipynb
+        - Instance Connection: notebooks/reference/sdk/instance_connection.ipynb
+        - Snapshot Resource: notebooks/reference/sdk/snapshot_resource.ipynb
+        - Mapping Resource: notebooks/reference/sdk/mapping_resource.ipynb
+        - Schema Resource: notebooks/reference/sdk/schema_resource.ipynb
+        - Algorithm Manager: notebooks/reference/sdk/algorithm_manager.ipynb
+        - NetworkX Manager: notebooks/reference/sdk/networkx_manager.ipynb
+        - Favorite Resource: notebooks/reference/sdk/favorite_resource.ipynb
+        - Health Resource: notebooks/reference/sdk/health_resource.ipynb
+        - Admin Resource: notebooks/reference/sdk/admin_resource.ipynb
+        - Ops Resource: notebooks/reference/sdk/ops_resource.ipynb
+        - Models: notebooks/reference/sdk/models.ipynb
+        - Exceptions: notebooks/reference/sdk/exceptions.ipynb
+      - Algorithm Reference:
+        - Overview: notebooks/reference/algorithms/_index.ipynb
+        - Centrality:
+          - Overview: notebooks/reference/algorithms/centrality/_index.ipynb
+          - PageRank: notebooks/reference/algorithms/centrality/pagerank.ipynb
+          - Degree: notebooks/reference/algorithms/centrality/degree.ipynb
+          - Betweenness: notebooks/reference/algorithms/centrality/betweenness.ipynb
+          - Closeness: notebooks/reference/algorithms/centrality/closeness.ipynb
+          - Eigenvector: notebooks/reference/algorithms/centrality/eigenvector.ipynb
+        - Community:
+          - Overview: notebooks/reference/algorithms/community/_index.ipynb
+          - Louvain: notebooks/reference/algorithms/community/louvain.ipynb
+          - Leiden: notebooks/reference/algorithms/community/leiden.ipynb
+          - Label Propagation: notebooks/reference/algorithms/community/label_propagation.ipynb
+          - Girvan Newman: notebooks/reference/algorithms/community/girvan_newman.ipynb
+        - Pathfinding:
+          - Overview: notebooks/reference/algorithms/pathfinding/_index.ipynb
+          - Shortest Path: notebooks/reference/algorithms/pathfinding/shortest_path.ipynb
+          - Dijkstra: notebooks/reference/algorithms/pathfinding/dijkstra.ipynb
+          - A*: notebooks/reference/algorithms/pathfinding/astar.ipynb
+          - BFS: notebooks/reference/algorithms/pathfinding/bfs.ipynb
+          - Single Source Path: notebooks/reference/algorithms/pathfinding/single_source_path.ipynb
+          - Single Source Shortest: notebooks/reference/algorithms/pathfinding/single_source_shortest_path.ipynb
+          - All Pairs Shortest: notebooks/reference/algorithms/pathfinding/all_pairs_shortest_path.ipynb
+          - Minimum Spanning Tree: notebooks/reference/algorithms/pathfinding/minimum_spanning_tree.ipynb
+          - Minimum Spanning Forest: notebooks/reference/algorithms/pathfinding/minimum_spanning_forest.ipynb
+        - Similarity:
+          - Overview: notebooks/reference/algorithms/similarity/_index.ipynb
+          - Jaccard: notebooks/reference/algorithms/similarity/jaccard.ipynb
+          - Adamic Adar: notebooks/reference/algorithms/similarity/adamic_adar.ipynb
+          - Common Neighbors: notebooks/reference/algorithms/similarity/common_neighbors.ipynb
+          - Preferential Attachment: notebooks/reference/algorithms/similarity/preferential_attachment.ipynb
+        - Structural:
+          - Overview: notebooks/reference/algorithms/structural/_index.ipynb
+          - K-Core: notebooks/reference/algorithms/structural/kcore.ipynb
+          - Triangle Count: notebooks/reference/algorithms/structural/triangle_count.ipynb
+          - Clustering Coefficient: notebooks/reference/algorithms/structural/clustering_coefficient.ipynb
+          - Strongly Connected: notebooks/reference/algorithms/structural/strongly_connected.ipynb
+          - Weakly Connected: notebooks/reference/algorithms/structural/weakly_connected.ipynb
+        - Embeddings:
+          - Overview: notebooks/reference/algorithms/embeddings/_index.ipynb
+          - Node2Vec: notebooks/reference/algorithms/embeddings/node2vec.ipynb
+      - E2E Platform Tests:
+        - Prerequisites: tests/e2e/notebooks/platform-tests/01_prerequisites.ipynb
+        - Health Checks: tests/e2e/notebooks/platform-tests/02_health_checks.ipynb
+        - Managing Resources: tests/e2e/notebooks/platform-tests/03_managing_resources.ipynb
+        - Cypher Basics: tests/e2e/notebooks/platform-tests/04_cypher_basics.ipynb
+        - Exploring Schemas: tests/e2e/notebooks/platform-tests/05_exploring_schemas.ipynb
+        - Graph Algorithms: tests/e2e/notebooks/platform-tests/06_graph_algorithms.ipynb
+        - End to End Workflows: tests/e2e/notebooks/platform-tests/07_end_to_end_workflows.ipynb
+        - Quick Start: tests/e2e/notebooks/platform-tests/08_quick_start.ipynb
+        - Handling Errors: tests/e2e/notebooks/platform-tests/09_handling_errors.ipynb
+        - Bookmarks: tests/e2e/notebooks/platform-tests/10_bookmarks.ipynb
+        - Instance Lifecycle: tests/e2e/notebooks/platform-tests/11_instance_lifecycle.ipynb
+        - Export Data: tests/e2e/notebooks/platform-tests/12_export_data.ipynb
+        - Advanced Mappings: tests/e2e/notebooks/platform-tests/13_advanced_mappings.ipynb
+        - Version Diffing: tests/e2e/notebooks/platform-tests/14_version_diffing.ipynb
+        - Background Jobs: tests/e2e/notebooks/platform-tests/15_background_jobs.ipynb
+        - FalkorDB: tests/e2e/notebooks/platform-tests/16_falkordb.ipynb
+        - Authorization: tests/e2e/notebooks/platform-tests/17_authorization.ipynb
+        - Admin Operations: tests/e2e/notebooks/platform-tests/18_admin_operations.ipynb
+        - Ops Configuration: tests/e2e/notebooks/platform-tests/19_ops_configuration.ipynb
+    - Appendices:
+      - Environment Variables: user-manual/sdk/appendices/a-environment-variables.manual.md
+      - Error Codes: user-manual/sdk/appendices/b-error-codes.manual.md
+      - Cypher Reference: user-manual/sdk/appendices/c-cypher-reference.manual.md
+      - Algorithm Reference: user-manual/sdk/appendices/d-algorithm-reference.manual.md
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # DEVELOPER GUIDE - For SDK Contributors & Integrators
+  # ═══════════════════════════════════════════════════════════════════════════
+  - Developer Guide:
+    - Overview: developer-guide/index.md
+    - API Specifications:
+      - Quick Reference: system-design/api.quick-reference.md
+      - Common Patterns: system-design/api.common.spec.md
+      - Endpoints:
+        - Instances: system-design/api/api.instances.spec.md
+        - Snapshots: system-design/api/api.snapshots.spec.md
+        - Mappings: system-design/api/api.mappings.spec.md
+        - Wrapper: system-design/api/api.wrapper.spec.md
+        - Starburst: system-design/api/api.starburst.spec.md
+        - Admin Ops: system-design/api/api.admin-ops.spec.md
+        - Favorites: system-design/api/api.favorites.spec.md
+        - Internal: system-design/api/api.internal.spec.md
+    - Component Designs:
+      - Overview: component-designs/README.md
+      - Control Plane:
+        - Design: component-designs/control-plane.design.md
+        - Services: component-designs/control-plane.services.design.md
+        - Background Jobs: component-designs/control-plane.background-jobs.design.md
+        - Mapping Generator: component-designs/control-plane.mapping-generator.design.md
+      - Export Worker:
+        - Design: component-designs/export-worker.design.md
+        - Clients: component-designs/export-worker.clients.design.md
+      - Graph Wrappers:
+        - RyuGraph Wrapper: component-designs/ryugraph-wrapper.design.md
+        - RyuGraph Services: component-designs/ryugraph-wrapper.services.design.md
+        - FalkorDB Wrapper: component-designs/falkordb-wrapper.design.md
+      - Jupyter SDK:
+        - Design: component-designs/jupyter-sdk.design.md
+        - Connection: component-designs/jupyter-sdk.connection.design.md
+        - Algorithms: component-designs/jupyter-sdk.algorithms.design.md
+        - Algorithms (Native): component-designs/jupyter-sdk.algorithms.native.design.md
+        - Algorithms (NetworkX): component-designs/jupyter-sdk.algorithms.networkx.design.md
+        - Deployment: component-designs/jupyter-sdk.deployment.design.md
+        - Models: component-designs/jupyter-sdk.models.spec.md
+      - Other:
+        - Instance Lifecycle: component-designs/instance-lifecycle-management.design.md
+        - Web Application: component-designs/web-application.design.md
+        - E2E Tests Design: component-designs/e2e-tests.design.md
+        - E2E Tests Reference: component-designs/e2e-tests.reference.md
+    - Data Model:
+      - Domain Model: system-design/domain.model.overview.md
+      - Data Model: system-design/data.model.spec.md
+    - Development Standards:
+      - Python Comments: standards/python-commenting-standards.md
+      - Python Linting: standards/python-linting-standards.md
+      - Python Logging: standards/python-logging-standards.md
+      - Container Builds: standards/container-build-standards.md
+      - Notebook Design: standards/notebook-design-system.md
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # OPERATIONS - For DevOps, SRE, Platform Engineers
+  # ═══════════════════════════════════════════════════════════════════════════
+  - Operations:
+    - Overview: operations/index.md
+    - Deployment:
+      - Deployment Guide: operations/deployment.design.md
+      - ArgoCD Quickstart: operations/argocd-quickstart.md
+      - Rollback Procedures: operations/deployment-rollback-procedures.md
+      - Container Registry: operations/container-registry-setup.md
+    - Monitoring:
+      - Observability: operations/observability.design.md
+      - DevOps Plan: operations/devops-implementation-plan.md
+    - Testing:
+      - Testing Strategy: operations/testing.strategy.md
+      - E2E Scenarios: operations/e2e-testing-scenarios.md
+      - E2E Runbook: operations/e2e-tests.runbook.md
+    - Infrastructure:
+      - GKE Configuration: reference/gke-configuration.reference.md
+      - Distroless Migration: operations/distroless-migration.md
+      - Open Questions: operations/open-questions.md
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ARCHITECTURE - For Architects & Technical Leads
+  # ═══════════════════════════════════════════════════════════════════════════
+  - Architecture:
+    - Overview: architecture/index.md
+    - Executive Summary: architecture/executive-overview.md
+    - System Design:
+      - Overview: system-design/README.md
+      - Architecture: system-design/system.architecture.design.md
+      - Transport Security: system-design/transport-security.design.md
+    - Foundation:
+      - Overview: foundation/README.md
+      - Requirements: foundation/requirements.md
+      - Guardrails: foundation/architectural.guardrails.md
+    - UX Design:
+      - Overview: ux-design/README.md
+      - Components: ux-design/ux.components.spec.md
+      - Copy: ux-design/ux.copy.spec.md
+      - Flows: ux-design/ux.flows.md
+      - Readiness Assessment: ux-design/ux.readiness-assessment.md
+      - Review Findings: ux-design/ux.review-findings.md
+    - Technical Reference:
+      - Overview: reference/README.md
+      - Data Pipeline: reference/data-pipeline.reference.md
+      - RyuGraph NetworkX: reference/ryugraph-networkx.reference.md
+      - RyuGraph Performance: reference/ryugraph-performance.reference.md
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # SECURITY & GOVERNANCE - For Security & Compliance Teams
+  # ═══════════════════════════════════════════════════════════════════════════
+  - Security & Governance:
+    - Security:
+      - Security Audit: security/container-security-audit.md
+      - Improvements: security/security-improvements-summary.md
+    - Governance:
+      - Supply Chain: governance/container-supply-chain.governance.md
+      - Change Control: governance/change-control-framework.governance.md
+

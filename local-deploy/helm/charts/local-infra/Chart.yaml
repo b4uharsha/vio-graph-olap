@@ -1,0 +1,22 @@
+apiVersion: v2
+name: local-infra
+description: Shared local infrastructure for Graph OLAP services
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+maintainers:
+  - name: Graph OLAP Team
+
+keywords:
+  - local-infra
+  - infrastructure
+  - postgresql
+  - development
+
+home: https://github.com/graph-olap/graph-olap
+sources:
+  - https://github.com/graph-olap/graph-olap
+
+# No dependencies - this is the foundational infrastructure chart
+dependencies: []

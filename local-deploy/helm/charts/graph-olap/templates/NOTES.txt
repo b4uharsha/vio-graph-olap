@@ -1,0 +1,33 @@
+Graph OLAP Platform has been deployed!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Environment: {{ .Values.global.environment | default "production" }}
+
+Components deployed:
+{{- if and (hasKey .Values "system") (index .Values "system" "enabled") }}
+  - System resources (namespaces, quotas, network policies)
+{{- end }}
+{{- if and (hasKey .Values "control-plane") (index .Values "control-plane" "enabled") }}
+  - Control Plane API (FastAPI backend)
+{{- end }}
+{{- if and (hasKey .Values "export-worker") (index .Values "export-worker" "enabled") }}
+  - Export Worker (KEDA-scaled database polling)
+{{- end }}
+{{- if and (hasKey .Values "observability") (index .Values "observability" "enabled") }}
+  - Observability (Prometheus metrics, alerting)
+{{- end }}
+
+To verify the deployment:
+
+  kubectl get pods -n {{ .Release.Namespace }}
+  kubectl get svc -n {{ .Release.Namespace }}
+
+{{- if and (hasKey .Values "control-plane") (index .Values "control-plane" "enabled") }}
+
+Control Plane API:
+  kubectl port-forward svc/{{ .Release.Name }}-control-plane 8080:8080 -n {{ .Release.Namespace }}
+  curl http://localhost:8080/health
+{{- end }}
+
+For more information, see the README in the graph-olap-local-deploy repository.
