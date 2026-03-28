@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from graph_olap_schemas import WrapperType
 
@@ -151,64 +151,6 @@ class InstanceResource:
         """
         response = self._http.get(f"/api/instances/{instance_id}")
         return Instance.from_api_response(response["data"])
-
-    # =========================================================================
-    # DEPRECATED: Use create_from_mapping() instead
-    # Commented out as part of API simplification - 2025-01
-    # =========================================================================
-    # def create(
-    #     self,
-    #     snapshot_id: int,
-    #     name: str,
-    #     wrapper_type: WrapperType,
-    #     *,
-    #     description: str | None = None,
-    #     ttl: int | str | None = None,
-    #     inactivity_timeout: int | str | None = None,
-    #     cpu_cores: int | None = None,
-    # ) -> Instance:
-    #     """Create a new graph instance from a snapshot.
-    #
-    #     Args:
-    #         snapshot_id: Source snapshot ID (must be 'ready')
-    #         name: Display name
-    #         wrapper_type: Graph database wrapper type (REQUIRED - must be explicitly specified)
-    #         description: Optional description
-    #         ttl: Time-to-live (hours as int/str or ISO 8601 duration like "PT24H")
-    #         inactivity_timeout: Inactivity timeout (hours as int/str or ISO 8601 duration)
-    #         cpu_cores: CPU cores for the instance (1-8)
-    #
-    #     Returns:
-    #         Instance object (status will be 'starting')
-    #
-    #     Raises:
-    #         InvalidStateError: If snapshot is not 'ready'
-    #         ConcurrencyLimitError: If instance limits exceeded
-    #     """
-    #     # Handle both WrapperType enum and string
-    #     wrapper_type_str = wrapper_type.value if hasattr(wrapper_type, "value") else wrapper_type
-    #     body: dict[str, Any] = {
-    #         "snapshot_id": snapshot_id,
-    #         "wrapper_type": wrapper_type_str,
-    #         "name": name,
-    #     }
-    #     if description:
-    #         body["description"] = description
-    #
-    #     # Normalize durations to ISO 8601 format
-    #     normalized_ttl = _normalize_duration(ttl)
-    #     if normalized_ttl:
-    #         body["ttl"] = normalized_ttl
-    #
-    #     normalized_timeout = _normalize_duration(inactivity_timeout)
-    #     if normalized_timeout:
-    #         body["inactivity_timeout"] = normalized_timeout
-    #
-    #     if cpu_cores is not None:
-    #         body["cpu_cores"] = cpu_cores
-    #
-    #     response = self._http.post("/api/instances", json=body)
-    #     return Instance.from_api_response(response["data"])
 
     def update(
         self,
@@ -444,7 +386,7 @@ class InstanceResource:
         try:
             response = httpx.get(health_url, timeout=timeout, headers=headers)
             response.raise_for_status()
-            return response.json()
+            return cast(dict[str, object], response.json())
         except (httpx.ConnectError, httpx.TimeoutException) as e:
             raise ConnectionError(
                 f"Cannot reach wrapper health endpoint for instance {instance_id} at {health_url}: {e}"
@@ -522,151 +464,6 @@ class InstanceResource:
             time.sleep(poll_interval)
 
         raise TimeoutError(f"Instance {instance_id} did not start within {timeout}s")
-
-    # =========================================================================
-    # DEPRECATED: Use create_from_mapping_and_wait() instead
-    # Commented out as part of API simplification - 2025-01
-    # =========================================================================
-    # def create_and_wait(
-    #     self,
-    #     snapshot_id: int,
-    #     name: str,
-    #     wrapper_type: WrapperType,
-    #     *,
-    #     description: str | None = None,
-    #     ttl: int | str | None = None,
-    #     inactivity_timeout: int | str | None = None,
-    #     cpu_cores: int | None = None,
-    #     timeout: int = 300,
-    #     poll_interval: int = 5,
-    #     on_progress: Callable[[str, int, int], None] | None = None,
-    # ) -> Instance:
-    #     """Create an instance and wait for it to become running.
-    #
-    #     Args:
-    #         snapshot_id: Source snapshot ID
-    #         name: Display name
-    #         wrapper_type: Graph database wrapper type (REQUIRED - must be explicitly specified)
-    #         description: Optional description
-    #         ttl: Time-to-live (hours as int/str or ISO 8601 duration like "PT24H")
-    #         inactivity_timeout: Inactivity timeout (hours as int/str or ISO 8601 duration)
-    #         cpu_cores: CPU cores for the instance (1-8)
-    #         timeout: Maximum wait time in seconds
-    #         poll_interval: Time between status checks
-    #         on_progress: Optional callback(phase, completed_steps, total_steps)
-    #
-    #     Returns:
-    #         Instance object with status='running'
-    #
-    #     Example:
-    #         >>> instance = client.instances.create_and_wait(
-    #         ...     snapshot_id=1,
-    #         ...     name="Quick Analysis",
-    #         ...     wrapper_type=WrapperType.FALKORDB,
-    #         ...     ttl=48  # 48 hours
-    #         ... )
-    #         >>> conn = client.instances.connect(instance.id)
-    #     """
-    #     instance = self.create(
-    #         snapshot_id=snapshot_id,
-    #         name=name,
-    #         wrapper_type=wrapper_type,
-    #         description=description,
-    #         ttl=ttl,
-    #         inactivity_timeout=inactivity_timeout,
-    #         cpu_cores=cpu_cores,
-    #     )
-    #
-    #     start = time.time()
-    #
-    #     # Phase 1: Wait for status="running" (wrapper has loaded data)
-    #     while time.time() - start < timeout:
-    #         # Get instance status from the instance object itself
-    #         instance = self.get(instance.id)
-    #
-    #         # Get progress for progress callback
-    #         if on_progress:
-    #             progress = self.get_progress(instance.id)
-    #             on_progress(progress.phase, progress.completed_steps, progress.total_steps)
-    #
-    #         if instance.status == "running":
-    #             break  # Continue to Phase 2
-    #
-    #         if instance.status == "failed":
-    #             error_msg = getattr(instance, "error_message", None) or "Unknown error"
-    #             raise InstanceFailedError(
-    #                 f"Instance {instance.id} failed: {error_msg}"
-    #             )
-    #
-    #         time.sleep(poll_interval)
-    #     else:
-    #         # Timeout waiting for status="running"
-    #         raise TimeoutError(f"Instance {instance.id} did not start within {timeout}s")
-    #
-    #     # Phase 2: Wait for wrapper HTTP service to be ready
-    #     # Construct health check URL based on environment
-    #     import os
-    #
-    #     import httpx
-    #
-    #     # Skip health check if configured (for remote cluster testing via port-forward)
-    #     # When testing against a remote cluster, the external URL may not be reachable
-    #     # but the instance is still valid and running
-    #     skip_health_check = os.environ.get("GRAPH_OLAP_SKIP_HEALTH_CHECK", "").lower() == "true"
-    #     if skip_health_check:
-    #         return instance
-    #
-    #     in_cluster_mode = os.environ.get("GRAPH_OLAP_IN_CLUSTER_MODE", "").lower() == "true"
-    #
-    #     if in_cluster_mode and instance.pod_name:
-    #         # In-cluster: Use direct service DNS
-    #         # Extract URL slug from pod name (format: wrapper-{slug})
-    #         url_slug = instance.pod_name.replace("wrapper-", "")
-    #         namespace = os.environ.get("GRAPH_OLAP_NAMESPACE", "e2e-test")
-    #         health_url = f"http://wrapper-{url_slug}.{namespace}.svc.cluster.local:8000/health"
-    #     elif instance.instance_url:
-    #         # External: Use ingress URL
-    #         health_url = f"{instance.instance_url.rstrip('/')}/health"
-    #     else:
-    #         # No URL available - return immediately (shouldn't happen in normal operation)
-    #         return instance
-    #
-    #     # Wait for wrapper HTTP service to respond
-    #     max_retries = 10
-    #     base_delay = 0.5  # 500ms initial delay
-    #
-    #     # Build headers with auth if api_key is present
-    #     headers = {}
-    #     if self._config.api_key:
-    #         headers["Authorization"] = f"Bearer {self._config.api_key}"
-    #
-    #     for attempt in range(max_retries):
-    #         if time.time() - start >= timeout:
-    #             mode = "in-cluster" if in_cluster_mode else "external"
-    #             raise TimeoutError(
-    #                 f"Instance {instance.id} is running but wrapper not reachable at {health_url} "
-    #                 f"({mode} mode, timeout={timeout}s)"
-    #             )
-    #
-    #         try:
-    #             response = httpx.get(health_url, timeout=5.0, headers=headers)
-    #             if response.status_code == 200:
-    #                 # Wrapper HTTP service is fully ready
-    #                 return instance
-    #         except (httpx.ConnectError, httpx.TimeoutException):
-    #             # Expected while wrapper initializes
-    #             pass
-    #
-    #         # Exponential backoff
-    #         if attempt < max_retries - 1:
-    #             delay = min(base_delay * (2**attempt), 5.0)
-    #             time.sleep(delay)
-    #
-    #     # Health check timeout
-    #     mode = "in-cluster" if in_cluster_mode else "external"
-    #     raise TimeoutError(
-    #         f"Instance {instance.id} is running but wrapper not reachable at {health_url} ({mode} mode)"
-    #     )
 
     def create(
         self,
@@ -831,9 +628,7 @@ class InstanceResource:
                     raise SnapshotFailedError(
                         f"Snapshot creation failed for instance {instance.id}: {error_msg}"
                     )
-                raise InstanceFailedError(
-                    f"Instance {instance.id} failed: {error_msg}"
-                )
+                raise InstanceFailedError(f"Instance {instance.id} failed: {error_msg}")
 
             time.sleep(poll_interval)
         else:

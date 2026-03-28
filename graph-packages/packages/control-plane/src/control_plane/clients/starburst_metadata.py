@@ -137,9 +137,9 @@ class StarburstMetadataClient:
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            raise StarburstError(f"HTTP {e.response.status_code}: {e.response.text}")
-        except httpx.TimeoutException:
-            raise StarburstTimeoutError(f"Query submission timeout: {sql[:100]}")
+            raise StarburstError(f"HTTP {e.response.status_code}: {e.response.text}") from e
+        except httpx.TimeoutException as e:
+            raise StarburstTimeoutError(f"Query submission timeout: {sql[:100]}") from e
 
         result = response.json()
 
@@ -152,7 +152,7 @@ class StarburstMetadataClient:
         if "data" in result and "columns" in result:
             columns = [col["name"] for col in result["columns"]]
             for row_data in result["data"]:
-                rows.append(dict(zip(columns, row_data)))
+                rows.append(dict(zip(columns, row_data, strict=False)))
 
         next_uri = result.get("nextUri")
 
@@ -166,8 +166,8 @@ class StarburstMetadataClient:
             try:
                 response = await self._client.get(next_uri, headers=headers)
                 response.raise_for_status()
-            except httpx.TimeoutException:
-                raise StarburstTimeoutError(f"Query polling timeout after {polls} polls")
+            except httpx.TimeoutException as e:
+                raise StarburstTimeoutError(f"Query polling timeout after {polls} polls") from e
 
             result = response.json()
 
@@ -175,7 +175,7 @@ class StarburstMetadataClient:
             if "data" in result and "columns" in result:
                 columns = [col["name"] for col in result["columns"]]
                 for row_data in result["data"]:
-                    rows.append(dict(zip(columns, row_data)))
+                    rows.append(dict(zip(columns, row_data, strict=False)))
 
             # Check for errors
             if error := result.get("error"):
@@ -241,9 +241,7 @@ class StarburstMetadataClient:
         """
         return await self.execute_query(sql)
 
-    async def fetch_columns(
-        self, catalog: str, schema: str, table: str
-    ) -> list[dict[str, Any]]:
+    async def fetch_columns(self, catalog: str, schema: str, table: str) -> list[dict[str, Any]]:
         """
         Fetch all columns for a table.
 

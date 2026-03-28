@@ -16,12 +16,6 @@ from graph_olap.resources.mappings import MappingResource
 from graph_olap.resources.ops import OpsResource
 from graph_olap.resources.schema import SchemaResource
 
-# =============================================================================
-# SNAPSHOT FUNCTIONALITY DISABLED
-# Snapshots are now created implicitly when instances are created from mappings.
-# =============================================================================
-# from graph_olap.resources.snapshots import SnapshotResource
-
 
 class GraphOLAPClient:
     """Main client for Graph OLAP Platform.
@@ -76,16 +70,11 @@ class GraphOLAPClient:
         >>> # List mappings
         >>> mappings = client.mappings.list()
 
-        >>> # Create snapshot and wait
-        >>> snapshot = client.snapshots.create_and_wait(
-        ...     mapping_id=1,
-        ...     name="Analysis Snapshot",
-        ... )
-
-        >>> # Create instance and connect
+        >>> # Create instance from mapping and connect
         >>> instance = client.instances.create_and_wait(
-        ...     snapshot_id=snapshot.id,
+        ...     mapping_id=1,
         ...     name="Analysis Instance",
+        ...     wrapper_type=WrapperType.RYUGRAPH,
         ... )
         >>> conn = client.instances.connect(instance.id)
 
@@ -146,8 +135,6 @@ class GraphOLAPClient:
 
         # Resource managers
         self.mappings = MappingResource(self._http)
-        # SNAPSHOT FUNCTIONALITY DISABLED - snapshots created implicitly from mappings
-        # self.snapshots = SnapshotResource(self._http)
         self.instances = InstanceResource(self._http, self._config)
         self.favorites = FavoriteResource(self._http)
         self.schema = SchemaResource(self._http)
@@ -192,7 +179,13 @@ class GraphOLAPClient:
             >>> # Override specific values
             >>> client = GraphOLAPClient.from_env(timeout=60.0)
         """
-        config = Config.from_env(api_url=api_url, api_key=api_key, internal_api_key=internal_api_key, username=username, **kwargs)
+        config = Config.from_env(
+            api_url=api_url,
+            api_key=api_key,
+            internal_api_key=internal_api_key,
+            username=username,
+            **kwargs,
+        )
         return cls(
             api_url=config.api_url,
             api_key=config.api_key,

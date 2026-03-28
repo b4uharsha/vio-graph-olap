@@ -80,9 +80,7 @@ class TestStarburstMetadataClient:
         )
 
         # Mock polling response with results
-        poll_route = respx.get(
-            "https://starburst.test/v1/statement/query-123/1"
-        ).mock(
+        poll_route = respx.get("https://starburst.test/v1/statement/query-123/1").mock(
             return_value=httpx.Response(
                 200,
                 json={
@@ -145,9 +143,7 @@ class TestStarburstMetadataClient:
         )
 
         async with client:
-            results = await client.execute_query(
-                "SELECT schema_name FROM system.metadata.schemas"
-            )
+            results = await client.execute_query("SELECT schema_name FROM system.metadata.schemas")
 
         assert len(results) == 2
         assert results[0]["schema_name"] == "public"
@@ -355,6 +351,77 @@ class TestStarburstMetadataClient:
         assert columns[0]["is_nullable"] == "NO"
         assert columns[2]["column_default"] == "now()"
         assert columns[2]["ordinal_position"] == 3
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_catalog_identifier_escaping(self, client):
+        """Test that catalog names with double quotes are properly escaped in SQL."""
+        route = respx.post("https://starburst.test/v1/statement").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "id": "query-123",
+                    "columns": [{"name": "schema_name"}],
+                    "data": [["public"]],
+                },
+            )
+        )
+
+        async with client:
+            # Catalog with double quote that could break SQL
+            await client.fetch_schemas('bad"catalog')
+
+        # Verify the SQL sent has the escaped catalog identifier
+        submitted_sql = route.calls[0].request.content.decode()
+        assert '"bad""catalog"' in submitted_sql
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_catalog_escaping_in_fetch_tables(self, client):
+        """Test catalog escaping in fetch_tables()."""
+        route = respx.post("https://starburst.test/v1/statement").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "id": "query-123",
+                    "columns": [{"name": "table_name"}, {"name": "table_type"}],
+                    "data": [["users", "BASE TABLE"]],
+                },
+            )
+        )
+
+        async with client:
+            await client.fetch_tables('bad"catalog', "public")
+
+        submitted_sql = route.calls[0].request.content.decode()
+        assert '"bad""catalog"' in submitted_sql
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_catalog_escaping_in_fetch_columns(self, client):
+        """Test catalog escaping in fetch_columns()."""
+        route = respx.post("https://starburst.test/v1/statement").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "id": "query-123",
+                    "columns": [
+                        {"name": "column_name"},
+                        {"name": "data_type"},
+                        {"name": "is_nullable"},
+                        {"name": "column_default"},
+                        {"name": "ordinal_position"},
+                    ],
+                    "data": [["id", "bigint", "NO", None, 1]],
+                },
+            )
+        )
+
+        async with client:
+            await client.fetch_columns('bad"catalog', "public", "users")
+
+        submitted_sql = route.calls[0].request.content.decode()
+        assert '"bad""catalog"' in submitted_sql
 
     @pytest.mark.asyncio
     @respx.mock
