@@ -8,7 +8,7 @@ import respx
 from graph_olap_schemas import WrapperType
 
 from graph_olap import GraphOLAPClient
-from graph_olap.models import Instance, Mapping, Snapshot
+from graph_olap.models import Instance, Mapping
 
 
 class TestClientInitialization:
@@ -32,14 +32,12 @@ class TestClientInitialization:
             api_key="sk-test-key",
         ) as client:
             assert client.mappings is not None
-            assert client.snapshots is not None
             assert client.instances is not None
 
     def test_has_all_resources(self):
         """Test client has all resource managers."""
         with GraphOLAPClient(api_url="https://api.example.com") as client:
             assert hasattr(client, "mappings")
-            assert hasattr(client, "snapshots")
             assert hasattr(client, "instances")
             assert hasattr(client, "favorites")
 
@@ -317,7 +315,7 @@ class TestInstanceWorkflow:
             "snapshot_id": 1,
             "snapshot_name": "Analysis Snapshot",
             "owner_username": "test_user",
-            "wrapper_type": "ryugraph",            "name": "Analysis Instance",
+            "name": "Analysis Instance",
             "description": None,
             "instance_url": None,
             "explorer_url": None,
@@ -340,7 +338,7 @@ class TestInstanceWorkflow:
 
         with GraphOLAPClient(api_url="https://api.example.com") as client:
             instance = client.instances.create(
-                snapshot_id=1,
+                mapping_id=1,
                 name="Analysis Instance",
                 wrapper_type=WrapperType.RYUGRAPH,
             )
@@ -403,7 +401,7 @@ class TestInstanceWorkflow:
             "snapshot_id": 1,
             "snapshot_name": "Analysis Snapshot",
             "owner_username": "test_user",
-            "wrapper_type": "ryugraph",            "name": "FalkorDB Instance",
+            "name": "FalkorDB Instance",
             "description": None,
             "instance_url": None,
             "explorer_url": None,
@@ -426,7 +424,7 @@ class TestInstanceWorkflow:
 
         with GraphOLAPClient(api_url="https://api.example.com") as client:
             instance = client.instances.create(
-                snapshot_id=1,
+                mapping_id=1,
                 name="FalkorDB Instance",
                 wrapper_type=WrapperType.FALKORDB,
             )
@@ -540,87 +538,19 @@ class TestQuickStartWorkflow:
 
     @respx.mock
     def test_quick_start_from_mapping(self):
-        """Test quick_start creates snapshot and instance from mapping."""
-        # Get mapping
-        mapping_data = {
-            "id": 1,
-            "owner_username": "test_user",
-            "wrapper_type": "ryugraph",            "name": "Customer Graph",
-            "description": None,
-            "current_version": 1,
-            "created_at": "2025-01-15T10:30:00Z",
-            "updated_at": "2025-01-15T10:30:00Z",
-            "ttl": None,
-            "inactivity_timeout": None,
-            "snapshot_count": 0,
-            "version": None,
-        }
-
-        respx.get("https://api.example.com/api/mappings/1").mock(
-            return_value=httpx.Response(200, json={"data": mapping_data})
-        )
-
-        # Create snapshot
-        snapshot_creating = {
-            "id": 1,
-            "mapping_id": 1,
-            "mapping_name": "Customer Graph",
-            "mapping_version": 1,
-            "owner_username": "test_user",
-            "wrapper_type": "ryugraph",            "name": "Quick Start Snapshot",
-            "description": None,
-            "gcs_path": None,
-            "size_bytes": None,
-            "node_counts": None,
-            "edge_counts": None,
-            "status": "creating",
-            "error_message": None,
-            "created_at": "2025-01-15T10:30:00Z",
-            "updated_at": "2025-01-15T10:30:00Z",
-            "ttl": None,
-            "inactivity_timeout": None,
-            "instance_count": 0,
-        }
-
-        snapshot_ready = {**snapshot_creating, "status": "ready"}
-
-        respx.post("https://api.example.com/api/snapshots").mock(
-            return_value=httpx.Response(202, json={"data": snapshot_creating})
-        )
-
-        # Poll for snapshot ready via progress
-        respx.get("https://api.example.com/api/snapshots/1/progress").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "data": {
-                        "id": 1,
-                        "status": "ready",
-                        "phase": "ready",
-                        "progress_percent": 100,
-                        "steps": [],
-                    }
-                },
-            )
-        )
-
-        # Get snapshot after ready
-        respx.get("https://api.example.com/api/snapshots/1").mock(
-            return_value=httpx.Response(200, json={"data": snapshot_ready})
-        )
-
-        # Create instance
+        """Test quick_start creates instance from mapping and connects."""
+        # Create instance (snapshot is created implicitly)
         instance_starting = {
             "id": 1,
             "snapshot_id": 1,
             "snapshot_name": "Quick Start Snapshot",
             "owner_username": "test_user",
             "wrapper_type": "ryugraph",
-            "name": "Quick Start Instance",
+            "name": "Quick Instance",
             "description": None,
             "instance_url": None,
             "explorer_url": None,
-            "status": "starting",
+            "status": "waiting_for_snapshot",
             "error_message": None,
             "created_at": "2025-01-15T10:30:00Z",
             "updated_at": "2025-01-15T10:30:00Z",
@@ -740,7 +670,7 @@ class TestErrorHandling:
 
         with GraphOLAPClient(api_url="https://api.example.com") as client:
             with pytest.raises(ConcurrencyLimitError) as exc_info:
-                client.instances.create(snapshot_id=1, name="Test", wrapper_type=WrapperType.RYUGRAPH)
+                client.instances.create(mapping_id=1, name="Test", wrapper_type=WrapperType.RYUGRAPH)
 
             assert exc_info.value.current_count == 5
             assert exc_info.value.max_allowed == 5

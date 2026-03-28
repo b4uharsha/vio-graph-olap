@@ -219,21 +219,20 @@ class GraphOLAPClient:
         mapping_id: int,
         wrapper_type: WrapperType,
         *,
-        snapshot_name: str | None = None,
         instance_name: str | None = None,
         wait_timeout: int = 600,
     ) -> Any:
-        """Quick start: create snapshot, instance, and connect in one call.
+        """Quick start: create instance from mapping and connect in one call.
 
         Convenience method for the common workflow of going from a mapping
-        to a connected instance ready for queries.
+        to a connected instance ready for queries. Snapshots are created
+        implicitly as part of instance creation.
 
         Args:
             mapping_id: Mapping ID to use
             wrapper_type: Graph database wrapper type (ryugraph or falkordb)
-            snapshot_name: Name for snapshot (defaults to "Quick Snapshot")
             instance_name: Name for instance (defaults to "Quick Instance")
-            wait_timeout: Max time to wait for snapshot + instance creation
+            wait_timeout: Max time to wait for instance creation
 
         Returns:
             InstanceConnection ready for queries
@@ -244,19 +243,12 @@ class GraphOLAPClient:
             >>> # Remember to terminate the instance when done!
         """
 
-        # Create snapshot
-        snapshot = self.snapshots.create_and_wait(
-            mapping_id=mapping_id,
-            name=snapshot_name or "Quick Snapshot",
-            timeout=wait_timeout // 2,
-        )
-
-        # Create instance
+        # Create instance from mapping (snapshot is created implicitly)
         instance = self.instances.create_and_wait(
-            snapshot_id=snapshot.id,
+            mapping_id=mapping_id,
             name=instance_name or "Quick Instance",
             wrapper_type=wrapper_type,
-            timeout=wait_timeout // 2,
+            timeout=wait_timeout,
         )
 
         # Connect
