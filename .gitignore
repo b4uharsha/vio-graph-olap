@@ -12,4 +12,4 @@ build/
 .claude/
 .coverage
 .hypothesis/
-=*
+qa-agent/

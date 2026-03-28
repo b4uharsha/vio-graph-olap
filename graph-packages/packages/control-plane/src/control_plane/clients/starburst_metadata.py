@@ -211,9 +211,10 @@ class StarburstMetadataClient:
         Returns: List of dicts with 'schema_name' key
         """
         # Use information_schema.schemata which works with both Trino and Starburst
+        safe_catalog = catalog.replace('"', '""')
         sql = f"""
             SELECT schema_name
-            FROM "{catalog}".information_schema.schemata
+            FROM "{safe_catalog}".information_schema.schemata
             ORDER BY schema_name
         """
         return await self.execute_query(sql)
@@ -229,11 +230,12 @@ class StarburstMetadataClient:
         Returns: List of dicts with 'table_name' and 'table_type' keys
         """
         # Use information_schema.tables which works with both Trino and Starburst
-        # Escape single quotes in identifiers
+        # Escape identifiers to prevent SQL injection
+        safe_catalog = catalog.replace('"', '""')
         safe_schema = schema.replace("'", "''")
         sql = f"""
             SELECT table_name, table_type
-            FROM "{catalog}".information_schema.tables
+            FROM "{safe_catalog}".information_schema.tables
             WHERE table_schema = '{safe_schema}'
             ORDER BY table_name
         """
@@ -253,7 +255,8 @@ class StarburstMetadataClient:
         Returns: List of dicts with column metadata
         """
         # Use catalog-qualified information_schema for Trino compatibility
-        # Escape single quotes in identifiers (SQL injection prevention)
+        # Escape identifiers to prevent SQL injection
+        safe_catalog = catalog.replace('"', '""')
         safe_schema = schema.replace("'", "''")
         safe_table = table.replace("'", "''")
         sql = f"""
@@ -263,7 +266,7 @@ class StarburstMetadataClient:
                 is_nullable,
                 column_default,
                 ordinal_position
-            FROM "{catalog}".information_schema.columns
+            FROM "{safe_catalog}".information_schema.columns
             WHERE table_schema = '{safe_schema}'
               AND table_name = '{safe_table}'
             ORDER BY ordinal_position
