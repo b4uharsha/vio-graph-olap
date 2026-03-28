@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, cast
 
 from graph_olap_schemas import WrapperType
@@ -307,13 +307,13 @@ class InstanceResource:
 
         if instance.expires_at is None:
             # No current TTL - set absolute expiry
-            new_expiry = datetime.now(timezone.utc) + timedelta(hours=hours)
+            new_expiry = datetime.now(UTC) + timedelta(hours=hours)
         else:
             # Extend from current expiry
             new_expiry = instance.expires_at + timedelta(hours=hours)
 
         # Calculate TTL duration from now
-        ttl_seconds = int((new_expiry - datetime.now(timezone.utc)).total_seconds())
+        ttl_seconds = int((new_expiry - datetime.now(UTC)).total_seconds())
         ttl_hours = max(1, ttl_seconds // 3600)  # At least 1 hour
 
         return self.set_lifecycle(instance_id=instance_id, ttl=f"PT{ttl_hours}H")

@@ -48,6 +48,7 @@ class StarburstMetadataClient:
         self.user = user  # Store user separately for X-Trino-User header
         # Only use Basic Auth if password is meaningful (not empty or placeholder)
         # Vanilla Trino doesn't support password auth over HTTP
+        self.auth: tuple[str, str] | None
         if password and password.lower() not in ("", "unused", "none"):
             self.auth = (user, password)
         else:
@@ -74,7 +75,7 @@ class StarburstMetadataClient:
             timeout=float(settings.starburst_timeout_seconds),
         )
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> StarburstMetadataClient:
         """Async context manager entry."""
         self._client = httpx.AsyncClient(
             timeout=self.timeout,
@@ -83,13 +84,15 @@ class StarburstMetadataClient:
         )
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object
+    ) -> None:
         """Async context manager exit."""
         if self._client:
             await self._client.aclose()
             self._client = None
 
-    async def close(self):
+    async def close(self) -> None:
         """Close HTTP client."""
         if self._client:
             await self._client.aclose()
