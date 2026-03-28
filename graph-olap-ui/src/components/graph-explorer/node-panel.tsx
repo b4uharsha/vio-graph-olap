@@ -43,8 +43,8 @@ export function NodePanel({
   onExpandNeighbors,
 }: NodePanelProps) {
   const isOpen = nodeId !== null && attributes !== null;
-  const Icon = attributes ? TYPE_ICONS[attributes.type] || User : User;
-  const colorClass = attributes ? TYPE_COLORS[attributes.type] || "text-white" : "text-white";
+  const Icon = attributes ? TYPE_ICONS[attributes.nodeType] || User : User;
+  const colorClass = attributes ? TYPE_COLORS[attributes.nodeType] || "text-white" : "text-white";
 
   return (
     <AnimatePresence>
@@ -62,7 +62,7 @@ export function NodePanel({
             <div className="flex items-center gap-2">
               <Icon className={`w-5 h-5 ${colorClass}`} />
               <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                {attributes.type}
+                {attributes.nodeType}
               </span>
             </div>
             <button

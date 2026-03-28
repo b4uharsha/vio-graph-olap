@@ -27,7 +27,7 @@ import networkx as nx
 import pandas as pd
 import requests
 
-API_DEFAULT = "http://graph-olap-control-plane:8080"
+API_DEFAULT = "http://localhost:8081"
 
 
 # ---------------------------------------------------------------------------
@@ -548,7 +548,7 @@ class GraphOLAPClient:
     Parameters
     ----------
     api_url : str
-        Control-plane base URL (default: http://graph-olap-control-plane:8080)
+        Control-plane base URL (default: http://localhost:8081)
     username : str
         Username passed in X-Username header (dev-mode auth).
     role : str

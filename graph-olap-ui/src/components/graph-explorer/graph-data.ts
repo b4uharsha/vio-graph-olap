@@ -4,7 +4,7 @@ export type NodeType = "Customer" | "Account" | "Address" | "Phone";
 
 export interface NodeAttributes {
   label: string;
-  type: NodeType;
+  nodeType: NodeType;
   color: string;
   size: number;
   x: number;
@@ -56,7 +56,7 @@ export function createFraudGraph(): Graph<NodeAttributes, EdgeAttributes> {
     const radius = 3 + Math.random() * 2;
     graph.addNode(id, {
       label,
-      type,
+      nodeType: type,
       color: NODE_COLORS[type],
       size: 6,
       x: Math.cos(angle) * radius + (Math.random() - 0.5),

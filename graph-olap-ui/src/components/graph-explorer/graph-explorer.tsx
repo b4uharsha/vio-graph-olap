@@ -185,7 +185,7 @@ export function GraphExplorer({ className = "" }: GraphExplorerProps) {
       neighborList.push({
         id: otherId,
         label: otherAttrs.label,
-        type: otherAttrs.type,
+        type: otherAttrs.nodeType,
         edgeLabel: edgeAttrs.label,
       });
     });

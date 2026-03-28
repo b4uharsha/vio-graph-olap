@@ -74,11 +74,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await db_manager.shutdown()
 
     app = FastAPI(
-        title="Graph OLAP Control Plane",
-        description="Control Plane API for Graph OLAP Platform",
+        title="Graph OLAP API",
+        description="API for Graph OLAP Platform",
         version="0.1.0",
         lifespan=lifespan,
-        docs_url="/docs" if settings.debug else None,
+        docs_url="/api" if settings.debug else None,
         redoc_url="/redoc" if settings.debug else None,
     )
 
