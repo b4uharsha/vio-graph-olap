@@ -268,8 +268,21 @@ class SnapshotService:
                 }
             )
 
-        if jobs:
+        # If all SQL references "placeholder", skip export (data pre-uploaded to GCS)
+        all_placeholder = all("placeholder" in j["sql"].lower() for j in jobs) if jobs else False
+
+        if jobs and not all_placeholder:
             await self._export_job_repo.create_batch(snapshot.id, jobs)
+        elif all_placeholder:
+            logger.info(
+                "snapshot_skip_export",
+                snapshot_id=snapshot.id,
+                reason="all SQL references placeholder — marking ready for direct upload",
+            )
+            snapshot = await self._snapshot_repo.update_status(
+                snapshot_id=snapshot.id,
+                status=SnapshotStatus.READY,
+            )
 
         return snapshot
 

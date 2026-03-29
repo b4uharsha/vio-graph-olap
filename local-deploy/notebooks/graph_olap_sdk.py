@@ -27,7 +27,104 @@ import networkx as nx
 import pandas as pd
 import requests
 
-API_DEFAULT = "http://localhost:8081"
+API_DEFAULT = "http://graph-olap-control-plane:8080"
+
+# Node colors by label
+_COLORS = [
+    "#3B82F6", "#F59E0B", "#10B981", "#EF4444", "#8B5CF6",
+    "#EC4899", "#06B6D4", "#F97316", "#6366F1", "#14B8A6",
+]
+
+
+def visualize(wrapper_url: str, limit: int = 200, height: str = "600px", title: str = "Graph"):
+    """
+    Render an interactive graph visualization in a Jupyter notebook.
+
+    Parameters
+    ----------
+    wrapper_url : str
+        The wrapper endpoint (e.g. http://wrapper-xxx:8000)
+    limit : int
+        Max relationships to show (default 200)
+    height : str
+        Height of the visualization (default 600px)
+    title : str
+        Title shown above the graph
+
+    Returns
+    -------
+    IPython.display.HTML object (renders inline in Jupyter)
+    """
+    from pyvis.network import Network
+    from IPython.display import HTML
+    import tempfile, os
+
+    # Query the graph
+    cypher = (
+        f"MATCH (n)-[r]->(m) "
+        f"RETURN id(n) AS src_id, labels(n)[0] AS src_label, "
+        f"coalesce(n.name, n.title, n.hostname, '') AS src_name, "
+        f"type(r) AS rel, "
+        f"id(m) AS tgt_id, labels(m)[0] AS tgt_label, "
+        f"coalesce(m.name, m.title, m.hostname, '') AS tgt_name "
+        f"LIMIT {limit}"
+    )
+    resp = requests.post(f"{wrapper_url}/query", json={"query": cypher})
+    data = resp.json()
+
+    if data.get("row_count", 0) == 0:
+        print("No relationships found in this graph.")
+        return HTML("<p>No data to visualize</p>")
+
+    # Build pyvis network
+    net = Network(height=height, width="100%", bgcolor="#1a1a2e", font_color="white",
+                  notebook=True, cdn_resources="in_line")
+    net.barnes_hut(gravity=-8000, central_gravity=0.3, spring_length=150)
+
+    # Track labels for coloring
+    label_colors = {}
+    color_idx = 0
+    nodes_added = set()
+
+    for row in data["rows"]:
+        src_id, src_label, src_name, rel, tgt_id, tgt_label, tgt_name = row
+
+        # Assign colors by label
+        if src_label not in label_colors:
+            label_colors[src_label] = _COLORS[color_idx % len(_COLORS)]
+            color_idx += 1
+        if tgt_label not in label_colors:
+            label_colors[tgt_label] = _COLORS[color_idx % len(_COLORS)]
+            color_idx += 1
+
+        # Add nodes
+        if src_id not in nodes_added:
+            display = src_name or f"{src_label} {src_id}"
+            net.add_node(src_id, label=display, title=f"{src_label}: {display}",
+                        color=label_colors[src_label], size=20)
+            nodes_added.add(src_id)
+
+        if tgt_id not in nodes_added:
+            display = tgt_name or f"{tgt_label} {tgt_id}"
+            net.add_node(tgt_id, label=display, title=f"{tgt_label}: {display}",
+                        color=label_colors[tgt_label], size=20)
+            nodes_added.add(tgt_id)
+
+        # Add edge
+        net.add_edge(src_id, tgt_id, title=rel, label=rel, color="#555555", font={"size": 8, "color": "#888888"})
+
+    # Legend
+    legend = " | ".join([f'<span style="color:{c}">● {lbl}</span>' for lbl, c in label_colors.items()])
+
+    # Render to temp file
+    tmp = tempfile.NamedTemporaryFile(suffix=".html", delete=False, dir="/tmp")
+    net.save_graph(tmp.name)
+    with open(tmp.name, "r") as f:
+        html_content = f.read()
+    os.unlink(tmp.name)
+
+    header = f'<div style="color:#ccc;font-size:13px;margin-bottom:8px"><b>{title}</b> — {len(nodes_added)} nodes, {len(data["rows"])} edges &nbsp; {legend}</div>'
+    return HTML(header + html_content)
 
 
 # ---------------------------------------------------------------------------
@@ -541,6 +638,42 @@ class AdminResource:
 # Client
 # ---------------------------------------------------------------------------
 
+class MappingResource:
+    """CRUD operations for graph mappings (data connections)."""
+
+    def __init__(self, client: "GraphOLAPClient"):
+        self._c = client
+
+    def list(self) -> list[dict]:
+        """List all mappings."""
+        return self._c._get("/api/mappings").get("data", [])
+
+    def get(self, mapping_id: str) -> dict:
+        """Get a single mapping by ID."""
+        return self._c._get(f"/api/mappings/{mapping_id}").get("data", {})
+
+    def create(
+        self,
+        name: str,
+        node_definitions: list[dict],
+        edge_definitions: list[dict],
+        description: str = "",
+    ) -> str:
+        """Create a mapping. Returns the mapping ID."""
+        payload = {
+            "name": name,
+            "description": description,
+            "node_definitions": node_definitions,
+            "edge_definitions": edge_definitions,
+        }
+        result = self._c._post("/api/mappings", json=payload)
+        return str(result.get("data", {}).get("id", ""))
+
+    def delete(self, mapping_id: str) -> None:
+        """Delete a mapping."""
+        self._c._delete(f"/api/mappings/{mapping_id}")
+
+
 class GraphOLAPClient:
     """
     Top-level client for the Graph OLAP local platform.
@@ -548,7 +681,7 @@ class GraphOLAPClient:
     Parameters
     ----------
     api_url : str
-        Control-plane base URL (default: http://localhost:8081)
+        Control-plane base URL (default: http://graph-olap-control-plane:8080)
     username : str
         Username passed in X-Username header (dev-mode auth).
     role : str
@@ -557,6 +690,7 @@ class GraphOLAPClient:
     Example
     -------
         client = GraphOLAPClient(username="alice@example.com")
+        mappings = client.mappings.list()
         instances = client.instances.list()
     """
 
@@ -568,6 +702,7 @@ class GraphOLAPClient:
     ):
         self.api = api_url.rstrip("/")
         self.headers = {"X-Username": username, "X-User-Role": role}
+        self.mappings = MappingResource(self)
         self.instances = InstanceResource(self)
         self.admin = AdminResource(self)
 

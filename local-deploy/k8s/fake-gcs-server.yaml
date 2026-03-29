@@ -1,4 +1,17 @@
 ---
+# Persistent storage for fake GCS so uploaded parquet files survive pod restarts
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fake-gcs-data
+  namespace: graph-olap-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 # Fake GCS Server for local development
 # Satisfies export-worker's STORAGE_EMULATOR_HOST=http://fake-gcs-local:4443
 apiVersion: apps/v1
@@ -13,6 +26,8 @@ spec:
   selector:
     matchLabels:
       app: fake-gcs-local
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -27,11 +42,16 @@ spec:
             - -port
             - "4443"
             - -backend
-            - memory
+            - filesystem
+            - -filesystem-root
+            - /data
             - -public-host
             - fake-gcs-local:4443
           ports:
             - containerPort: 4443
+          volumeMounts:
+            - name: gcs-data
+              mountPath: /data
           resources:
             requests:
               memory: "128Mi"
@@ -39,6 +59,10 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "200m"
+      volumes:
+        - name: gcs-data
+          persistentVolumeClaim:
+            claimName: fake-gcs-data
 ---
 apiVersion: v1
 kind: Service

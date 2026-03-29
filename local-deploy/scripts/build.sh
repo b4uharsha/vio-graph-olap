@@ -128,6 +128,9 @@ build_service() {
     local build_context="$MONOREPO_ROOT"
     if [[ "$svc" == "local-docs" ]]; then
         build_context="$LOCAL_DEPLOY_DIR"
+    elif [[ -d "$MONOREPO_ROOT/graph-packages/packages" && ! -d "$MONOREPO_ROOT/packages/control-plane" ]]; then
+        # vio-graph-olap repo: packages are under graph-packages/
+        build_context="$MONOREPO_ROOT/graph-packages"
     fi
 
     # Explicit || return 1: bash disables set -e inside functions called from an

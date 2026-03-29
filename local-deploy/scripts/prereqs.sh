@@ -51,6 +51,8 @@ fi
 MONOREPO_ROOT="${MONOREPO_ROOT:-../graph-olap}"
 if [[ -d "$MONOREPO_ROOT/packages/control-plane" ]]; then
     ok "Monorepo found at $MONOREPO_ROOT"
+elif [[ -d "$MONOREPO_ROOT/graph-packages/packages/control-plane" ]]; then
+    ok "Monorepo found at $MONOREPO_ROOT (graph-packages layout)"
 else
     fail "Monorepo not found at '$MONOREPO_ROOT'
         Set MONOREPO_ROOT to the path of the graph-olap repo:
