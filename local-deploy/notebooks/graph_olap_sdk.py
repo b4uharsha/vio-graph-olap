@@ -27,7 +27,8 @@ import networkx as nx
 import pandas as pd
 import requests
 
-API_DEFAULT = "http://graph-olap-control-plane:8080"
+import os
+API_DEFAULT = os.environ.get("GRAPH_OLAP_URL", "http://control-plane:8080")
 
 # Node colors by label
 _COLORS = [
