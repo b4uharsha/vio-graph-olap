@@ -273,6 +273,52 @@ async def delete_instance(
     await service.delete_instance(instance_id, user)
 
 
+@router.post("/{instance_id}/suspend", response_model=DataResponse[InstanceResponse])
+async def suspend_instance(
+    instance_id: int,
+    user: CurrentUser,
+    service: InstanceServiceDep,
+) -> DataResponse[InstanceResponse]:
+    """Suspend a running instance (scale-to-zero).
+
+    Deletes the K8s pod but preserves the instance metadata and snapshot
+    reference. The instance can be resumed later with POST /resume.
+
+    Args:
+        instance_id: Instance ID
+        user: Current authenticated user
+        service: Instance service
+
+    Returns:
+        Updated instance with status='suspended'
+    """
+    instance = await service.suspend_instance(instance_id, user)
+    return DataResponse(data=instance_to_response(instance))
+
+
+@router.post("/{instance_id}/resume", response_model=DataResponse[InstanceResponse])
+async def resume_instance(
+    instance_id: int,
+    user: CurrentUser,
+    service: InstanceServiceDep,
+) -> DataResponse[InstanceResponse]:
+    """Resume a suspended instance.
+
+    Recreates the K8s pod from the existing snapshot. The instance
+    transitions through 'resuming' -> 'running' once the pod is ready.
+
+    Args:
+        instance_id: Instance ID
+        user: Current authenticated user
+        service: Instance service
+
+    Returns:
+        Updated instance with status='resuming'
+    """
+    instance = await service.resume_instance(instance_id, user)
+    return DataResponse(data=instance_to_response(instance))
+
+
 @router.get("/user/status", response_model=DataResponse[dict[str, Any]])
 async def get_user_status(
     user: CurrentUser,

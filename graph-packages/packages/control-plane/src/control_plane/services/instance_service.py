@@ -976,3 +976,163 @@ class InstanceService:
 
         # Return progress or empty dict
         return instance.progress or {"phase": "unknown", "steps": []}
+
+    async def suspend_instance(
+        self,
+        instance_id: int,
+        user: User,
+    ) -> Instance:
+        """Suspend a running instance (scale-to-zero).
+
+        Deletes the K8s pod/service/ingress but preserves the instance
+        record and its snapshot reference. The instance can be resumed later.
+
+        Args:
+            instance_id: Instance to suspend
+            user: User performing suspension
+
+        Returns:
+            Updated Instance with status='suspended'
+
+        Raises:
+            NotFoundError: If instance not found
+            PermissionDeniedError: If user is not owner or admin
+            InvalidStateError: If instance is not in running state
+        """
+        instance = await self.get_instance(instance_id)
+
+        # Permission check
+        if user.role not in (UserRole.ADMIN, UserRole.OPS):
+            check_ownership(user, instance.owner_username, "Instance", instance_id)
+
+        # Only running instances can be suspended
+        if instance.status != InstanceStatus.RUNNING:
+            raise InvalidStateError(
+                f"Cannot suspend instance {instance_id}: "
+                f"status is '{instance.status.value}', must be 'running'"
+            )
+
+        logger.info(
+            "instance_suspension_started",
+            instance_id=instance_id,
+            pod_name=instance.pod_name,
+            suspended_by=user.username,
+        )
+
+        # Delete K8s resources (pod, service, ingress)
+        await self._cleanup_k8s_resources(instance)
+
+        # Update DB status to suspended
+        updated = await self._instance_repo.suspend_instance(instance_id)
+        if updated is None:
+            raise NotFoundError("Instance", instance_id)
+
+        logger.info(
+            "instance_suspended",
+            instance_id=instance_id,
+            owner=instance.owner_username,
+        )
+
+        return updated
+
+    async def resume_instance(
+        self,
+        instance_id: int,
+        user: User,
+    ) -> Instance:
+        """Resume a suspended instance by recreating its K8s pod.
+
+        Spins up a new wrapper pod from the existing snapshot.
+        The instance transitions through resuming -> running.
+
+        Args:
+            instance_id: Instance to resume
+            user: User performing resumption
+
+        Returns:
+            Updated Instance with status='resuming'
+
+        Raises:
+            NotFoundError: If instance or snapshot not found
+            PermissionDeniedError: If user is not owner or admin
+            InvalidStateError: If instance is not suspended
+            ConcurrencyLimitError: If limits would be exceeded
+        """
+        instance = await self.get_instance(instance_id)
+
+        # Permission check
+        if user.role not in (UserRole.ADMIN, UserRole.OPS):
+            check_ownership(user, instance.owner_username, "Instance", instance_id)
+
+        # Only suspended instances can be resumed
+        if instance.status != InstanceStatus.SUSPENDED:
+            raise InvalidStateError(
+                f"Cannot resume instance {instance_id}: "
+                f"status is '{instance.status.value}', must be 'suspended'"
+            )
+
+        # Check concurrency limits (same as create)
+        limits = await self._config_repo.get_concurrency_limits()
+        user_count = await self._instance_repo.count_by_owner(user.username)
+        if user_count >= limits["per_analyst"]:
+            raise ConcurrencyLimitError("per_analyst", user_count, limits["per_analyst"])
+        total_count = await self._instance_repo.count_total_active()
+        if total_count >= limits["cluster_total"]:
+            raise ConcurrencyLimitError("cluster_total", total_count, limits["cluster_total"])
+
+        # Look up the snapshot
+        snapshot = await self._snapshot_repo.get_by_id(instance.snapshot_id)
+        if snapshot is None:
+            raise NotFoundError("Snapshot", instance.snapshot_id)
+
+        logger.info(
+            "instance_resume_started",
+            instance_id=instance_id,
+            snapshot_id=snapshot.id,
+            resumed_by=user.username,
+            resume_count=instance.resume_count + 1,
+        )
+
+        # Update status to resuming
+        updated = await self._instance_repo.resume_instance(instance_id)
+        if updated is None:
+            raise NotFoundError("Instance", instance_id)
+
+        # Recreate K8s pod from snapshot
+        if self._k8s_service is not None and instance.url_slug:
+            try:
+                resources = self._calculate_resources(
+                    snapshot, instance.cpu_cores
+                )
+                pod_name, external_url = await self._k8s_service.create_wrapper_pod(
+                    instance_id=instance.id,
+                    url_slug=instance.url_slug,
+                    wrapper_type=instance.wrapper_type,
+                    snapshot_id=snapshot.id,
+                    mapping_id=snapshot.mapping_id,
+                    mapping_version=snapshot.mapping_version,
+                    owner_username=instance.owner_username,
+                    owner_email=user.email or f"{user.username}@auto.local",
+                    gcs_path=snapshot.gcs_path,
+                    resource_overrides=resources,
+                )
+                if pod_name:
+                    updated = await self._instance_repo.update_status(
+                        instance_id=instance.id,
+                        status=InstanceStatus.RESUMING,
+                        pod_name=pod_name,
+                        instance_url=external_url if external_url else None,
+                    )
+                    logger.info(
+                        "instance_resume_pod_created",
+                        instance_id=instance_id,
+                        pod_name=pod_name,
+                    )
+            except Exception as e:
+                logger.exception(
+                    "instance_resume_pod_failed",
+                    instance_id=instance_id,
+                    error=str(e),
+                )
+
+        return updated

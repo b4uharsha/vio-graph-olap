@@ -173,7 +173,7 @@ instances = Table(
         "status",
         Text,
         CheckConstraint(
-            "status IN ('waiting_for_snapshot', 'starting', 'running', 'stopping', 'failed')"
+            "status IN ('waiting_for_snapshot', 'starting', 'running', 'stopping', 'failed', 'suspended', 'resuming')"
         ),
         nullable=False,
     ),
@@ -196,6 +196,8 @@ instances = Table(
     Column("last_activity_at", Text, nullable=True),  # ISO 8601
     Column("ttl", Text, nullable=True),  # ISO 8601 duration
     Column("inactivity_timeout", Text, nullable=True),  # ISO 8601 duration
+    Column("suspended_at", Text, nullable=True),  # ISO 8601
+    Column("resume_count", Integer, nullable=True, default=0),
     Column("memory_usage_bytes", Integer, nullable=True),
     Column("disk_usage_bytes", Integer, nullable=True),
     Column("cpu_cores", Integer, nullable=True, default=2),

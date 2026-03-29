@@ -45,7 +45,8 @@ class InstanceRepository(BaseRepository):
                    status, progress, error_message, error_code, stack_trace,
                    created_at, updated_at, started_at,
                    last_activity_at, ttl, inactivity_timeout,
-                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb
+                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb,
+                   suspended_at, resume_count
             FROM instances
             WHERE id = :instance_id
         """
@@ -111,7 +112,8 @@ class InstanceRepository(BaseRepository):
                    status, progress, error_message, error_code, stack_trace,
                    created_at, updated_at, started_at,
                    last_activity_at, ttl, inactivity_timeout,
-                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb
+                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb,
+                   suspended_at, resume_count
             FROM instances
             WHERE {where_clause}
             ORDER BY {sort_field} {sort_order}
@@ -449,7 +451,7 @@ class InstanceRepository(BaseRepository):
         sql = """
             SELECT COUNT(*) FROM instances
             WHERE owner_username = :owner_username
-              AND status IN ('waiting_for_snapshot', 'starting', 'running')
+              AND status IN ('waiting_for_snapshot', 'starting', 'running', 'resuming')
         """
         return await self._fetch_scalar(sql, {"owner_username": owner_username}) or 0
 
@@ -481,7 +483,7 @@ class InstanceRepository(BaseRepository):
         sql = """
             SELECT COALESCE(SUM(memory_usage_bytes), 0) FROM instances
             WHERE owner_username = :owner_username
-              AND status IN ('waiting_for_snapshot', 'starting', 'running')
+              AND status IN ('waiting_for_snapshot', 'starting', 'running', 'resuming')
         """
         total_bytes = await self._fetch_scalar(sql, {"owner_username": owner_username}) or 0
         return total_bytes / (1024**3)
@@ -601,10 +603,11 @@ class InstanceRepository(BaseRepository):
                    status, progress, error_message, error_code, stack_trace,
                    created_at, updated_at, started_at,
                    last_activity_at, ttl, inactivity_timeout,
-                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb
+                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb,
+                   suspended_at, resume_count
             FROM instances
             WHERE ttl IS NOT NULL
-              AND status IN ('starting', 'running', 'waiting_for_snapshot')
+              AND status IN ('starting', 'running', 'waiting_for_snapshot', 'suspended', 'resuming')
             LIMIT :limit
         """
         rows = await self._fetch_all(sql, {"limit": limit})
@@ -625,7 +628,8 @@ class InstanceRepository(BaseRepository):
                    status, progress, error_message, error_code, stack_trace,
                    created_at, updated_at, started_at,
                    last_activity_at, ttl, inactivity_timeout,
-                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb
+                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb,
+                   suspended_at, resume_count
             FROM instances
             WHERE inactivity_timeout IS NOT NULL
               AND status = 'running'
@@ -649,7 +653,8 @@ class InstanceRepository(BaseRepository):
                    status, progress, error_message, error_code, stack_trace,
                    created_at, updated_at, started_at,
                    last_activity_at, ttl, inactivity_timeout,
-                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb
+                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb,
+                   suspended_at, resume_count
             FROM instances
             ORDER BY created_at DESC
         """
@@ -671,7 +676,8 @@ class InstanceRepository(BaseRepository):
                    status, progress, error_message, error_code, stack_trace,
                    created_at, updated_at, started_at,
                    last_activity_at, ttl, inactivity_timeout,
-                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb
+                   memory_usage_bytes, disk_usage_bytes, cpu_cores, memory_gb,
+                   suspended_at, resume_count
             FROM instances
             WHERE status = 'waiting_for_snapshot'
             ORDER BY created_at ASC
@@ -839,6 +845,72 @@ class InstanceRepository(BaseRepository):
 
         return instances, total or 0
 
+    async def suspend_instance(self, instance_id: int) -> Instance | None:
+        """Suspend a running instance (scale-to-zero).
+
+        Clears pod_name, pod_ip, instance_url and sets status to suspended.
+        The snapshot reference is preserved for later resumption.
+
+        Args:
+            instance_id: Instance ID
+
+        Returns:
+            Updated Instance or None if not found
+        """
+        now = utc_now()
+        sql = """
+            UPDATE instances
+            SET status = 'suspended',
+                pod_name = NULL,
+                pod_ip = NULL,
+                instance_url = NULL,
+                suspended_at = :suspended_at,
+                updated_at = :updated_at
+            WHERE id = :instance_id
+        """
+        result = await self._execute(
+            sql,
+            {
+                "instance_id": instance_id,
+                "suspended_at": now,
+                "updated_at": now,
+            },
+        )
+        if result.rowcount == 0:
+            return None
+        return await self.get_by_id(instance_id)
+
+    async def resume_instance(self, instance_id: int) -> Instance | None:
+        """Start resuming a suspended instance.
+
+        Sets status to resuming and increments resume_count.
+        Caller is responsible for creating the K8s pod.
+
+        Args:
+            instance_id: Instance ID
+
+        Returns:
+            Updated Instance or None if not found
+        """
+        now = utc_now()
+        sql = """
+            UPDATE instances
+            SET status = 'resuming',
+                resume_count = COALESCE(resume_count, 0) + 1,
+                updated_at = :updated_at
+            WHERE id = :instance_id
+        """
+        result = await self._execute(
+            sql,
+            {
+                "instance_id": instance_id,
+                "updated_at": now,
+            },
+        )
+        if result.rowcount == 0:
+            return None
+        return await self.get_by_id(instance_id)
+
     def _row_to_instance(self, row) -> Instance:
         """Convert database row to Instance domain object."""
         return Instance(
@@ -868,4 +940,6 @@ class InstanceRepository(BaseRepository):
             disk_usage_bytes=row.disk_usage_bytes,
             cpu_cores=row.cpu_cores,
             memory_gb=getattr(row, "memory_gb", None),
+            suspended_at=parse_timestamp(getattr(row, "suspended_at", None)),
+            resume_count=getattr(row, "resume_count", 0) or 0,
         )

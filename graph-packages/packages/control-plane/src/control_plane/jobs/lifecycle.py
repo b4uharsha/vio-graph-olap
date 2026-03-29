@@ -86,12 +86,13 @@ async def _run_lifecycle_with_session(session, start_time: float) -> None:
         "TTL expiry",
     )
 
-    # Phase 2: Find and terminate inactive instances
+    # Phase 2: Find and SUSPEND inactive instances (scale-to-zero)
     inactive_instances = await _find_inactive_instances(instance_repo, now)
-    inactive_terminated = await _terminate_expired_instances(
+    inactive_suspended = await _suspend_inactive_instances(
         instance_service,
+        instance_repo,
+        k8s_service,
         inactive_instances,
-        "inactivity timeout",
     )
 
     # TODO: Snapshot functionality disabled - Phase 3 snapshot TTL enforcement commented out
@@ -118,7 +119,7 @@ async def _run_lifecycle_with_session(session, start_time: float) -> None:
     logger.info(
         "lifecycle_job_completed",
         ttl_instances_terminated=ttl_terminated,
-        inactive_instances_terminated=inactive_terminated,
+        inactive_instances_suspended=inactive_suspended,
         ttl_snapshots_deleted=snapshots_deleted,
         ttl_mappings_deleted=mappings_deleted,
         duration_seconds=duration,
@@ -247,6 +248,65 @@ async def _terminate_expired_instances(
             metrics.lifecycle_termination_failures_total.labels(resource_type="instance").inc()
 
     return terminated_count
+
+
+async def _suspend_inactive_instances(
+    service: InstanceService,
+    repo: InstanceRepository,
+    k8s_service,
+    instances: list,
+) -> int:
+    """Suspend inactive instances (scale-to-zero).
+
+    Instead of deleting, suspends the instance by removing K8s resources
+    while preserving the DB record and snapshot reference for later resumption.
+
+    Args:
+        service: Instance service (for cleanup)
+        repo: Instance repository (for status update)
+        k8s_service: K8s service (for pod deletion)
+        instances: List of inactive instances to suspend
+
+    Returns:
+        Number of instances successfully suspended
+    """
+    suspended_count = 0
+
+    for instance in instances:
+        try:
+            logger.info(
+                "lifecycle_instance_suspending",
+                instance_id=instance.id,
+                last_activity_at=instance.last_activity_at.isoformat() if instance.last_activity_at else None,
+                inactivity_timeout=instance.inactivity_timeout,
+            )
+
+            # Delete K8s resources (pod, service, ingress)
+            await service._cleanup_k8s_resources(instance)
+
+            # Update status to suspended (preserves snapshot reference)
+            await repo.suspend_instance(instance.id)
+
+            logger.info(
+                "lifecycle_instance_suspended",
+                instance_id=instance.id,
+                owner=instance.owner_username,
+            )
+            suspended_count += 1
+
+            from control_plane.jobs import metrics
+            metrics.inactive_instances_terminated_total.inc()
+
+        except Exception as e:
+            logger.error(
+                "lifecycle_suspension_failed",
+                instance_id=instance.id,
+                error=str(e),
+            )
+            from control_plane.jobs import metrics
+            metrics.lifecycle_termination_failures_total.labels(resource_type="instance").inc()
+
+    return suspended_count
 
 
 # TODO: Snapshot functionality disabled - _find_ttl_expired_snapshots function commented out

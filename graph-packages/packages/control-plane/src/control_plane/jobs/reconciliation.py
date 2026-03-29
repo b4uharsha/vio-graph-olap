@@ -80,7 +80,7 @@ async def _run_reconciliation_with_session(session, start_time: float) -> None:
         if (
             instance.pod_name
             and instance.pod_name not in k8s_by_name
-            and instance.status in [InstanceStatus.STARTING, InstanceStatus.RUNNING, InstanceStatus.STOPPING]
+            and instance.status in [InstanceStatus.STARTING, InstanceStatus.RUNNING, InstanceStatus.STOPPING, InstanceStatus.RESUMING]
         ):
             missing_pods.append(instance)
 
@@ -94,6 +94,9 @@ async def _run_reconciliation_with_session(session, start_time: float) -> None:
             pod_phase = pod.status.phase
             # Database says running but pod is failed
             if instance.status == InstanceStatus.RUNNING and pod_phase == "Failed":
+                status_drift.append((instance, pod))
+            # Resuming instance's pod is now running — transition to RUNNING
+            if instance.status == InstanceStatus.RESUMING and pod_phase == "Running":
                 status_drift.append((instance, pod))
 
     # Update current state gauges (before cleanup)
@@ -238,16 +241,29 @@ async def _fix_status_drift(instance_repo: InstanceRepository, drifts: list[tupl
                 db_status=instance.status.value,
                 pod_phase=pod.status.phase,
             )
-            updated = await instance_repo.update_status(
-                instance_id=instance.id,
-                status=InstanceStatus.FAILED,
-                error_code=InstanceErrorCode.UNEXPECTED_TERMINATION,
-                error_message=f"Pod entered {pod.status.phase} phase",
-            )
-            if updated:
-                logger.info("status_drift_fixed", instance_id=instance.id)
-                fixed_count += 1
-                metrics.status_drift_fixed_total.inc()
+
+            # Resuming instance with Running pod → transition to RUNNING
+            if instance.status == InstanceStatus.RESUMING and pod.status.phase == "Running":
+                updated = await instance_repo.update_status(
+                    instance_id=instance.id,
+                    status=InstanceStatus.RUNNING,
+                )
+                if updated:
+                    logger.info("instance_resumed_to_running", instance_id=instance.id)
+                    fixed_count += 1
+                    metrics.status_drift_fixed_total.inc()
+            else:
+                # Default: mark as failed
+                updated = await instance_repo.update_status(
+                    instance_id=instance.id,
+                    status=InstanceStatus.FAILED,
+                    error_code=InstanceErrorCode.UNEXPECTED_TERMINATION,
+                    error_message=f"Pod entered {pod.status.phase} phase",
+                )
+                if updated:
+                    logger.info("status_drift_fixed", instance_id=instance.id)
+                    fixed_count += 1
+                    metrics.status_drift_fixed_total.inc()
         except Exception as e:
             logger.error("status_drift_fix_failed", instance_id=instance.id, error=str(e))
 

@@ -78,8 +78,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         description="API for Graph OLAP Platform",
         version="0.1.0",
         lifespan=lifespan,
-        docs_url="/api" if settings.debug else None,
-        redoc_url="/redoc" if settings.debug else None,
+        openapi_url="/api/openapi.json",
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
     )
 
     # Store settings in app state for access by dependencies
@@ -109,25 +110,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router)
 
     # Metrics endpoint (for Prometheus)
-    app.include_router(metrics_router)
+    app.include_router(metrics_router, include_in_schema=False)
 
-    # Public API routes
+    # Public API routes (shown in docs)
     app.include_router(mappings_router)
-    # SNAPSHOT FUNCTIONALITY DISABLED - snapshots are now created implicitly
-    # app.include_router(snapshots_router)
     app.include_router(instances_router)
-    app.include_router(favorites_router)
-    app.include_router(config_router)
-    app.include_router(cluster_router)
-    app.include_router(schema_router)
-    app.include_router(ops_router)
-    app.include_router(admin_router)
-    app.include_router(export_jobs_router)
 
-    # Internal API routes (for service-to-service)
-    app.include_router(internal_snapshots_router)
-    app.include_router(internal_instances_router)
-    app.include_router(internal_export_jobs_router)
+    # Public API routes (hidden from docs — not yet tested)
+    app.include_router(favorites_router, include_in_schema=False)
+    app.include_router(config_router, include_in_schema=False)
+    app.include_router(cluster_router, include_in_schema=False)
+    app.include_router(schema_router, include_in_schema=False)
+    app.include_router(ops_router, include_in_schema=False)
+    app.include_router(admin_router, include_in_schema=False)
+    app.include_router(export_jobs_router, include_in_schema=False)
+
+    # Internal API routes (service-to-service, hidden from docs)
+    app.include_router(internal_snapshots_router, include_in_schema=False)
+    app.include_router(internal_instances_router, include_in_schema=False)
+    app.include_router(internal_export_jobs_router, include_in_schema=False)
 
     return app
 

@@ -230,9 +230,7 @@ class K8sService:
                             {"name": "WRAPPER_MAPPING_VERSION", "value": str(mapping_version)},
                             {"name": "WRAPPER_OWNER_ID", "value": owner_username},
                             {"name": "WRAPPER_GCS_BASE_PATH", "value": gcs_path},
-                            # Control plane service name - "control-plane" for GKE production,
-                            # "graph-olap-control-plane" for local k3d/development
-                            {"name": "WRAPPER_CONTROL_PLANE_URL", "value": "http://control-plane:8080"},
+                            {"name": "WRAPPER_CONTROL_PLANE_URL", "value": self._settings.wrapper_control_plane_url},
                             {"name": "WRAPPER_INSTANCE_URL", "value": instance_url},
                             {"name": "DATABASE_PATH", "value": "/data/db"},
                             {"name": "RYUGRAPH_EXTENSION_SERVER_URL", "value": self._settings.extension_server_url},

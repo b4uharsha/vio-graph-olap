@@ -50,6 +50,8 @@ class InstanceStatus(StrEnum):
     RUNNING = "running"
     STOPPING = "stopping"
     FAILED = "failed"
+    SUSPENDED = "suspended"
+    RESUMING = "resuming"
 
 
 class InstanceErrorCode(StrEnum):

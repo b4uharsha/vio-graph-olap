@@ -287,6 +287,8 @@ class Instance:
     disk_usage_bytes: int | None = None
     cpu_cores: int | None = None
     memory_gb: int | None = None  # Current memory allocation in GB (2-32)
+    suspended_at: datetime | None = None
+    resume_count: int = 0
 
     @property
     def expires_at(self) -> datetime | None:

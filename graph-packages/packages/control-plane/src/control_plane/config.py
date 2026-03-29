@@ -89,6 +89,7 @@ class Settings(BaseSettings):
     wrapper_image_pull_policy: str = "IfNotPresent"
     storage_class: str = "standard"
     extension_server_url: str = "http://extension-server:80"
+    wrapper_control_plane_url: str = "http://control-plane:8080"
     storage_emulator_host: str = ""  # For E2E tests with fake-gcs-server
     wrapper_service_account: str = ""  # K8s service account for wrapper pods (for Workload Identity)
     wrapper_gcp_secret: str = ""  # K8s secret name containing GCP credentials (for local dev, alternative to Workload Identity)
