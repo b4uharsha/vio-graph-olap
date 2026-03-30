@@ -87,7 +87,23 @@ class FileSourceConnector(DataConnector):
         fs = self._get_filesystem()
         base_path = f"{self._bucket}/{self._prefix}".rstrip("/")
 
-        if self._file_format == "csv":
+        # Auto-detect format if not explicitly set: check for CSV files
+        file_format = self._file_format
+        if file_format == "parquet":
+            # Check if files are actually CSV by listing them
+            try:
+                file_info = fs.get_file_info(
+                    pyarrow_fs_selector(base_path, recursive=True)
+                )
+                has_csv = any(fi.path.endswith(".csv") for fi in file_info)
+                has_parquet = any(fi.path.endswith(".parquet") for fi in file_info)
+                if has_csv and not has_parquet:
+                    file_format = "csv"
+                    self._logger.info("Auto-detected CSV format from file extensions")
+            except Exception:
+                pass  # Fall through to configured format
+
+        if file_format == "csv":
             # Read all CSV files under the prefix
             file_info = fs.get_file_info(
                 pyarrow_fs_selector(base_path, recursive=True)
@@ -128,6 +144,28 @@ class FileSourceConnector(DataConnector):
 
         return await asyncio.get_running_loop().run_in_executor(None, _run)
 
+    def _extract_file_from_sql(self, sql: str) -> str | None:
+        """Extract file path from SQL like 'SELECT * FROM game-of-thrones/characters.csv'."""
+        import re
+        match = re.match(r"SELECT\s+\*\s+FROM\s+(.+)", sql, re.IGNORECASE)
+        if match:
+            return match.group(1).strip().strip("'\"")
+        return None
+
+    def _read_single_file(self, file_path: str) -> "pa.Table":  # noqa: F821
+        """Read a single file (CSV or Parquet) from the configured bucket."""
+        import pyarrow.csv as pcsv
+        import pyarrow.parquet as pq
+
+        fs = self._get_filesystem()
+        full_path = f"{self._bucket}/{file_path}"
+        self._logger.info("Reading single file", path=full_path)
+
+        if file_path.endswith(".csv"):
+            return pcsv.read_csv(fs.open_input_stream(full_path))
+        else:
+            return pq.read_table(full_path, filesystem=fs)
+
     async def execute_and_export_parquet(
         self, sql: str, gcs_path: str
     ) -> tuple[int, int]:
@@ -135,10 +173,15 @@ class FileSourceConnector(DataConnector):
         import asyncio
 
         self._logger.info(
-            "Re-exporting file source as Parquet", gcs_path=gcs_path
+            "Re-exporting file source as Parquet", gcs_path=gcs_path, sql=sql
         )
 
+        # Try to extract specific file path from SQL
+        specific_file = self._extract_file_from_sql(sql)
+
         def _run() -> "pa.Table":  # noqa: F821
+            if specific_file:
+                return self._read_single_file(specific_file)
             return self._read_source()
 
         table = await asyncio.get_running_loop().run_in_executor(None, _run)
