@@ -30,6 +30,7 @@ from export_worker.clients.control_plane import ControlPlaneClient
 from export_worker.clients.gcs import GCSClient
 from export_worker.clients.starburst import StarburstClient
 from export_worker.config import Settings, get_settings
+from export_worker.connectors import DataConnector, create_connector
 from export_worker.exceptions import ControlPlaneError, StarburstError
 from export_worker.models import ExportJob, ExportJobStatus
 
@@ -98,6 +99,61 @@ class ExportWorker:
         self._control_plane = ControlPlaneClient.from_config(settings.control_plane)
         self._gcs = GCSClient.from_config(settings.gcs)
 
+        # Connector cache: keyed by data_source_id, cleared each poll cycle
+        self._connector_cache: dict[int, DataConnector] = {}
+
+    async def _get_connector(self, job: ExportJob) -> DataConnector | None:
+        """Resolve a DataConnector for a job's data source.
+
+        If the job has a ``data_source_id``, fetch the source config from the
+        control plane and create (or return a cached) connector via the factory.
+        Returns ``None`` when the job should use the default Starburst client.
+
+        Connectors are cached per ``data_source_id`` within a single poll cycle
+        and cleaned up at the end of each cycle.
+        """
+        if job.data_source_id is None:
+            return None
+
+        # Return cached connector if available
+        if job.data_source_id in self._connector_cache:
+            return self._connector_cache[job.data_source_id]
+
+        try:
+            ds = self._control_plane.get_data_source(job.data_source_id)
+            connector = create_connector(
+                source_type=ds["source_type"],
+                config=ds.get("config", {}),
+                credentials=ds.get("credentials", {}),
+            )
+            self._connector_cache[job.data_source_id] = connector
+            self._logger.info(
+                "Created connector for data source",
+                data_source_id=job.data_source_id,
+                source_type=ds["source_type"],
+            )
+            return connector
+        except Exception as e:
+            self._logger.error(
+                "Failed to create connector for data source",
+                data_source_id=job.data_source_id,
+                error=str(e),
+            )
+            raise
+
+    async def _cleanup_connectors(self) -> None:
+        """Close and clear all cached connectors at end of poll cycle."""
+        for ds_id, connector in self._connector_cache.items():
+            try:
+                await connector.close()
+            except Exception as e:
+                self._logger.warning(
+                    "Error closing connector",
+                    data_source_id=ds_id,
+                    error=str(e),
+                )
+        self._connector_cache.clear()
+
     async def run(self) -> None:
         """Run the main worker loop.
 
@@ -139,6 +195,10 @@ class ExportWorker:
 
             except Exception as e:
                 self._logger.exception("Unexpected error in main loop", error=str(e))
+
+            finally:
+                # Clean up any dynamic connectors created this cycle
+                await self._cleanup_connectors()
 
             # Backoff based on whether work was done
             if work_done:
@@ -185,7 +245,10 @@ class ExportWorker:
             await self._submit_job(job)
 
     async def _submit_job(self, job: ExportJob) -> None:
-        """Submit a single job to Starburst.
+        """Submit a single job to the appropriate data source.
+
+        If the job has a ``data_source_id``, a dynamic connector is used.
+        Otherwise the default Starburst client handles the export.
 
         Args:
             job: Job to submit
@@ -195,8 +258,15 @@ class ExportWorker:
             snapshot_id=job.snapshot_id,
             entity_name=job.entity_name,
             job_type=job.job_type,
+            data_source_id=job.data_source_id,
         )
 
+        # ---- Dynamic connector path ----------------------------------------
+        if job.data_source_id is not None:
+            await self._submit_job_via_connector(job, job_log)
+            return
+
+        # ---- Default Starburst path -----------------------------------------
         if not job.sql or not job.column_names or not job.starburst_catalog:
             job_log.error("Job missing required fields")
             await self._mark_job_failed(job, "Job missing sql, column_names, or starburst_catalog")
@@ -257,6 +327,74 @@ class ExportWorker:
         except Exception as e:
             job_log.exception("Unexpected error submitting job", error=str(e))
             await self._mark_job_failed(job, f"Unexpected error: {e}")
+
+    async def _submit_job_via_connector(self, job: ExportJob, job_log) -> None:
+        """Submit a job using a dynamic data-source connector.
+
+        The connector executes the query and exports directly to GCS as
+        Parquet (no Starburst UNLOAD polling required).
+
+        Args:
+            job: Job with a data_source_id set.
+            job_log: Logger bound to job context.
+        """
+        if not job.sql:
+            job_log.error("Job missing SQL for connector export")
+            await self._mark_job_failed(job, "Job missing sql for connector export")
+            return
+
+        try:
+            connector = await self._get_connector(job)
+            if connector is None:
+                # Should not happen — data_source_id was set
+                await self._mark_job_failed(job, "Failed to resolve connector")
+                return
+
+            # Transition snapshot to 'creating' before starting
+            self._control_plane.update_snapshot_status_if_pending(
+                job.snapshot_id,
+                "creating",
+            )
+
+            job_log.info("Executing export via dynamic connector")
+            now = datetime.now(UTC)
+
+            row_count, size_bytes = await connector.execute_and_export_parquet(
+                sql=job.sql,
+                gcs_path=job.gcs_path,
+            )
+
+            completed_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+            self._control_plane.update_export_job(
+                job.id,  # type: ignore
+                status=ExportJobStatus.COMPLETED,
+                row_count=row_count,
+                size_bytes=size_bytes,
+                submitted_at=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                completed_at=completed_at,
+            )
+
+            job_log.info(
+                "Connector export completed",
+                row_count=row_count,
+                size_bytes=size_bytes,
+            )
+
+            updated_job = job.model_copy(
+                update={
+                    "status": ExportJobStatus.COMPLETED,
+                    "row_count": row_count,
+                    "size_bytes": size_bytes,
+                    "submitted_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "completed_at": completed_at,
+                }
+            )
+
+            await self._check_snapshot_complete(job.snapshot_id, job_log, updated_job)
+
+        except Exception as e:
+            job_log.exception("Connector export failed", error=str(e))
+            await self._mark_job_failed(job, f"Connector export error: {e}")
 
     async def _submit_job_direct_export(self, job: ExportJob, job_log) -> None:
         """Submit a job using direct PyArrow export (fallback for system.unload).

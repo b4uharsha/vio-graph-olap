@@ -225,6 +225,7 @@ class Mapping:
     updated_at: datetime | None = None
     ttl: str | None = None
     inactivity_timeout: str | None = None
+    data_source_id: int | None = None
     # Current version details (loaded with mapping)
     node_definitions: list[NodeDefinition] = field(default_factory=list)
     edge_definitions: list[EdgeDefinition] = field(default_factory=list)
@@ -309,6 +310,27 @@ class Instance:
 
 
 @dataclass
+class DataSource:
+    """External data source connection configuration.
+
+    Stores connection details and credentials for data sources
+    like Starburst, BigQuery, Snowflake, Databricks, S3, GCS, CSV.
+    """
+
+    id: int
+    owner_username: str
+    name: str
+    source_type: str  # starburst, bigquery, snowflake, databricks, s3, gcs, csv
+    config: dict[str, Any] = field(default_factory=dict)  # host, port, catalog, schema, etc.
+    credentials: dict[str, Any] = field(default_factory=dict)  # passwords, tokens, keys (encrypted)
+    is_default: bool = False
+    last_tested_at: datetime | None = None
+    test_status: str | None = None  # success, failed
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+@dataclass
 class ExportJob:
     """Individual export job for a node/edge type (ADR-025).
 
@@ -329,6 +351,7 @@ class ExportJob:
     sql: str | None = None
     column_names: list[str] | None = None
     starburst_catalog: str | None = None
+    data_source_id: int | None = None
     # Claiming state (lease-based ownership)
     claimed_by: str | None = None
     claimed_at: datetime | None = None

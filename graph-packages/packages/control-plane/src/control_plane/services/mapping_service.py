@@ -32,6 +32,7 @@ from control_plane.repositories.mappings import (
     Pagination,
     Sort,
 )
+from control_plane.repositories.data_sources import DataSourceRepository
 from control_plane.repositories.snapshots import SnapshotRepository
 
 logger = structlog.get_logger()
@@ -112,6 +113,7 @@ class MappingService:
         snapshot_repo: SnapshotRepository,
         favorites_repo: FavoritesRepository,
         instance_repo: "InstanceRepository | None" = None,
+        data_source_repo: "DataSourceRepository | None" = None,
     ):
         """Initialize service with repositories.
 
@@ -120,11 +122,13 @@ class MappingService:
             snapshot_repo: Snapshot repository (for dependency checks)
             favorites_repo: Favorites repository (for cascade delete)
             instance_repo: Instance repository (optional, for tree endpoint)
+            data_source_repo: Data source repository (optional, for default data source lookup)
         """
         self._mapping_repo = mapping_repo
         self._snapshot_repo = snapshot_repo
         self._favorites_repo = favorites_repo
         self._instance_repo = instance_repo
+        self._data_source_repo = data_source_repo
 
     async def get_mapping(self, mapping_id: int) -> Mapping:
         """Get a mapping by ID.
@@ -300,6 +304,7 @@ class MappingService:
         """Create a new mapping.
 
         The user becomes the owner of the mapping.
+        If no data_source_id is provided, looks up the user's default data source.
 
         Args:
             user: Current user (becomes owner)
@@ -312,6 +317,20 @@ class MappingService:
         node_definitions = [schema_to_domain_node(nd) for nd in request.node_definitions]
         edge_definitions = [schema_to_domain_edge(ed) for ed in request.edge_definitions]
 
+        # Resolve data source: explicit > user default > None
+        data_source_id = getattr(request, "data_source_id", None)
+        if data_source_id is None and self._data_source_repo is not None:
+            default_ds = await self._data_source_repo.get_default(user.username)
+            if default_ds is not None:
+                data_source_id = default_ds.id
+            else:
+                # Fall back to system default (owner = system@viograph.io)
+                system_default = await self._data_source_repo.get_default(
+                    "system@viograph.io"
+                )
+                if system_default is not None:
+                    data_source_id = system_default.id
+
         return await self._mapping_repo.create(
             owner_username=user.username,
             name=request.name,
@@ -320,6 +339,7 @@ class MappingService:
             edge_definitions=edge_definitions,
             ttl=request.ttl,
             inactivity_timeout=request.inactivity_timeout,
+            data_source_id=data_source_id,
         )
 
     async def update_mapping(

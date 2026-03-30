@@ -50,6 +50,7 @@ def get_mapping_service(
     session: AsyncSession = Depends(get_async_session),
 ) -> MappingService:
     """Dependency to get mapping service."""
+    from control_plane.repositories.data_sources import DataSourceRepository
     from control_plane.repositories.instances import InstanceRepository
 
     return MappingService(
@@ -57,6 +58,7 @@ def get_mapping_service(
         snapshot_repo=SnapshotRepository(session),
         favorites_repo=FavoritesRepository(session),
         instance_repo=InstanceRepository(session),
+        data_source_repo=DataSourceRepository(session),
     )
 
 
@@ -354,6 +356,7 @@ async def copy_mapping(
         edge_definitions=source.edge_definitions,
         ttl=source.ttl,
         inactivity_timeout=source.inactivity_timeout,
+        data_source_id=source.data_source_id,
     )
     return DataResponse(data=mapping_to_response(copied))
 

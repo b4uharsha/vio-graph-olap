@@ -171,6 +171,11 @@ class Settings(BaseSettings):
     # Internal API
     internal_api_key: str = ""
 
+    # Encryption (Fernet key for data source credential encryption)
+    # Must be a url-safe-base64-encoded 32-byte key (use `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` to generate)
+    # Falls back to a key derived from internal_api_key when not set
+    encryption_key: str = ""
+
     @property
     def async_database_url(self) -> str:
         """Get async-compatible database URL.

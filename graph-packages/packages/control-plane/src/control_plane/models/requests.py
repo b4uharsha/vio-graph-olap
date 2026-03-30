@@ -104,6 +104,28 @@ class UpdateMemoryRequest(BaseModel):
     memory_gb: int = Field(..., ge=2, le=32, description="Memory in GB (2-32)")
 
 
+VALID_SOURCE_TYPES = {"starburst", "bigquery", "snowflake", "databricks", "s3", "gcs", "csv"}
+
+
+class CreateDataSourceRequest(BaseModel):
+    """Request to create a new data source."""
+
+    name: str = Field(..., min_length=1, max_length=255)
+    source_type: str = Field(..., description="Data source type: starburst, bigquery, snowflake, databricks, s3, gcs, csv")
+    config: dict = Field(default_factory=dict, description="Connection config: host, port, catalog, schema, project_id, bucket, etc.")
+    credentials: dict = Field(default_factory=dict, description="Credentials: passwords, tokens, service account keys")
+    is_default: bool = Field(default=False, description="Set as default data source for this user")
+
+
+class UpdateDataSourceRequest(BaseModel):
+    """Request to update a data source."""
+
+    name: str | None = Field(None, min_length=1, max_length=255)
+    source_type: str | None = Field(None, description="Data source type")
+    config: dict | None = Field(None, description="Connection config")
+    credentials: dict | None = Field(None, description="Credentials")
+
+
 __all__ = [
     # Control-plane specific
     "AddFavoriteRequest",
@@ -138,4 +160,7 @@ __all__ = [
     "UpdateSnapshotRequest",
     # From graph_olap_schemas - Internal API
     "UpdateSnapshotStatusRequest",
+    # Data Sources
+    "CreateDataSourceRequest",
+    "UpdateDataSourceRequest",
 ]

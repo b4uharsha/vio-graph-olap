@@ -234,6 +234,9 @@ class SnapshotService:
         jobs = []
         effective_catalog = starburst_catalog or self._starburst_catalog
 
+        # Propagate data_source_id from mapping to export jobs
+        mapping_data_source_id = mapping.data_source_id
+
         for node_def in version.node_definitions:
             # Build column names: primary key first, then properties
             column_names = [node_def.primary_key.name] + [
@@ -248,6 +251,7 @@ class SnapshotService:
                     "sql": node_def.sql,
                     "column_names": column_names,
                     "starburst_catalog": effective_catalog,
+                    "data_source_id": mapping_data_source_id,
                 }
             )
 
@@ -265,6 +269,7 @@ class SnapshotService:
                     "sql": edge_def.sql,
                     "column_names": column_names,
                     "starburst_catalog": effective_catalog,
+                    "data_source_id": mapping_data_source_id,
                 }
             )
 

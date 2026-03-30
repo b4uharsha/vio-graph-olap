@@ -42,6 +42,35 @@ users = Table(
 )
 
 # =============================================================================
+# Data Sources (Dynamic Data Sources - Phase 1)
+# =============================================================================
+
+data_sources = Table(
+    "data_sources",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column(
+        "owner_username",
+        Text,
+        ForeignKey("users.username"),
+        nullable=False,
+    ),
+    Column("name", Text, nullable=False),
+    Column("source_type", Text, nullable=False),  # starburst, bigquery, snowflake, databricks, s3, gcs, csv
+    Column("config", Text, nullable=False, server_default="{}"),  # JSON: host, port, catalog, schema, project_id, bucket, etc.
+    Column("credentials", Text, nullable=False, server_default="{}"),  # JSON: passwords, tokens, service account keys (encrypted)
+    Column("is_default", Integer, nullable=False, server_default="0"),
+    Column("last_tested_at", Text, nullable=True),  # ISO 8601
+    Column("test_status", Text, nullable=True),  # success, failed
+    Column("created_at", Text, nullable=False),  # ISO 8601
+    Column("updated_at", Text, nullable=False),  # ISO 8601
+    UniqueConstraint("owner_username", "name", name="uq_data_sources_owner_name"),
+    Index("idx_data_sources_owner", "owner_username"),
+    Index("idx_data_sources_source_type", "source_type"),
+    Index("idx_data_sources_created_at", "created_at"),
+)
+
+# =============================================================================
 # Mappings and Versions
 # =============================================================================
 
@@ -62,6 +91,7 @@ mappings = Table(
     Column("updated_at", Text, nullable=False),  # ISO 8601
     Column("ttl", Text, nullable=True),  # ISO 8601 duration
     Column("inactivity_timeout", Text, nullable=True),  # ISO 8601 duration
+    Column("data_source_id", Integer, ForeignKey("data_sources.id"), nullable=True),
     Index("idx_mappings_owner", "owner_username"),
     Index("idx_mappings_created_at", "created_at"),
     Index("idx_mappings_name", "name"),
@@ -289,6 +319,7 @@ export_jobs = Table(
     Column("error_message", Text, nullable=True),
     Column("created_at", Text, nullable=False),  # ISO 8601
     Column("updated_at", Text, nullable=False),  # ISO 8601
+    Column("data_source_id", Integer, ForeignKey("data_sources.id"), nullable=True),
     Index("idx_export_jobs_snapshot_id", "snapshot_id"),
     Index("idx_export_jobs_status", "status"),
     Index("idx_export_jobs_snapshot_status", "snapshot_id", "status"),

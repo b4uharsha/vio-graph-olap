@@ -156,10 +156,56 @@ class ExportJobWithDefinitionResponse(BaseModel):
     updated_at: datetime | None = None
 
 
+class DataSourceResponse(BaseModel):
+    """Data source in response.
+
+    Note: credentials are redacted in public API responses.
+    """
+
+    id: int
+    owner_username: str
+    name: str
+    source_type: str
+    config: dict
+    is_default: bool
+    last_tested_at: datetime | None = None
+    test_status: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class DataSourceInternalResponse(BaseModel):
+    """Data source with decrypted credentials for internal use."""
+
+    id: int
+    owner_username: str
+    name: str
+    source_type: str
+    config: dict
+    credentials: dict
+    is_default: bool
+    last_tested_at: datetime | None = None
+    test_status: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class DataSourceTestResponse(BaseModel):
+    """Response from testing a data source connection."""
+
+    success: bool
+    message: str
+    tested_at: datetime | None = None
+
+
 __all__ = [
     "CacheStatsResponse",
     # From graph_olap_schemas - Schema metadata
     "CatalogResponse",
+    # Data Sources
+    "DataSourceInternalResponse",
+    "DataSourceResponse",
+    "DataSourceTestResponse",
     # ADR-025: Database polling
     "ClaimExportJobsRequest",
     "ClaimExportJobsResponse",

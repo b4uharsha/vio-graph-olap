@@ -220,6 +220,7 @@ class ExportJob(BaseModel):
 
     id: int | None = Field(default=None, description="Database ID (set after creation)")
     snapshot_id: int = Field(description="Parent snapshot ID")
+    data_source_id: int | None = Field(default=None, description="Dynamic data source ID (None = default Starburst)")
     job_type: str = Field(description="'node' or 'edge'")
     entity_name: str = Field(description="Node label or edge type name")
     status: ExportJobStatus = Field(default=ExportJobStatus.PENDING)
@@ -255,6 +256,7 @@ class ExportJob(BaseModel):
         """Convert to dict format for Control Plane API."""
         return {
             "snapshot_id": self.snapshot_id,
+            "data_source_id": self.data_source_id,
             "job_type": self.job_type,
             "entity_name": self.entity_name,
             "status": self.status.value,
@@ -281,6 +283,7 @@ class ExportJob(BaseModel):
         return cls(
             id=data.get("id"),
             snapshot_id=data["snapshot_id"],
+            data_source_id=data.get("data_source_id"),
             job_type=data["job_type"],
             entity_name=data["entity_name"],
             status=ExportJobStatus(data["status"]),

@@ -72,6 +72,7 @@ def export_job_to_dict(job: ExportJob) -> dict[str, Any]:
         "sql": job.sql,
         "column_names": job.column_names,
         "starburst_catalog": job.starburst_catalog,
+        "data_source_id": job.data_source_id,
         # Claiming state
         "claimed_by": job.claimed_by,
         "claimed_at": job.claimed_at.isoformat() if job.claimed_at else None,

@@ -57,7 +57,7 @@ class MappingRepository(BaseRepository):
         sql = """
             SELECT m.id, m.owner_username, m.name, m.description,
                    m.current_version, m.created_at, m.updated_at,
-                   m.ttl, m.inactivity_timeout,
+                   m.ttl, m.inactivity_timeout, m.data_source_id,
                    mv.node_definitions, mv.edge_definitions,
                    mv.change_description, mv.created_at as version_created_at,
                    mv.created_by as version_created_by
@@ -116,7 +116,7 @@ class MappingRepository(BaseRepository):
         sql = f"""
             SELECT m.id, m.owner_username, m.name, m.description,
                    m.current_version, m.created_at, m.updated_at,
-                   m.ttl, m.inactivity_timeout,
+                   m.ttl, m.inactivity_timeout, m.data_source_id,
                    mv.node_definitions, mv.edge_definitions,
                    mv.change_description, mv.created_at as version_created_at,
                    mv.created_by as version_created_by
@@ -141,6 +141,7 @@ class MappingRepository(BaseRepository):
         edge_definitions: list[EdgeDefinition],
         ttl: str | None = None,
         inactivity_timeout: str | None = None,
+        data_source_id: int | None = None,
     ) -> Mapping:
         """Create a new mapping with initial version.
 
@@ -152,6 +153,7 @@ class MappingRepository(BaseRepository):
             edge_definitions: List of edge definitions
             ttl: Optional TTL duration (ISO 8601)
             inactivity_timeout: Optional inactivity timeout (ISO 8601)
+            data_source_id: Optional data source ID
 
         Returns:
             Created Mapping with version details
@@ -162,10 +164,10 @@ class MappingRepository(BaseRepository):
         mapping_sql = """
             INSERT INTO mappings (owner_username, name, description,
                                  current_version, created_at, updated_at,
-                                 ttl, inactivity_timeout)
+                                 ttl, inactivity_timeout, data_source_id)
             VALUES (:owner_username, :name, :description,
                     1, :created_at, :updated_at,
-                    :ttl, :inactivity_timeout)
+                    :ttl, :inactivity_timeout, :data_source_id)
             RETURNING id
         """
         mapping_id = await self._insert_returning_id(
@@ -178,6 +180,7 @@ class MappingRepository(BaseRepository):
                 "updated_at": now,
                 "ttl": ttl,
                 "inactivity_timeout": inactivity_timeout,
+                "data_source_id": data_source_id,
             },
         )
 
@@ -466,7 +469,7 @@ class MappingRepository(BaseRepository):
         sql = """
             SELECT m.id, m.owner_username, m.name, m.description,
                    m.current_version, m.created_at, m.updated_at,
-                   m.ttl, m.inactivity_timeout,
+                   m.ttl, m.inactivity_timeout, m.data_source_id,
                    mv.node_definitions, mv.edge_definitions,
                    mv.change_description, mv.created_at as version_created_at,
                    mv.created_by as version_created_by
@@ -493,6 +496,7 @@ class MappingRepository(BaseRepository):
             updated_at=parse_timestamp(row.updated_at),
             ttl=row.ttl,
             inactivity_timeout=row.inactivity_timeout,
+            data_source_id=getattr(row, "data_source_id", None),
             node_definitions=[NodeDefinition.from_dict(nd) for nd in node_defs_json],
             edge_definitions=[EdgeDefinition.from_dict(ed) for ed in edge_defs_json],
             change_description=row.change_description,

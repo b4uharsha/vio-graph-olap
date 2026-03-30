@@ -657,6 +657,61 @@ class ControlPlaneClient:
             )
 
     # -------------------------------------------------------------------------
+    # Dynamic Data Sources
+    # -------------------------------------------------------------------------
+
+    @retry(
+        retry=retry_if_exception_type((httpx.RequestError, httpx.TimeoutException)),
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(1),
+    )
+    def get_data_source(self, data_source_id: int) -> dict[str, Any]:
+        """Get a data source with full credentials from Control Plane.
+
+        Used by the export worker to retrieve connection config and credentials
+        for dynamic data sources referenced by export jobs.
+
+        Args:
+            data_source_id: Data source ID
+
+        Returns:
+            Data source config dict with keys: id, owner_username, name,
+            source_type, config, credentials, is_default, etc.
+
+        Raises:
+            ControlPlaneError: If request fails or data source not found
+        """
+        url = f"{self.base_url}/api/internal/data-sources/{data_source_id}"
+
+        self._logger.debug(
+            "Getting data source",
+            data_source_id=data_source_id,
+        )
+
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.get(url, headers=self._get_headers())
+
+                if response.status_code == 404:
+                    raise ControlPlaneError(
+                        f"Data source not found: {data_source_id}",
+                        status_code=404,
+                    )
+
+                if response.status_code != 200:
+                    raise ControlPlaneError(
+                        f"Failed to get data source: {response.status_code}",
+                        status_code=response.status_code,
+                        response_body=response.text,
+                    )
+
+                data = response.json().get("data", {})
+                return data
+
+        except httpx.RequestError as e:
+            raise ControlPlaneError(f"Request failed: {e}") from e
+
+    # -------------------------------------------------------------------------
     # ADR-025: Database Polling - Claim and Poll Endpoints
     # -------------------------------------------------------------------------
 

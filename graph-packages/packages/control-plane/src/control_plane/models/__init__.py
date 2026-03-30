@@ -1,6 +1,7 @@
 """Domain models, request/response models, and errors."""
 
 from control_plane.models.domain import (
+    DataSource,
     EdgeDefinition,
     ExportJob,
     ExportJobStatus,
@@ -34,6 +35,7 @@ __all__ = [
     # Errors
     "AppError",
     "ConcurrencyLimitError",
+    "DataSource",
     "DependencyError",
     "EdgeDefinition",
     "ExportJob",

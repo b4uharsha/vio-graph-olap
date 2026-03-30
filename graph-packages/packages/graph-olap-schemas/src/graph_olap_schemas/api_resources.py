@@ -140,6 +140,14 @@ class CreateMappingRequest(BaseModel):
         ),
     ]
 
+    data_source_id: Annotated[
+        int | None,
+        Field(
+            default=None,
+            description="Data source ID to use for exports (uses user's default if not specified)",
+        ),
+    ]
+
     @model_validator(mode="after")
     def validate_unique_labels(self) -> Self:
         """Ensure node labels are unique within the mapping."""

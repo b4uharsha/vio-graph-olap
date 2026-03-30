@@ -1,5 +1,6 @@
 """FastAPI application factory."""
 
+import structlog
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -8,7 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from control_plane.cache.schema_cache import SchemaMetadataCache
 from control_plane.config import Settings, get_settings
-from control_plane.infrastructure.database import DatabaseCommitMiddleware, DatabaseManager
+from control_plane.infrastructure.database import (
+    DatabaseCommitMiddleware,
+    DatabaseManager,
+    get_session_factory,
+)
 from control_plane.jobs import BackgroundJobScheduler
 from control_plane.middleware import RequestIdMiddleware, register_exception_handlers
 from control_plane.routers import health_router
@@ -16,6 +21,7 @@ from control_plane.routers.api import (
     admin_router,
     cluster_router,
     config_router,
+    data_sources_router,
     export_jobs_router,
     favorites_router,
     instances_router,
@@ -24,6 +30,9 @@ from control_plane.routers.api import (
     schema_router,
     # SNAPSHOT FUNCTIONALITY DISABLED - snapshots are now created implicitly
     # snapshots_router,
+)
+from control_plane.routers.internal import (
+    data_sources_router as internal_data_sources_router,
 )
 from control_plane.routers.internal import (
     export_jobs_router as internal_export_jobs_router,
@@ -35,6 +44,66 @@ from control_plane.routers.internal import (
     snapshots_router as internal_snapshots_router,
 )
 from control_plane.routers.metrics import router as metrics_router
+
+logger = structlog.get_logger()
+
+
+async def _seed_default_data_source(
+    settings: Settings,
+    db_manager: DatabaseManager,
+) -> None:
+    """Seed a default data source from env vars if none exist.
+
+    Ensures backward compatibility: existing deployments that configure
+    Starburst via GRAPH_OLAP_STARBURST_URL env var will auto-migrate
+    that config into the data_sources table on first startup.
+    """
+    if not settings.starburst_url:
+        return
+
+    try:
+        from control_plane.repositories.data_sources import DataSourceRepository
+
+        session_factory = get_session_factory()
+        async with session_factory() as session:
+            repo = DataSourceRepository(session)
+
+            # Check if any data sources already exist
+            count_sql = "SELECT COUNT(*) FROM data_sources"
+            count = await repo._fetch_scalar(count_sql, {})
+            if count and count > 0:
+                return
+
+            # Create system-level default data source from env vars
+            starburst_password = settings.starburst_password.get_secret_value()
+            await repo.create(
+                owner_username="system@viograph.io",
+                name="Default Starburst",
+                source_type="starburst",
+                config={
+                    "host": settings.starburst_url,
+                    "catalog": settings.starburst_catalog,
+                    "user": settings.starburst_user,
+                },
+                credentials={
+                    "password": starburst_password,
+                },
+                is_default=True,
+            )
+            await session.commit()
+
+            logger.info(
+                "Seeded default data source from env vars",
+                name="Default Starburst",
+                source_type="starburst",
+                host=settings.starburst_url,
+                catalog=settings.starburst_catalog,
+            )
+    except Exception as e:
+        logger.warning(
+            "Failed to seed default data source",
+            error=str(e),
+        )
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -60,6 +129,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """Application lifespan handler."""
         # Startup
         await db_manager.startup()
+
+        # Seed default data source from env vars (backward compatibility)
+        await _seed_default_data_source(settings, db_manager)
+
         # Initialize schema metadata cache
         schema_cache = SchemaMetadataCache()
         app.state.schema_cache = schema_cache
@@ -115,6 +188,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Public API routes (shown in docs)
     app.include_router(mappings_router)
     app.include_router(instances_router)
+    app.include_router(data_sources_router)
 
     # Public API routes (hidden from docs — not yet tested)
     app.include_router(favorites_router, include_in_schema=False)
@@ -129,6 +203,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(internal_snapshots_router, include_in_schema=False)
     app.include_router(internal_instances_router, include_in_schema=False)
     app.include_router(internal_export_jobs_router, include_in_schema=False)
+    app.include_router(internal_data_sources_router, include_in_schema=False)
 
     return app
 

@@ -13,7 +13,7 @@ from control_plane.repositories.base import (
 # All columns in export_jobs table (ADR-025)
 EXPORT_JOB_COLUMNS = """
     id, snapshot_id, job_type, entity_name, status,
-    sql, column_names, starburst_catalog,
+    sql, column_names, starburst_catalog, data_source_id,
     claimed_by, claimed_at,
     starburst_query_id, next_uri,
     next_poll_at, poll_count,
@@ -110,6 +110,7 @@ class ExportJobRepository(BaseRepository):
         sql_query: str | None = None,
         column_names: list[str] | None = None,
         starburst_catalog: str | None = None,
+        data_source_id: int | None = None,
     ) -> ExportJob:
         """Create a new export job.
 
@@ -121,6 +122,7 @@ class ExportJobRepository(BaseRepository):
             sql_query: Denormalized SQL query for export
             column_names: Column names for UNLOAD
             starburst_catalog: Starburst catalog name
+            data_source_id: Optional dynamic data source ID
 
         Returns:
             Created ExportJob
@@ -130,9 +132,11 @@ class ExportJobRepository(BaseRepository):
         sql = """
             INSERT INTO export_jobs (snapshot_id, job_type, entity_name,
                                     status, sql, column_names, starburst_catalog,
+                                    data_source_id,
                                     gcs_path, poll_count, created_at, updated_at)
             VALUES (:snapshot_id, :job_type, :entity_name,
                     'pending', :sql, :column_names, :starburst_catalog,
+                    :data_source_id,
                     :gcs_path, 0, :created_at, :updated_at)
             RETURNING id
         """
@@ -145,6 +149,7 @@ class ExportJobRepository(BaseRepository):
                 "sql": sql_query,
                 "column_names": column_names_json,
                 "starburst_catalog": starburst_catalog,
+                "data_source_id": data_source_id,
                 "gcs_path": gcs_path,
                 "created_at": now,
                 "updated_at": now,
@@ -160,6 +165,7 @@ class ExportJobRepository(BaseRepository):
             sql=sql_query,
             column_names=column_names,
             starburst_catalog=starburst_catalog,
+            data_source_id=data_source_id,
             gcs_path=gcs_path,
             poll_count=0,
             created_at=parse_timestamp(now),
@@ -176,7 +182,7 @@ class ExportJobRepository(BaseRepository):
         Args:
             snapshot_id: ID of the parent snapshot
             jobs: List of dicts with job_type, entity_name, gcs_path,
-                  and optional sql, column_names, starburst_catalog
+                  and optional sql, column_names, starburst_catalog, data_source_id
 
         Returns:
             List of created ExportJob objects
@@ -190,9 +196,11 @@ class ExportJobRepository(BaseRepository):
             sql = """
                 INSERT INTO export_jobs (snapshot_id, job_type, entity_name,
                                         status, sql, column_names, starburst_catalog,
+                                        data_source_id,
                                         gcs_path, poll_count, created_at, updated_at)
                 VALUES (:snapshot_id, :job_type, :entity_name,
                         'pending', :sql, :column_names, :starburst_catalog,
+                        :data_source_id,
                         :gcs_path, 0, :created_at, :updated_at)
                 RETURNING id
             """
@@ -205,6 +213,7 @@ class ExportJobRepository(BaseRepository):
                     "sql": job.get("sql"),
                     "column_names": column_names_json,
                     "starburst_catalog": job.get("starburst_catalog"),
+                    "data_source_id": job.get("data_source_id"),
                     "gcs_path": job["gcs_path"],
                     "created_at": now,
                     "updated_at": now,
@@ -221,6 +230,7 @@ class ExportJobRepository(BaseRepository):
                     sql=job.get("sql"),
                     column_names=column_names,
                     starburst_catalog=job.get("starburst_catalog"),
+                    data_source_id=job.get("data_source_id"),
                     gcs_path=job["gcs_path"],
                     poll_count=0,
                     created_at=parse_timestamp(now),
@@ -625,6 +635,7 @@ class ExportJobRepository(BaseRepository):
             sql=getattr(row, "sql", None),
             column_names=column_names,
             starburst_catalog=getattr(row, "starburst_catalog", None),
+            data_source_id=getattr(row, "data_source_id", None),
             claimed_by=getattr(row, "claimed_by", None),
             claimed_at=parse_timestamp(getattr(row, "claimed_at", None)),
             starburst_query_id=row.starburst_query_id,

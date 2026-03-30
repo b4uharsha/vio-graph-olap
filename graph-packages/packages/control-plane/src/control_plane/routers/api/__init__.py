@@ -3,6 +3,7 @@
 from control_plane.routers.api.admin import router as admin_router
 from control_plane.routers.api.cluster import router as cluster_router
 from control_plane.routers.api.config import router as config_router
+from control_plane.routers.api.data_sources import router as data_sources_router
 from control_plane.routers.api.export_jobs import router as export_jobs_router
 from control_plane.routers.api.favorites import router as favorites_router
 from control_plane.routers.api.instances import router as instances_router
@@ -16,6 +17,7 @@ __all__ = [
     "admin_router",
     "cluster_router",
     "config_router",
+    "data_sources_router",
     "export_jobs_router",
     "favorites_router",
     "instances_router",
