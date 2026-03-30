@@ -155,10 +155,10 @@ class BackgroundJobScheduler:
         )
 
         # Instance orchestration job (waiting_for_snapshot -> starting transitions)
-        # Run every 30 seconds for responsive instance creation from mapping flow
+        # Run every 15 seconds for fast instance creation
         self._scheduler.add_job(
             func=self._wrap_job(run_instance_orchestration_job, "instance_orchestration"),
-            trigger=IntervalTrigger(seconds=30),
+            trigger=IntervalTrigger(seconds=15),
             id="instance_orchestration",
             name="Instance Orchestration Job",
             replace_existing=True,
@@ -166,7 +166,7 @@ class BackgroundJobScheduler:
         logger.info(
             "job_registered",
             job_id="instance_orchestration",
-            interval_seconds=30,
+            interval_seconds=15,
         )
 
         # Resource monitor job (dynamic memory monitoring and proactive resize)
