@@ -24,7 +24,11 @@ RUN pip install --no-cache-dir ./graph-olap-schemas && \
         "pydantic>=2.6.0" \
         "pydantic-settings>=2.1.0" \
         "pyarrow>=15.0.0" \
-        "trino>=0.328.0"
+        "trino>=0.328.0" \
+        "google-cloud-bigquery>=3.25.0" \
+        "boto3>=1.35.0" \
+        "snowflake-connector-python>=3.12.0" \
+        "databricks-sql-connector>=3.4.0"
 
 # Runtime stage
 FROM cgr.dev/chainguard/python:latest AS production

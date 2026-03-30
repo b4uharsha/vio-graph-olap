@@ -21,8 +21,13 @@ dependencies = [
     # Configuration
     "pydantic>=2.10.0",
     "pydantic-settings>=2.12.0",
-    # Parquet metadata reading
+    # Parquet metadata reading + CSV support
     "pyarrow>=22.0.0",
+    # Data source connectors
+    "google-cloud-bigquery>=3.30.0",
+    "boto3>=1.38.0",
+    "snowflake-connector-python>=3.15.0",
+    "databricks-sql-connector>=3.6.0",
 ]
 
 [project.scripts]
