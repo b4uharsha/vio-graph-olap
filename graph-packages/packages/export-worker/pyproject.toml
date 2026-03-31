@@ -60,6 +60,9 @@ addopts = [
     "--tb=short",
     "--strict-markers",
     "-ra",
+    "--cov=export_worker",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
 ]
 markers = [
     "unit: Unit tests (fast, no external dependencies)",

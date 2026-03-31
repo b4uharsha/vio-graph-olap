@@ -74,6 +74,9 @@ addopts = [
     "-v",
     "--strict-markers",
     "--tb=short",
+    "--cov=wrapper",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
 ]
 markers = [
     "unit: Fast unit tests with mocks (no Docker, no external services)",

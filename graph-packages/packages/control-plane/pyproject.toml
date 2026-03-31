@@ -58,7 +58,7 @@ packages = ["src/control_plane"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --cov=control_plane --cov-report=term-missing --cov-report=html:htmlcov"
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
