@@ -44,7 +44,7 @@ class TestCSVConverter:
         parquet_path = tmp_path / "nonexistent.parquet"
         csv_path = tmp_path / "output.csv"
 
-        with pytest.raises(FileNotFoundError, match="Parquet file not found"):
+        with pytest.raises(FileNotFoundError, match="Parquet path not found"):
             await CSVConverter.convert_parquet_to_csv(parquet_path, csv_path)
 
         # Ensure no partial CSV file created

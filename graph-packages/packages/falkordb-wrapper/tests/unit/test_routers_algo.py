@@ -119,7 +119,7 @@ class TestExecuteAlgorithm:
             headers={"X-User-ID": "user-001", "X-User-Name": "testuser"},
         )
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_202_ACCEPTED
         data = response.json()
         assert data["execution_id"] == "exec-123"
         assert data["algorithm_name"] == "pagerank"
@@ -141,7 +141,7 @@ class TestExecuteAlgorithm:
             headers={"X-User-ID": "user-001", "X-User-Name": "testuser"},
         )
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_202_ACCEPTED
         mock_algorithm_service.execute.assert_called_once()
 
     @pytest.mark.unit

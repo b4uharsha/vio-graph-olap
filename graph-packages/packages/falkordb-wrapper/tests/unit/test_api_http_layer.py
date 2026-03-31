@@ -315,7 +315,7 @@ class TestQueryEndpoints:
         response = client.post(
             "/query",
             json={
-                "cypher": "MATCH (n:Person) RETURN n.name, n.age",
+                "query": "MATCH (n:Person) RETURN n.name, n.age",
                 "parameters": {},
             },
         )
@@ -335,7 +335,7 @@ class TestQueryEndpoints:
         response = client.post(
             "/query",
             json={
-                "cypher": "MATCH (n:Person {name: $name}) RETURN n.name",
+                "query": "MATCH (n:Person {name: $name}) RETURN n.name",
                 "parameters": {"name": "Alice"},
             },
         )
@@ -361,7 +361,7 @@ class TestQueryEndpoints:
         client = TestClient(app_with_mocks)
         response = client.post(
             "/query",
-            json={"cypher": ""},  # Empty string
+            json={"query": ""},  # Empty string
         )
 
         assert response.status_code == 422  # Validation error
@@ -373,7 +373,7 @@ class TestQueryEndpoints:
         response = client.post(
             "/query",
             json={
-                "cypher": "MATCH (n) RETURN n",
+                "query": "MATCH (n) RETURN n",
                 "timeout_ms": 5000,
             },
         )
@@ -409,7 +409,7 @@ class TestDatabaseNotInitialized:
         client = TestClient(app_with_uninitialized_db)
         response = client.post(
             "/query",
-            json={"cypher": "MATCH (n) RETURN n"},
+            json={"query": "MATCH (n) RETURN n"},
         )
 
         assert response.status_code == 503
@@ -460,7 +460,7 @@ class TestErrorHandling:
         client = TestClient(app_with_error_db)
         response = client.post(
             "/query",
-            json={"cypher": "INVALID SYNTAX"},
+            json={"query": "INVALID SYNTAX"},
         )
 
         assert response.status_code == 400
@@ -475,7 +475,7 @@ class TestErrorHandling:
         client = TestClient(app_with_error_db)
         response = client.post(
             "/query",
-            json={"cypher": "SLOW QUERY"},
+            json={"query": "SLOW QUERY"},
         )
 
         assert response.status_code == 408

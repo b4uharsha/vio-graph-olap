@@ -196,10 +196,14 @@ class TestDatabaseServiceOperations:
     @pytest.mark.asyncio
     async def test_get_schema_success(self, database_service):
         """Test successful schema retrieval."""
-        # Mock execute_query for property queries
+        # Mock execute_query for label, relationship type, and property queries
         async def mock_execute(*args, **kwargs):
-            query = args[0]
-            if "Person" in query:
+            query = kwargs.get("query", args[0] if args else "")
+            if "db.labels" in query:
+                return {"rows": [["Person"], ["Company"]], "row_count": 2}
+            elif "db.relationshipTypes" in query:
+                return {"rows": [["KNOWS"], ["WORKS_AT"]], "row_count": 2}
+            elif "Person" in query:
                 return {"rows": [[["person_id", "name", "age"]]], "row_count": 1}
             elif "Company" in query:
                 return {"rows": [[["company_id", "name"]]], "row_count": 1}
@@ -226,10 +230,14 @@ class TestDatabaseServiceOperations:
     @pytest.mark.asyncio
     async def test_get_stats_success(self, database_service):
         """Test successful stats retrieval."""
-        # Mock execute_query for count queries
+        # Mock execute_query for label, relationship type, and count queries
         async def mock_execute(*args, **kwargs):
-            query = args[0]
-            if "count(n)" in query:
+            query = kwargs.get("query", args[0] if args else "")
+            if "db.labels" in query:
+                return {"rows": [["Person"], ["Company"]], "row_count": 2}
+            elif "db.relationshipTypes" in query:
+                return {"rows": [["KNOWS"], ["WORKS_AT"]], "row_count": 2}
+            elif "count(n)" in query:
                 return {"rows": [[100]], "row_count": 1}
             elif "count(r)" in query:
                 return {"rows": [[50]], "row_count": 1}

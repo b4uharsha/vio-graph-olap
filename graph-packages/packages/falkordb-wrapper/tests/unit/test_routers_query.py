@@ -64,7 +64,7 @@ class TestQueryRouter:
         response = client.post(
             "/query",
             json={
-                "cypher": "MATCH (n:Person) RETURN n.name, n.age",
+                "query": "MATCH (n:Person) RETURN n.name, n.age",
                 "parameters": {},
             },
         )
@@ -91,7 +91,7 @@ class TestQueryRouter:
         response = client.post(
             "/query",
             json={
-                "cypher": "MATCH (n:Person {name: $name}) RETURN n.name",
+                "query": "MATCH (n:Person {name: $name}) RETURN n.name",
                 "parameters": {"name": "Alice"},
             },
         )
@@ -113,7 +113,7 @@ class TestQueryRouter:
         client = TestClient(test_app)
         response = client.post(
             "/query",
-            json={"cypher": "INVALID CYPHER"},
+            json={"query": "INVALID CYPHER"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -131,7 +131,7 @@ class TestQueryRouter:
         client = TestClient(test_app)
         response = client.post(
             "/query",
-            json={"cypher": "MATCH (n) RETURN n", "timeout_ms": 5000},
+            json={"query": "MATCH (n) RETURN n", "timeout_ms": 5000},
         )
 
         assert response.status_code == status.HTTP_408_REQUEST_TIMEOUT
@@ -146,7 +146,7 @@ class TestQueryRouter:
         client = TestClient(test_app)
         response = client.post(
             "/query",
-            json={"cypher": "MATCH (n) RETURN n"},
+            json={"query": "MATCH (n) RETURN n"},
         )
 
         assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
@@ -170,7 +170,7 @@ class TestQueryRouter:
         client = TestClient(test_app)
         response = client.post(
             "/query",
-            json={"cypher": ""},  # Empty string
+            json={"query": ""},  # Empty string
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -189,7 +189,7 @@ class TestQueryRouter:
         client = TestClient(test_app)
         response = client.post(
             "/query",
-            json={"cypher": "MATCH (n) RETURN n LIMIT 1000"},
+            json={"query": "MATCH (n) RETURN n LIMIT 1000"},
         )
 
         assert response.status_code == status.HTTP_200_OK
