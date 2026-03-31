@@ -198,10 +198,48 @@ class DataSourceTestResponse(BaseModel):
     tested_at: datetime | None = None
 
 
+class BrowseItem(BaseModel):
+    """Single item returned when browsing a data source."""
+
+    name: str
+    type: str  # "file" or "table"
+    size: int | None = None
+    format: str | None = None  # csv, parquet, etc.
+    catalog: str | None = None
+    schema_name: str | None = None
+
+
+class BrowseResponse(BaseModel):
+    """Response from browsing a data source's contents."""
+
+    source_type: str
+    items: list[BrowseItem]
+    message: str | None = None
+
+
+class ColumnInfo(BaseModel):
+    """Column metadata from a table or file."""
+
+    name: str
+    type: str = "STRING"
+    sample: str | None = None
+
+
+class SchemaInspectResponse(BaseModel):
+    """Response from inspecting a table/file schema."""
+
+    table: str
+    columns: list[ColumnInfo]
+
+
 __all__ = [
+    # Browse / Schema inspect
+    "BrowseItem",
+    "BrowseResponse",
     "CacheStatsResponse",
     # From graph_olap_schemas - Schema metadata
     "CatalogResponse",
+    "ColumnInfo",
     # Data Sources
     "DataSourceInternalResponse",
     "DataSourceResponse",
@@ -235,6 +273,7 @@ __all__ = [
     "PaginatedResponse",
     "PaginationMeta",
     "PollableExportJobsResponse",
+    "SchemaInspectResponse",
     "SchemaResponse",
     "ShutdownResponse",
     "SnapshotResponse",
