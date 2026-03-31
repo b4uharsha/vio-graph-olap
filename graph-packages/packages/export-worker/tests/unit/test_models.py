@@ -7,6 +7,8 @@ from pydantic import ValidationError
 
 from export_worker.models import (
     EdgeDefinition,
+    ExportJob,
+    ExportJobStatus,
     ExportPhase,
     NodeDefinition,
     PrimaryKeyDefinition,
@@ -189,91 +191,199 @@ class TestEdgeDefinition:
 #             )
 
 
-# class TestSnapshotProgress:
-#     """Tests for SnapshotProgress model."""
-#
-#     def test_initial_state(self) -> None:
-#         """Test initial progress state."""
-#         progress = SnapshotProgress()
-#         assert progress.phase == ExportPhase.INITIALIZING
-#         assert progress.current_step is None
-#         assert progress.steps == []
-#         assert progress.completed_at is None
-#
-#     def test_mark_step_started(self) -> None:
-#         """Test marking a step as started."""
-#         progress = SnapshotProgress()
-#         progress.steps.append(ProgressStep(name="Customer", step_type="node"))
-#
-#         progress.mark_step_started("Customer")
-#
-#         assert progress.current_step == "Customer"
-#         assert progress.steps[0].status == StepStatus.IN_PROGRESS
-#         assert progress.steps[0].started_at is not None
-#
-#     def test_mark_step_completed(self) -> None:
-#         """Test marking a step as completed."""
-#         progress = SnapshotProgress()
-#         progress.steps.append(ProgressStep(name="Customer", step_type="node"))
-#
-#         progress.mark_step_started("Customer")
-#         progress.mark_step_completed("Customer", row_count=5000)
-#
-#         assert progress.current_step is None
-#         assert progress.steps[0].status == StepStatus.COMPLETED
-#         assert progress.steps[0].row_count == 5000
-#         assert progress.steps[0].completed_at is not None
-#
-#     def test_mark_step_failed(self) -> None:
-#         """Test marking a step as failed."""
-#         progress = SnapshotProgress()
-#         progress.steps.append(ProgressStep(name="Customer", step_type="node"))
-#
-#         progress.mark_step_started("Customer")
-#         progress.mark_step_failed("Customer", error="Connection timeout")
-#
-#         assert progress.current_step is None
-#         assert progress.steps[0].status == StepStatus.FAILED
-#         assert progress.steps[0].error == "Connection timeout"
-#
-#     def test_get_node_counts(self) -> None:
-#         """Test getting node counts."""
-#         progress = SnapshotProgress()
-#         progress.steps.append(ProgressStep(name="Customer", step_type="node"))
-#         progress.steps.append(ProgressStep(name="Product", step_type="node"))
-#         progress.steps.append(ProgressStep(name="PURCHASED", step_type="edge"))
-#
-#         progress.mark_step_completed("Customer", 1000)
-#         progress.mark_step_completed("Product", 500)
-#         progress.mark_step_completed("PURCHASED", 5000)
-#
-#         node_counts = progress.get_node_counts()
-#         assert node_counts == {"Customer": 1000, "Product": 500}
-#
-#     def test_get_edge_counts(self) -> None:
-#         """Test getting edge counts."""
-#         progress = SnapshotProgress()
-#         progress.steps.append(ProgressStep(name="Customer", step_type="node"))
-#         progress.steps.append(ProgressStep(name="PURCHASED", step_type="edge"))
-#
-#         progress.mark_step_completed("Customer", 1000)
-#         progress.mark_step_completed("PURCHASED", 5000)
-#
-#         edge_counts = progress.get_edge_counts()
-#         assert edge_counts == {"PURCHASED": 5000}
-#
-#     def test_to_api_dict(self) -> None:
-#         """Test conversion to API dict format."""
-#         progress = SnapshotProgress()
-#         progress.phase = ExportPhase.EXPORTING_NODES
-#         progress.steps.append(ProgressStep(name="Customer", step_type="node"))
-#         progress.mark_step_completed("Customer", 1000)
-#
-#         api_dict = progress.to_api_dict()
-#
-#         assert api_dict["phase"] == "exporting_nodes"
-#         assert "started_at" in api_dict
-#         assert len(api_dict["steps"]) == 1
-#         assert api_dict["steps"][0]["name"] == "Customer"
-#         assert api_dict["steps"][0]["status"] == "completed"
-#         assert api_dict["steps"][0]["row_count"] == 1000
+class TestSnapshotProgress:
+    """Tests for SnapshotProgress model."""
+
+    def test_initial_state(self) -> None:
+        """Test initial progress state."""
+        progress = SnapshotProgress()
+        assert progress.phase == ExportPhase.INITIALIZING
+        assert progress.current_step is None
+        assert progress.steps == []
+        assert progress.completed_at is None
+
+    def test_mark_step_started(self) -> None:
+        """Test marking a step as started."""
+        progress = SnapshotProgress()
+        progress.steps.append(ProgressStep(name="Customer", step_type="node"))
+
+        progress.mark_step_started("Customer")
+
+        assert progress.current_step == "Customer"
+        assert progress.steps[0].status == StepStatus.IN_PROGRESS
+        assert progress.steps[0].started_at is not None
+
+    def test_mark_step_completed(self) -> None:
+        """Test marking a step as completed."""
+        progress = SnapshotProgress()
+        progress.steps.append(ProgressStep(name="Customer", step_type="node"))
+
+        progress.mark_step_started("Customer")
+        progress.mark_step_completed("Customer", row_count=5000)
+
+        assert progress.current_step is None
+        assert progress.steps[0].status == StepStatus.COMPLETED
+        assert progress.steps[0].row_count == 5000
+        assert progress.steps[0].completed_at is not None
+
+    def test_mark_step_failed(self) -> None:
+        """Test marking a step as failed."""
+        progress = SnapshotProgress()
+        progress.steps.append(ProgressStep(name="Customer", step_type="node"))
+
+        progress.mark_step_started("Customer")
+        progress.mark_step_failed("Customer", error="Connection timeout")
+
+        assert progress.current_step is None
+        assert progress.steps[0].status == StepStatus.FAILED
+        assert progress.steps[0].error == "Connection timeout"
+
+    def test_get_node_counts(self) -> None:
+        """Test getting node counts."""
+        progress = SnapshotProgress()
+        progress.steps.append(ProgressStep(name="Customer", step_type="node"))
+        progress.steps.append(ProgressStep(name="Product", step_type="node"))
+        progress.steps.append(ProgressStep(name="PURCHASED", step_type="edge"))
+
+        progress.mark_step_completed("Customer", 1000)
+        progress.mark_step_completed("Product", 500)
+        progress.mark_step_completed("PURCHASED", 5000)
+
+        node_counts = progress.get_node_counts()
+        assert node_counts == {"Customer": 1000, "Product": 500}
+
+    def test_get_edge_counts(self) -> None:
+        """Test getting edge counts."""
+        progress = SnapshotProgress()
+        progress.steps.append(ProgressStep(name="Customer", step_type="node"))
+        progress.steps.append(ProgressStep(name="PURCHASED", step_type="edge"))
+
+        progress.mark_step_completed("Customer", 1000)
+        progress.mark_step_completed("PURCHASED", 5000)
+
+        edge_counts = progress.get_edge_counts()
+        assert edge_counts == {"PURCHASED": 5000}
+
+    def test_to_api_dict(self) -> None:
+        """Test conversion to API dict format."""
+        progress = SnapshotProgress()
+        progress.phase = ExportPhase.EXPORTING_NODES
+        progress.steps.append(ProgressStep(name="Customer", step_type="node"))
+        progress.mark_step_completed("Customer", 1000)
+
+        api_dict = progress.to_api_dict()
+
+        assert api_dict["phase"] == "exporting_nodes"
+        assert "started_at" in api_dict
+        assert len(api_dict["steps"]) == 1
+        assert api_dict["steps"][0]["name"] == "Customer"
+        assert api_dict["steps"][0]["status"] == "completed"
+        assert api_dict["steps"][0]["row_count"] == 1000
+
+    def test_mark_nonexistent_step_does_nothing(self) -> None:
+        """Test that marking a nonexistent step is a no-op."""
+        progress = SnapshotProgress()
+        progress.steps.append(ProgressStep(name="Customer", step_type="node"))
+
+        progress.mark_step_started("NonExistent")
+        assert progress.current_step is None
+
+        progress.mark_step_completed("NonExistent", 100)
+        progress.mark_step_failed("NonExistent", "error")
+
+
+class TestSnapshotRequest:
+    """Tests for SnapshotRequest model."""
+
+    def test_valid_request(self, sample_snapshot_request: SnapshotRequest) -> None:
+        """Test creating a valid snapshot request."""
+        assert sample_snapshot_request.snapshot_id == 123
+        assert sample_snapshot_request.mapping_id == 45
+        assert len(sample_snapshot_request.node_definitions) == 1
+        assert len(sample_snapshot_request.edge_definitions) == 1
+
+    def test_gcs_path_validation_requires_gs_prefix(self) -> None:
+        """Test that GCS path must start with gs://."""
+        with pytest.raises(ValidationError) as exc_info:
+            SnapshotRequest(
+                snapshot_id=1,
+                mapping_id=1,
+                mapping_version=1,
+                gcs_base_path="/bucket/path/",
+                node_definitions=[
+                    NodeDefinition(
+                        label="Test",
+                        sql="SELECT * FROM t",
+                        primary_key=PrimaryKeyDefinition(name="id", type="STRING"),
+                    )
+                ],
+                edge_definitions=[],
+                starburst_catalog="analytics",
+                created_at="2025-01-15T10:00:00Z",
+            )
+        assert "must start with gs://" in str(exc_info.value)
+
+    def test_gcs_path_adds_trailing_slash(self) -> None:
+        """Test that GCS path gets trailing slash added if missing."""
+        request = SnapshotRequest(
+            snapshot_id=1,
+            mapping_id=1,
+            mapping_version=1,
+            gcs_base_path="gs://bucket/path",
+            node_definitions=[
+                NodeDefinition(
+                    label="Test",
+                    sql="SELECT * FROM t",
+                    primary_key=PrimaryKeyDefinition(name="id", type="STRING"),
+                )
+            ],
+            edge_definitions=[],
+            starburst_catalog="analytics",
+            created_at="2025-01-15T10:00:00Z",
+        )
+        assert request.gcs_base_path.endswith("/")
+
+    def test_get_node_gcs_path(self, sample_snapshot_request: SnapshotRequest) -> None:
+        """Test getting node GCS path."""
+        path = sample_snapshot_request.get_node_gcs_path("Customer")
+        assert path == "gs://test-bucket/user-123/mapping-45/snapshot-123/nodes/Customer/"
+
+    def test_get_edge_gcs_path(self, sample_snapshot_request: SnapshotRequest) -> None:
+        """Test getting edge GCS path."""
+        path = sample_snapshot_request.get_edge_gcs_path("PURCHASED")
+        assert path == "gs://test-bucket/user-123/mapping-45/snapshot-123/edges/PURCHASED/"
+
+
+class TestExportJobModel:
+    """Tests for ExportJob model."""
+
+    def test_to_api_dict(self) -> None:
+        """Test ExportJob.to_api_dict conversion."""
+        from export_worker.models import ExportJob, ExportJobStatus
+
+        job = ExportJob(
+            id=1, snapshot_id=123, job_type="node", entity_name="Customer",
+            status=ExportJobStatus.COMPLETED, gcs_path="gs://b/p/",
+            row_count=100, size_bytes=512,
+        )
+        d = job.to_api_dict()
+        assert d["snapshot_id"] == 123
+        assert d["status"] == "completed"
+        assert d["row_count"] == 100
+
+    def test_from_api_dict(self) -> None:
+        """Test ExportJob.from_api_dict creation."""
+        from export_worker.models import ExportJob, ExportJobStatus
+
+        data = {
+            "id": 5,
+            "snapshot_id": 100,
+            "job_type": "edge",
+            "entity_name": "KNOWS",
+            "status": "pending",
+            "gcs_path": "gs://bucket/edges/KNOWS/",
+        }
+        job = ExportJob.from_api_dict(data)
+        assert job.id == 5
+        assert job.status == ExportJobStatus.PENDING
+        assert job.entity_name == "KNOWS"

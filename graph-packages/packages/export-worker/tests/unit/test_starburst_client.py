@@ -509,6 +509,281 @@ class TestStarburstAsyncMethods:
         assert "503" in str(exc_info.value)
 
 
+class TestStarburstRoleHandling:
+    """Tests for SET ROLE functionality."""
+
+    @pytest.fixture
+    def client_with_role(self) -> StarburstClient:
+        """Create client with role configured."""
+        return StarburstClient(
+            url="http://starburst.test:8080",
+            user="test_user",
+            password="test_password",
+            catalog="analytics",
+            schema="public",
+            role="admin_role",
+        )
+
+    @pytest.fixture
+    def client_without_role(self) -> StarburstClient:
+        """Create client without role."""
+        return StarburstClient(
+            url="http://starburst.test:8080",
+            user="test_user",
+            password="test_password",
+            catalog="analytics",
+            schema="public",
+        )
+
+    def test_get_headers_includes_role(self, client_with_role: StarburstClient) -> None:
+        """Test that role is included in headers when configured."""
+        headers = client_with_role._get_headers("analytics")
+        assert headers["X-Trino-Role"] == "admin_role"
+
+    def test_get_headers_excludes_role_when_not_set(self, client_without_role: StarburstClient) -> None:
+        """Test that role is not in headers when not configured."""
+        headers = client_without_role._get_headers("analytics")
+        assert "X-Trino-Role" not in headers
+
+    @respx.mock
+    def test_set_role_sync_sends_set_role(self, client_with_role: StarburstClient) -> None:
+        """Test that _set_role_sync sends SET ROLE statement."""
+        route = respx.post("http://starburst.test:8080/v1/statement").mock(
+            return_value=httpx.Response(200, json={})
+        )
+
+        with httpx.Client(timeout=30) as http_client:
+            client_with_role._set_role_sync(http_client, "analytics")
+
+        assert route.called
+
+    @respx.mock
+    def test_set_role_sync_skips_when_no_role(self, client_without_role: StarburstClient) -> None:
+        """Test that _set_role_sync does nothing when no role."""
+        route = respx.post("http://starburst.test:8080/v1/statement").mock(
+            return_value=httpx.Response(200, json={})
+        )
+
+        with httpx.Client(timeout=30) as http_client:
+            client_without_role._set_role_sync(http_client, "analytics")
+
+        assert not route.called
+
+    @respx.mock
+    def test_set_role_sync_handles_failure(self, client_with_role: StarburstClient) -> None:
+        """Test that _set_role_sync handles failure gracefully."""
+        respx.post("http://starburst.test:8080/v1/statement").mock(
+            return_value=httpx.Response(500, text="Error")
+        )
+
+        with httpx.Client(timeout=30) as http_client:
+            # Should not raise
+            client_with_role._set_role_sync(http_client, "analytics")
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_set_role_async_sends_set_role(self, client_with_role: StarburstClient) -> None:
+        """Test that _set_role_async sends SET ROLE statement."""
+        route = respx.post("http://starburst.test:8080/v1/statement").mock(
+            return_value=httpx.Response(200, json={})
+        )
+
+        async with httpx.AsyncClient(timeout=30) as http_client:
+            await client_with_role._set_role_async(http_client, "analytics")
+
+        assert route.called
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_set_role_async_skips_when_no_role(self, client_without_role: StarburstClient) -> None:
+        """Test that _set_role_async does nothing when no role."""
+        route = respx.post("http://starburst.test:8080/v1/statement").mock(
+            return_value=httpx.Response(200, json={})
+        )
+
+        async with httpx.AsyncClient(timeout=30) as http_client:
+            await client_without_role._set_role_async(http_client, "analytics")
+
+        assert not route.called
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_set_role_async_handles_failure(self, client_with_role: StarburstClient) -> None:
+        """Test that _set_role_async handles failure gracefully."""
+        respx.post("http://starburst.test:8080/v1/statement").mock(
+            return_value=httpx.Response(500, text="Error")
+        )
+
+        async with httpx.AsyncClient(timeout=30) as http_client:
+            # Should not raise
+            await client_with_role._set_role_async(http_client, "analytics")
+
+
+class TestStarburstSubmitUnloadErrors:
+    """Tests for submit_unload error paths."""
+
+    @pytest.fixture
+    def client(self) -> StarburstClient:
+        """Create client for testing."""
+        return StarburstClient(
+            url="http://starburst.test:8080",
+            user="test_user",
+            password="test_password",
+            catalog="analytics",
+            schema="public",
+        )
+
+    @respx.mock
+    def test_submit_unload_http_error(self, client: StarburstClient) -> None:
+        """Test submit_unload raises on HTTP status error."""
+        respx.post("http://starburst.test:8080/v1/statement").mock(
+            return_value=httpx.Response(500, text="Server Error")
+        )
+
+        with pytest.raises(StarburstError) as exc_info:
+            client.submit_unload(
+                sql="SELECT * FROM t",
+                columns=["id"],
+                destination="gs://bucket/path/",
+            )
+
+        assert "500" in str(exc_info.value)
+
+    @respx.mock
+    def test_poll_query_request_error(self, client: StarburstClient) -> None:
+        """Test poll_query raises on request error."""
+        respx.get("http://starburst.test:8080/v1/query/123").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(StarburstError):
+            client.poll_query("http://starburst.test:8080/v1/query/123")
+
+    @respx.mock
+    def test_poll_query_failed_state_from_stats(self, client: StarburstClient) -> None:
+        """Test poll_query returns FAILED from stats state."""
+        respx.get("http://starburst.test:8080/v1/query/123").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "id": "query-123",
+                    "stats": {"state": "FAILED"},
+                },
+            )
+        )
+
+        result = client.poll_query("http://starburst.test:8080/v1/query/123")
+        assert result.state == "FAILED"
+        assert result.error_message == "Query failed"
+
+
+class TestStarburstClientNoPassword:
+    """Test client auth with no password."""
+
+    def test_no_password_disables_auth(self) -> None:
+        """Test that empty password disables basic auth."""
+        client = StarburstClient(
+            url="http://starburst.test:8080",
+            user="test_user",
+            password="",
+            catalog="analytics",
+        )
+        assert client.auth is None
+
+    def test_password_enables_auth(self) -> None:
+        """Test that non-empty password enables basic auth."""
+        client = StarburstClient(
+            url="http://starburst.test:8080",
+            user="test_user",
+            password="secret",
+            catalog="analytics",
+        )
+        assert client.auth == ("test_user", "secret")
+
+
+class TestStarburstValidateQueryErrors:
+    """Tests for validate_query error paths."""
+
+    @pytest.fixture
+    def client(self) -> StarburstClient:
+        """Create client for testing."""
+        return StarburstClient(
+            url="http://starburst.test:8080",
+            user="test_user",
+            password="test_password",
+            catalog="analytics",
+            schema="public",
+        )
+
+    @respx.mock
+    def test_validate_query_http_error(self, client: StarburstClient) -> None:
+        """Test validate_query raises on HTTP error."""
+        respx.post("http://starburst.test:8080/v1/statement").mock(
+            return_value=httpx.Response(500, text="Error")
+        )
+
+        with pytest.raises(StarburstError):
+            client.validate_query("SELECT * FROM t")
+
+
+class TestStarburstAsyncPollErrors:
+    """Tests for async poll error paths."""
+
+    @pytest.fixture
+    def client(self) -> StarburstClient:
+        """Create client for testing."""
+        return StarburstClient(
+            url="http://starburst.test:8080",
+            user="test_user",
+            password="test_password",
+            catalog="analytics",
+            schema="public",
+        )
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_poll_query_async_request_error(self, client: StarburstClient) -> None:
+        """Test async poll raises on request error."""
+        respx.get("http://starburst.test:8080/v1/query/123").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(StarburstError):
+            await client.poll_query_async("http://starburst.test:8080/v1/query/123")
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_submit_unload_async_request_error(self, client: StarburstClient) -> None:
+        """Test async submit raises on request error."""
+        respx.post("http://starburst.test:8080/v1/statement").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(StarburstError):
+            await client.submit_unload_async(
+                sql="SELECT * FROM t",
+                columns=["id"],
+                destination="gs://bucket/path/",
+            )
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_poll_query_async_failed_from_stats(self, client: StarburstClient) -> None:
+        """Test async poll returns FAILED from stats state."""
+        respx.get("http://starburst.test:8080/v1/query/123").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "id": "query-123",
+                    "stats": {"state": "FAILED"},
+                },
+            )
+        )
+
+        result = await client.poll_query_async("http://starburst.test:8080/v1/query/123")
+        assert result.state == "FAILED"
+
+
 class TestStarburstClientFromConfig:
     """Tests for StarburstClient.from_config()."""
 

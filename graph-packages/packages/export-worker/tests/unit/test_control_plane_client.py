@@ -10,7 +10,7 @@ import respx
 
 from export_worker.clients import ControlPlaneClient
 from export_worker.exceptions import ControlPlaneError
-from export_worker.models import ExportPhase, SnapshotProgress, SnapshotStatus
+from export_worker.models import ExportPhase, ExportJob, ExportJobStatus, SnapshotProgress, SnapshotStatus
 
 
 # =============================================================================
@@ -570,6 +570,806 @@ class TestControlPlaneClientExportJobs:
     #         success=False,
     #         error_message="Export failed",
     #     )
+
+
+class TestControlPlaneClientInternalApiKey:
+    """Tests for internal API key authentication."""
+
+    def test_headers_with_internal_api_key(self) -> None:
+        """Test headers when internal API key is provided."""
+        client = ControlPlaneClient(
+            base_url="http://control-plane.test:8080",
+            use_id_token=True,
+            internal_api_key="test-secret-key",
+        )
+
+        headers = client._get_headers()
+
+        # Internal API key should be preferred over ID token
+        assert headers["X-Internal-API-Key"] == "test-secret-key"
+        assert "Authorization" not in headers
+
+    def test_id_token_not_fetched_after_failure(self) -> None:
+        """Test that ID token is not re-fetched after initial failure."""
+        client = ControlPlaneClient(
+            base_url="http://control-plane.test:8080",
+            use_id_token=True,
+        )
+
+        with patch("export_worker.clients.control_plane.id_token.fetch_id_token") as mock_fetch:
+            mock_fetch.side_effect = Exception("Metadata server unavailable")
+
+            # First call: attempts fetch, fails
+            client._get_headers()
+            # Second call: should not attempt fetch again
+            client._get_headers()
+
+            assert mock_fetch.call_count == 1
+
+    def test_get_token_returns_none_when_disabled(self) -> None:
+        """Test _get_token returns None when use_id_token is False."""
+        client = ControlPlaneClient(
+            base_url="http://control-plane.test:8080",
+            use_id_token=False,
+        )
+        assert client._get_token() is None
+
+
+class TestControlPlaneClientSnapshotMethods:
+    """Tests for snapshot-related methods."""
+
+    @pytest.fixture
+    def client(self) -> ControlPlaneClient:
+        """Create client for testing."""
+        return ControlPlaneClient(
+            base_url="http://control-plane.test:8080",
+            timeout=10,
+            use_id_token=False,
+        )
+
+    @respx.mock
+    def test_update_snapshot_status_success(self, client: ControlPlaneClient) -> None:
+        """Test successful status update."""
+        respx.patch("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"success": True})
+        )
+
+        client.update_snapshot_status(
+            snapshot_id=123,
+            status=SnapshotStatus.CREATING,
+        )
+
+    @respx.mock
+    def test_update_snapshot_status_with_all_fields(self, client: ControlPlaneClient) -> None:
+        """Test status update with all optional fields."""
+        import json
+
+        route = respx.patch("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"success": True})
+        )
+
+        progress = SnapshotProgress()
+        progress.phase = ExportPhase.EXPORTING_NODES
+
+        client.update_snapshot_status(
+            snapshot_id=123,
+            status=SnapshotStatus.READY,
+            progress=progress,
+            size_bytes=2048,
+            node_counts={"A": 100},
+            edge_counts={"B": 200},
+            error_message="test error",
+            failed_step="step1",
+        )
+
+        request_body = json.loads(route.calls.last.request.content)
+        assert request_body["status"] == "ready"
+        assert request_body["size_bytes"] == 2048
+        assert request_body["node_counts"] == {"A": 100}
+        assert request_body["edge_counts"] == {"B": 200}
+        assert request_body["error_message"] == "test error"
+        assert request_body["failed_step"] == "step1"
+        assert "progress" in request_body
+
+    @respx.mock
+    def test_update_snapshot_status_string_status(self, client: ControlPlaneClient) -> None:
+        """Test status update with string status value."""
+        import json
+
+        route = respx.patch("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"success": True})
+        )
+
+        client.update_snapshot_status(snapshot_id=123, status="creating")
+
+        request_body = json.loads(route.calls.last.request.content)
+        assert request_body["status"] == "creating"
+
+    @respx.mock
+    def test_update_snapshot_status_http_error(self, client: ControlPlaneClient) -> None:
+        """Test handling HTTP error during status update."""
+        respx.patch("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(500, text="Internal Server Error")
+        )
+
+        with pytest.raises(ControlPlaneError) as exc_info:
+            client.update_snapshot_status(snapshot_id=123, status=SnapshotStatus.CREATING)
+
+        assert "500" in str(exc_info.value)
+
+    @respx.mock
+    def test_update_snapshot_status_request_error(self, client: ControlPlaneClient) -> None:
+        """Test handling request error during status update."""
+        respx.patch("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.update_snapshot_status(snapshot_id=123, status=SnapshotStatus.CREATING)
+
+    @respx.mock
+    def test_get_snapshot_status_success(self, client: ControlPlaneClient) -> None:
+        """Test successful status retrieval."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"data": {"status": "creating"}})
+        )
+
+        status = client.get_snapshot_status(123)
+        assert status == SnapshotStatus.CREATING
+
+    @respx.mock
+    def test_get_snapshot_status_http_error(self, client: ControlPlaneClient) -> None:
+        """Test handling HTTP error during status retrieval."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(404, text="Not Found")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.get_snapshot_status(123)
+
+    @respx.mock
+    def test_get_snapshot_status_missing_status(self, client: ControlPlaneClient) -> None:
+        """Test handling invalid response format."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"invalid": "format"})
+        )
+
+        with pytest.raises(ControlPlaneError) as exc_info:
+            client.get_snapshot_status(123)
+
+        assert "missing status" in str(exc_info.value)
+
+    @respx.mock
+    def test_get_snapshot_status_request_error(self, client: ControlPlaneClient) -> None:
+        """Test handling request error during status retrieval."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.get_snapshot_status(123)
+
+    @respx.mock
+    def test_is_cancelled_true(self, client: ControlPlaneClient) -> None:
+        """Test is_cancelled returns True for cancelled snapshot."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"data": {"status": "cancelled"}})
+        )
+
+        assert client.is_cancelled(123) is True
+
+    @respx.mock
+    def test_is_cancelled_false(self, client: ControlPlaneClient) -> None:
+        """Test is_cancelled returns False for non-cancelled snapshot."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"data": {"status": "creating"}})
+        )
+
+        assert client.is_cancelled(123) is False
+
+    @respx.mock
+    def test_is_cancelled_on_error(self, client: ControlPlaneClient) -> None:
+        """Test is_cancelled returns False on error (fail open)."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(500)
+        )
+
+        assert client.is_cancelled(123) is False
+
+    @respx.mock
+    def test_update_snapshot_status_if_pending_success(self, client: ControlPlaneClient) -> None:
+        """Test conditional update when currently pending."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"data": {"status": "pending"}})
+        )
+        respx.patch("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"success": True})
+        )
+
+        result = client.update_snapshot_status_if_pending(123, "creating")
+        assert result is True
+
+    @respx.mock
+    def test_update_snapshot_status_if_pending_not_pending(self, client: ControlPlaneClient) -> None:
+        """Test conditional update when not pending returns False."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"data": {"status": "creating"}})
+        )
+
+        result = client.update_snapshot_status_if_pending(123, "creating")
+        assert result is False
+
+    @respx.mock
+    def test_update_snapshot_status_if_pending_on_error(self, client: ControlPlaneClient) -> None:
+        """Test conditional update returns False on error."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(500)
+        )
+
+        result = client.update_snapshot_status_if_pending(123, "creating")
+        assert result is False
+
+    @respx.mock
+    def test_finalize_snapshot_success(self, client: ControlPlaneClient) -> None:
+        """Test successful snapshot finalization."""
+        respx.patch("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"success": True})
+        )
+
+        client.finalize_snapshot(
+            123,
+            success=True,
+            node_counts={"Customer": 100},
+            edge_counts={"PURCHASED": 500},
+            size_bytes=1024,
+        )
+
+    @respx.mock
+    def test_finalize_snapshot_failure(self, client: ControlPlaneClient) -> None:
+        """Test snapshot finalization on failure."""
+        respx.patch("http://control-plane.test:8080/api/internal/snapshots/123/status").mock(
+            return_value=httpx.Response(200, json={"success": True})
+        )
+
+        client.finalize_snapshot(
+            123,
+            success=False,
+            error_message="Export failed",
+        )
+
+
+class TestControlPlaneClientClaimAndPoll:
+    """Tests for claim and poll endpoints (ADR-025)."""
+
+    @pytest.fixture
+    def client(self) -> ControlPlaneClient:
+        """Create client for testing."""
+        return ControlPlaneClient(
+            base_url="http://control-plane.test:8080",
+            timeout=10,
+            use_id_token=False,
+        )
+
+    @respx.mock
+    def test_claim_export_jobs_success(self, client: ControlPlaneClient) -> None:
+        """Test successful job claiming."""
+        respx.post("http://control-plane.test:8080/api/internal/export-jobs/claim").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "jobs": [
+                            {
+                                "id": 1,
+                                "snapshot_id": 123,
+                                "job_type": "node",
+                                "entity_name": "Customer",
+                                "status": "claimed",
+                                "gcs_path": "gs://bucket/path/",
+                            }
+                        ]
+                    }
+                },
+            )
+        )
+
+        jobs = client.claim_export_jobs(worker_id="worker-1", limit=5)
+        assert len(jobs) == 1
+        assert jobs[0].entity_name == "Customer"
+
+    @respx.mock
+    def test_claim_export_jobs_empty(self, client: ControlPlaneClient) -> None:
+        """Test claiming when no jobs available."""
+        respx.post("http://control-plane.test:8080/api/internal/export-jobs/claim").mock(
+            return_value=httpx.Response(200, json={"data": {"jobs": []}})
+        )
+
+        jobs = client.claim_export_jobs(worker_id="worker-1")
+        assert jobs == []
+
+    @respx.mock
+    def test_claim_export_jobs_http_error(self, client: ControlPlaneClient) -> None:
+        """Test claiming with HTTP error."""
+        respx.post("http://control-plane.test:8080/api/internal/export-jobs/claim").mock(
+            return_value=httpx.Response(500, text="Internal Server Error")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.claim_export_jobs(worker_id="worker-1")
+
+    @respx.mock
+    def test_claim_export_jobs_request_error(self, client: ControlPlaneClient) -> None:
+        """Test claiming with request error."""
+        respx.post("http://control-plane.test:8080/api/internal/export-jobs/claim").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.claim_export_jobs(worker_id="worker-1")
+
+    @respx.mock
+    def test_get_pollable_export_jobs_success(self, client: ControlPlaneClient) -> None:
+        """Test getting pollable jobs."""
+        respx.get("http://control-plane.test:8080/api/internal/export-jobs/pollable").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "jobs": [
+                            {
+                                "id": 1,
+                                "snapshot_id": 123,
+                                "job_type": "node",
+                                "entity_name": "Customer",
+                                "status": "submitted",
+                                "gcs_path": "gs://bucket/path/",
+                                "next_uri": "http://starburst/v1/query/123",
+                            }
+                        ]
+                    }
+                },
+            )
+        )
+
+        jobs = client.get_pollable_export_jobs(limit=5)
+        assert len(jobs) == 1
+
+    @respx.mock
+    def test_get_pollable_export_jobs_empty(self, client: ControlPlaneClient) -> None:
+        """Test getting pollable jobs when none available."""
+        respx.get("http://control-plane.test:8080/api/internal/export-jobs/pollable").mock(
+            return_value=httpx.Response(200, json={"data": {"jobs": []}})
+        )
+
+        jobs = client.get_pollable_export_jobs()
+        assert jobs == []
+
+    @respx.mock
+    def test_get_pollable_export_jobs_http_error(self, client: ControlPlaneClient) -> None:
+        """Test getting pollable jobs with HTTP error."""
+        respx.get("http://control-plane.test:8080/api/internal/export-jobs/pollable").mock(
+            return_value=httpx.Response(500, text="Error")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.get_pollable_export_jobs()
+
+    @respx.mock
+    def test_get_pollable_export_jobs_request_error(self, client: ControlPlaneClient) -> None:
+        """Test getting pollable jobs with request error."""
+        respx.get("http://control-plane.test:8080/api/internal/export-jobs/pollable").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.get_pollable_export_jobs()
+
+
+class TestControlPlaneClientDataSource:
+    """Tests for data source methods."""
+
+    @pytest.fixture
+    def client(self) -> ControlPlaneClient:
+        """Create client for testing."""
+        return ControlPlaneClient(
+            base_url="http://control-plane.test:8080",
+            timeout=10,
+            use_id_token=False,
+        )
+
+    @respx.mock
+    def test_get_data_source_success(self, client: ControlPlaneClient) -> None:
+        """Test successful data source retrieval."""
+        respx.get("http://control-plane.test:8080/api/internal/data-sources/42").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "id": 42,
+                        "source_type": "bigquery",
+                        "config": {"project": "my-proj"},
+                        "credentials": {"key": "val"},
+                    }
+                },
+            )
+        )
+
+        result = client.get_data_source(42)
+        assert result["id"] == 42
+        assert result["source_type"] == "bigquery"
+
+    @respx.mock
+    def test_get_data_source_not_found(self, client: ControlPlaneClient) -> None:
+        """Test data source not found."""
+        respx.get("http://control-plane.test:8080/api/internal/data-sources/99").mock(
+            return_value=httpx.Response(404, text="Not Found")
+        )
+
+        with pytest.raises(ControlPlaneError) as exc_info:
+            client.get_data_source(99)
+
+        assert exc_info.value.status_code == 404
+
+    @respx.mock
+    def test_get_data_source_http_error(self, client: ControlPlaneClient) -> None:
+        """Test data source retrieval with server error."""
+        respx.get("http://control-plane.test:8080/api/internal/data-sources/42").mock(
+            return_value=httpx.Response(500, text="Error")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.get_data_source(42)
+
+    @respx.mock
+    def test_get_data_source_request_error(self, client: ControlPlaneClient) -> None:
+        """Test data source retrieval with request error."""
+        respx.get("http://control-plane.test:8080/api/internal/data-sources/42").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.get_data_source(42)
+
+
+class TestControlPlaneClientSnapshotJobsResult:
+    """Tests for get_snapshot_jobs_result."""
+
+    @pytest.fixture
+    def client(self) -> ControlPlaneClient:
+        """Create client for testing."""
+        return ControlPlaneClient(
+            base_url="http://control-plane.test:8080",
+            timeout=10,
+            use_id_token=False,
+        )
+
+    @respx.mock
+    def test_get_snapshot_jobs_result_empty(self, client: ControlPlaneClient) -> None:
+        """Test result when no jobs exist."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            return_value=httpx.Response(200, json={"data": []})
+        )
+
+        result = client.get_snapshot_jobs_result(123)
+        assert result.all_complete is True
+        assert result.any_failed is False
+
+    @respx.mock
+    def test_get_snapshot_jobs_result_all_complete(self, client: ControlPlaneClient) -> None:
+        """Test result when all jobs are complete."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": [
+                        {
+                            "id": 1, "snapshot_id": 123, "job_type": "node",
+                            "entity_name": "Customer", "status": "completed",
+                            "gcs_path": "gs://b/p/", "row_count": 100, "size_bytes": 512,
+                        },
+                        {
+                            "id": 2, "snapshot_id": 123, "job_type": "edge",
+                            "entity_name": "PURCHASED", "status": "completed",
+                            "gcs_path": "gs://b/p/", "row_count": 500, "size_bytes": 1024,
+                        },
+                    ]
+                },
+            )
+        )
+
+        result = client.get_snapshot_jobs_result(123)
+        assert result.all_complete is True
+        assert result.any_failed is False
+        assert result.node_counts == {"Customer": 100}
+        assert result.edge_counts == {"PURCHASED": 500}
+        assert result.total_size == 1536
+
+    @respx.mock
+    def test_get_snapshot_jobs_result_with_failure(self, client: ControlPlaneClient) -> None:
+        """Test result when some jobs failed."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": [
+                        {
+                            "id": 1, "snapshot_id": 123, "job_type": "node",
+                            "entity_name": "Customer", "status": "completed",
+                            "gcs_path": "gs://b/p/", "row_count": 100,
+                        },
+                        {
+                            "id": 2, "snapshot_id": 123, "job_type": "node",
+                            "entity_name": "Product", "status": "failed",
+                            "gcs_path": "gs://b/p/", "error_message": "Query timeout",
+                        },
+                    ]
+                },
+            )
+        )
+
+        result = client.get_snapshot_jobs_result(123)
+        assert result.all_complete is True
+        assert result.any_failed is True
+        assert result.first_error == "Query timeout"
+
+    @respx.mock
+    def test_get_snapshot_jobs_result_with_updated_job(self, client: ControlPlaneClient) -> None:
+        """Test that updated_job replaces stale fetched data."""
+        from export_worker.models import ExportJob, ExportJobStatus
+
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": [
+                        {
+                            "id": 1, "snapshot_id": 123, "job_type": "node",
+                            "entity_name": "Customer", "status": "submitted",
+                            "gcs_path": "gs://b/p/",
+                        },
+                    ]
+                },
+            )
+        )
+
+        # The updated_job should replace the stale "submitted" with "completed"
+        updated_job = ExportJob(
+            id=1, snapshot_id=123, job_type="node", entity_name="Customer",
+            status=ExportJobStatus.COMPLETED, gcs_path="gs://b/p/",
+            row_count=100, size_bytes=512,
+        )
+
+        result = client.get_snapshot_jobs_result(123, updated_job=updated_job)
+        assert result.all_complete is True
+        assert result.node_counts == {"Customer": 100}
+
+    @respx.mock
+    def test_get_snapshot_jobs_result_still_running(self, client: ControlPlaneClient) -> None:
+        """Test result when some jobs still running."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": [
+                        {
+                            "id": 1, "snapshot_id": 123, "job_type": "node",
+                            "entity_name": "Customer", "status": "completed",
+                            "gcs_path": "gs://b/p/", "row_count": 100,
+                        },
+                        {
+                            "id": 2, "snapshot_id": 123, "job_type": "node",
+                            "entity_name": "Product", "status": "submitted",
+                            "gcs_path": "gs://b/p/",
+                        },
+                    ]
+                },
+            )
+        )
+
+        result = client.get_snapshot_jobs_result(123)
+        assert result.all_complete is False
+
+
+class TestControlPlaneExportJobErrors:
+    """Tests for error handling in export job methods."""
+
+    @pytest.fixture
+    def client(self) -> ControlPlaneClient:
+        """Create client for testing."""
+        return ControlPlaneClient(
+            base_url="http://control-plane.test:8080",
+            timeout=10,
+            use_id_token=False,
+        )
+
+    @respx.mock
+    def test_get_pending_export_jobs_http_error(self, client: ControlPlaneClient) -> None:
+        """Test HTTP error on get_pending_export_jobs."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            return_value=httpx.Response(500, text="Error")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.get_pending_export_jobs(123)
+
+    @respx.mock
+    def test_get_pending_export_jobs_request_error(self, client: ControlPlaneClient) -> None:
+        """Test request error on get_pending_export_jobs."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.get_pending_export_jobs(123)
+
+    @respx.mock
+    def test_start_export_job_http_error(self, client: ControlPlaneClient) -> None:
+        """Test HTTP error on start_export_job."""
+        respx.patch("http://control-plane.test:8080/api/internal/export-jobs/1").mock(
+            return_value=httpx.Response(500, text="Error")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.start_export_job(1, "q-123", "http://uri", "2025-01-01T00:00:00Z")
+
+    @respx.mock
+    def test_start_export_job_request_error(self, client: ControlPlaneClient) -> None:
+        """Test request error on start_export_job."""
+        respx.patch("http://control-plane.test:8080/api/internal/export-jobs/1").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.start_export_job(1, "q-123", "http://uri", "2025-01-01T00:00:00Z")
+
+    @respx.mock
+    def test_update_export_job_http_error(self, client: ControlPlaneClient) -> None:
+        """Test HTTP error on update_export_job."""
+        from export_worker.models import ExportJobStatus
+
+        respx.patch("http://control-plane.test:8080/api/internal/export-jobs/1").mock(
+            return_value=httpx.Response(500, text="Error")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.update_export_job(1, status=ExportJobStatus.COMPLETED)
+
+    @respx.mock
+    def test_update_export_job_request_error(self, client: ControlPlaneClient) -> None:
+        """Test request error on update_export_job."""
+        from export_worker.models import ExportJobStatus
+
+        respx.patch("http://control-plane.test:8080/api/internal/export-jobs/1").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.update_export_job(1, status=ExportJobStatus.COMPLETED)
+
+    @respx.mock
+    def test_update_export_job_with_all_fields(self, client: ControlPlaneClient) -> None:
+        """Test update_export_job with all optional fields."""
+        import json
+        from export_worker.models import ExportJobStatus
+
+        route = respx.patch("http://control-plane.test:8080/api/internal/export-jobs/1").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "id": 1, "snapshot_id": 123, "job_type": "node",
+                        "entity_name": "Customer", "status": "completed",
+                        "gcs_path": "gs://b/p/",
+                    }
+                },
+            )
+        )
+
+        client.update_export_job(
+            1,
+            status=ExportJobStatus.COMPLETED,
+            starburst_query_id="q-123",
+            next_uri="http://uri",
+            next_poll_at="2025-01-01T00:00:05Z",
+            poll_count=3,
+            row_count=1000,
+            size_bytes=2048,
+            error_message="test",
+            submitted_at="2025-01-01T00:00:00Z",
+            completed_at="2025-01-01T00:01:00Z",
+        )
+
+        body = json.loads(route.calls.last.request.content)
+        assert body["status"] == "completed"
+        assert body["starburst_query_id"] == "q-123"
+        assert body["next_uri"] == "http://uri"
+        assert body["next_poll_at"] == "2025-01-01T00:00:05Z"
+        assert body["poll_count"] == 3
+        assert body["row_count"] == 1000
+        assert body["size_bytes"] == 2048
+
+    @respx.mock
+    def test_get_export_job_not_found(self, client: ControlPlaneClient) -> None:
+        """Test get_export_job returns error on 404."""
+        respx.get("http://control-plane.test:8080/api/internal/export-jobs/99").mock(
+            return_value=httpx.Response(404, text="Not Found")
+        )
+
+        with pytest.raises(ControlPlaneError) as exc_info:
+            client.get_export_job(99)
+
+        assert exc_info.value.status_code == 404
+
+    @respx.mock
+    def test_get_export_job_http_error(self, client: ControlPlaneClient) -> None:
+        """Test get_export_job with server error."""
+        respx.get("http://control-plane.test:8080/api/internal/export-jobs/1").mock(
+            return_value=httpx.Response(500, text="Error")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.get_export_job(1)
+
+    @respx.mock
+    def test_get_export_job_request_error(self, client: ControlPlaneClient) -> None:
+        """Test get_export_job with request error."""
+        respx.get("http://control-plane.test:8080/api/internal/export-jobs/1").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.get_export_job(1)
+
+    @respx.mock
+    def test_list_export_jobs_success(self, client: ControlPlaneClient) -> None:
+        """Test successful listing of export jobs."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": [
+                        {
+                            "id": 1, "snapshot_id": 123, "job_type": "node",
+                            "entity_name": "A", "status": "completed", "gcs_path": "gs://b/p/",
+                        }
+                    ]
+                },
+            )
+        )
+
+        jobs = client.list_export_jobs(123)
+        assert len(jobs) == 1
+
+    @respx.mock
+    def test_list_export_jobs_http_error(self, client: ControlPlaneClient) -> None:
+        """Test list_export_jobs with HTTP error."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            return_value=httpx.Response(500, text="Error")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.list_export_jobs(123)
+
+    @respx.mock
+    def test_list_export_jobs_request_error(self, client: ControlPlaneClient) -> None:
+        """Test list_export_jobs with request error."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+
+        with pytest.raises(ControlPlaneError):
+            client.list_export_jobs(123)
+
+    @respx.mock
+    def test_check_all_jobs_complete_empty(self, client: ControlPlaneClient) -> None:
+        """Test check_all_jobs_complete with no jobs."""
+        respx.get("http://control-plane.test:8080/api/internal/snapshots/123/export-jobs").mock(
+            return_value=httpx.Response(200, json={"data": []})
+        )
+
+        all_complete, any_failed = client.check_all_jobs_complete(123)
+        assert all_complete is True
+        assert any_failed is False
 
 
 class TestControlPlaneClientFromConfig:
