@@ -78,7 +78,7 @@ def visualize(wrapper_url: str, limit: int = 200, height: str = "600px", title: 
         return HTML("<p>No data to visualize</p>")
 
     # Build pyvis network
-    net = Network(height=height, width="100%", bgcolor="#1a1a2e", font_color="white",
+    net = Network(height=height, width="100%", bgcolor="#06080d", font_color="#e4e4e7",
                   notebook=True, cdn_resources="in_line")
     net.barnes_hut(gravity=-8000, central_gravity=0.3, spring_length=150)
 

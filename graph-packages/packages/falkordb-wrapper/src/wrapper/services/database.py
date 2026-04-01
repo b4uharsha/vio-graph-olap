@@ -62,6 +62,31 @@ except ImportError as e:
     )
 
 
+def _cypher_value(v: Any) -> str:
+    """Convert a Python value to a Cypher literal string."""
+    if v is None:
+        return "null"
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return str(v)
+    # String: escape single quotes
+    s = str(v).replace("\\", "\\\\").replace("'", "\\'")
+    return f"'{s}'"
+
+
+def _batch_to_cypher_literal(batch: list[dict]) -> str:
+    """Convert a list of dicts to a Cypher list-of-maps literal.
+
+    Example: [{name: 'Alice', age: 30}, {name: 'Bob', age: 25}]
+    """
+    rows = []
+    for row in batch:
+        props = ", ".join(f"{k}: {_cypher_value(v)}" for k, v in row.items())
+        rows.append(f"{{{props}}}")
+    return "[" + ", ".join(rows) + "]"
+
+
 class DatabaseService:
     """Service for managing FalkorDB database operations.
 
@@ -564,7 +589,7 @@ class DatabaseService:
             UNWIND Cypher query string
 
         Example Output:
-            UNWIND $nodes AS node
+            UNWIND $batch_data AS node
             CREATE (:Customer {customer_id: node.customer_id, name: node.name, age: node.age})
         """
         # Build property list from primary key and additional properties
@@ -575,7 +600,7 @@ class DatabaseService:
         prop_assignments = ", ".join(f"{p}: node.{p}" for p in all_properties)
 
         query = f"""
-        UNWIND $nodes AS node
+        UNWIND $batch_data AS node
         CREATE (:{node_def.label} {{{prop_assignments}}})
         """
 
@@ -598,7 +623,7 @@ class DatabaseService:
             UNWIND Cypher query string
 
         Example Output:
-            UNWIND $edges AS edge
+            UNWIND $batch_data AS edge
             MATCH (src:Customer {customer_id: edge.customer_id})
             MATCH (dst:Product {product_id: edge.product_id})
             CREATE (src)-[:PURCHASED {amount: edge.amount}]->(dst)
@@ -637,7 +662,7 @@ class DatabaseService:
 
         # Build query using edge CSV column names (from_key, to_key)
         query = f"""
-        UNWIND $edges AS edge
+        UNWIND $batch_data AS edge
         MATCH (src:{edge_def.from_node} {{{from_pk_name}: edge.{edge_def.from_key}}})
         MATCH (dst:{edge_def.to_node} {{{to_pk_name}: edge.{edge_def.to_key}}})
         CREATE (src)-[:{edge_def.type}{prop_str}]->(dst)
@@ -1192,8 +1217,10 @@ class DatabaseService:
                 local_file = parquet_dir / filename
                 await gcs_client.download_file(gcs_file, local_file)
 
-            # Step 2: Build UNWIND query for this node type
-            query = self._build_unwind_query_for_nodes(node_def)
+            # Step 2: Compute node property assignments for inline query
+            all_properties = [node_def.primary_key.name]
+            all_properties.extend(prop.name for prop in node_def.properties)
+            prop_assignments = ", ".join(f"{p}: node.{p}" for p in all_properties)
 
             logger.info(
                 "loading_nodes_with_unwind",
@@ -1209,9 +1236,12 @@ class DatabaseService:
             async for batch, expected_rows in ParquetReader.read_batches(
                 parquet_dir, batch_size=BATCH_SIZE
             ):
+                # Embed batch data directly in query as Cypher list literal
+                # (FalkorDB's param header can't serialize list-of-dicts)
+                cypher_list = _batch_to_cypher_literal(batch)
+                inline_query = f"UNWIND {cypher_list} AS node\n        CREATE (:{node_def.label} {{{prop_assignments}}})"
                 await self.execute_query(
-                    query,
-                    parameters={"nodes": batch},
+                    inline_query,
                     timeout_ms=5 * 60 * 1000,  # 5 min per batch
                 )
                 batches_processed += 1
@@ -1331,8 +1361,26 @@ class DatabaseService:
                 local_file = parquet_dir / filename
                 await gcs_client.download_file(gcs_file, local_file)
 
-            # Step 2: Build UNWIND query for this edge type
-            query = self._build_unwind_query_for_edges(edge_def, node_definitions)
+            # Step 2: Compute edge query components
+            from_node_def = next(
+                (n for n in node_definitions if n.label == edge_def.from_node), None
+            )
+            to_node_def = next(
+                (n for n in node_definitions if n.label == edge_def.to_node), None
+            )
+            from_pk_name = from_node_def.primary_key.name if from_node_def else "id"
+            to_pk_name = to_node_def.primary_key.name if to_node_def else "id"
+            if edge_def.properties:
+                edge_props = ", ".join(f"{p.name}: edge.{p.name}" for p in edge_def.properties)
+                prop_str = f" {{{edge_props}}}"
+            else:
+                prop_str = ""
+
+            edge_match_create = (
+                f"MATCH (src:{edge_def.from_node} {{{from_pk_name}: edge.{edge_def.from_key}}})\n"
+                f"        MATCH (dst:{edge_def.to_node} {{{to_pk_name}: edge.{edge_def.to_key}}})\n"
+                f"        CREATE (src)-[:{edge_def.type}{prop_str}]->(dst)"
+            )
 
             logger.info(
                 "loading_edges_with_unwind",
@@ -1348,9 +1396,10 @@ class DatabaseService:
             async for batch, expected_rows in ParquetReader.read_batches(
                 parquet_dir, batch_size=BATCH_SIZE
             ):
+                cypher_list = _batch_to_cypher_literal(batch)
+                inline_query = f"UNWIND {cypher_list} AS edge\n        {edge_match_create}"
                 await self.execute_query(
-                    query,
-                    parameters={"edges": batch},
+                    inline_query,
                     timeout_ms=5 * 60 * 1000,  # 5 min per batch
                 )
                 batches_processed += 1

@@ -91,6 +91,7 @@ from graph_olap.models import (
     # SnapshotProgress,
 )
 from graph_olap.testing import NotebookTest, PersonaConfig, TestPersona
+from graph_olap.visualize import visualize
 
 __version__ = "0.1.0"
 
@@ -152,4 +153,5 @@ __all__ = [
     "TestPersona",
     "TimeoutError",
     "ValidationError",
+    "visualize",
 ]
