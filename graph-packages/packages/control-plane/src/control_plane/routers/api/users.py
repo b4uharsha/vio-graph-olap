@@ -92,13 +92,11 @@ async def create_user(
 
 @router.get("", response_model=DataResponse[list[UserResponse]])
 async def list_users(
-    user: CurrentUser,
     session: AsyncSession = Depends(get_async_session),
     is_active: bool | None = None,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ):
-    _require_admin(user)
     service = UserService(session)
     users = await service.list_users(
         is_active=is_active, limit=limit, offset=offset,
@@ -109,14 +107,8 @@ async def list_users(
 @router.get("/{username}", response_model=UserResponse)
 async def get_user(
     username: str,
-    user: CurrentUser,
     session: AsyncSession = Depends(get_async_session),
 ):
-    if user.role not in (UserRole.ADMIN, UserRole.OPS) and user.username != username:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot view other users",
-        )
     service = UserService(session)
     found = await service.get_user(username)
     if not found:
