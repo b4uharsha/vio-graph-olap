@@ -27,11 +27,20 @@ def _require_admin(user: CurrentUser):
 
 
 def _to_response(user) -> UserResponse:
+    # User.role is not stored in DB in vio-graph-olap (comes from JWT per-request).
+    # Default to "analyst" for user management responses.
+    role = getattr(user, "role", None)
+    if role is not None and hasattr(role, "value"):
+        role_str = role.value
+    elif role is not None:
+        role_str = str(role)
+    else:
+        role_str = "analyst"
     return UserResponse(
         username=user.username,
         email=user.email,
         display_name=user.display_name,
-        role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        role=role_str,
         is_active=user.is_active,
         created_at=user.created_at,
         updated_at=user.updated_at,
