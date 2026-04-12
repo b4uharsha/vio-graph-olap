@@ -6,6 +6,7 @@ from graph_olap.resources.instances import InstanceResource
 from graph_olap.resources.mappings import MappingResource
 from graph_olap.resources.ops import OpsResource
 from graph_olap.resources.schema import SchemaResource
+from graph_olap.resources.users import UserResource
 
 # =============================================================================
 # SNAPSHOT FUNCTIONALITY DISABLED
@@ -20,6 +21,7 @@ __all__ = [
     "MappingResource",
     "OpsResource",
     "SchemaResource",
+    "UserResource",
     # SNAPSHOT FUNCTIONALITY DISABLED
     # "SnapshotResource",
 ]

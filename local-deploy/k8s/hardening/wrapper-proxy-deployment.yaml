@@ -1,0 +1,100 @@
+# nginx Wrapper Proxy deployment + service
+# Provides path-based routing: /wrapper/{slug}/* -> wrapper-{slug}:8000/*
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-wrapper-proxy
+  labels:
+    app: nginx-wrapper-proxy
+    component: proxy
+    team: graph-olap
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: nginx-wrapper-proxy
+  template:
+    metadata:
+      labels:
+        app: nginx-wrapper-proxy
+        component: proxy
+    spec:
+      serviceAccountName: graph-wrapper-sa
+      terminationGracePeriodSeconds: 30
+
+      securityContext:
+        runAsUser: 101
+        runAsGroup: 101
+        runAsNonRoot: true
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: nginx
+          image: wrapper-proxy:latest
+          imagePullPolicy: IfNotPresent
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-wrapper-proxy
+  labels:
+    app: nginx-wrapper-proxy
+    component: proxy
+  annotations:
+    cloud.google.com/load-balancer-type: Internal
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "wrapper-proxy-backend-config"}'
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx-wrapper-proxy
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP

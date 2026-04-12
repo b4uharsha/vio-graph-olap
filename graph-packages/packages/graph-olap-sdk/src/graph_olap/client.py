@@ -15,6 +15,7 @@ from graph_olap.resources.instances import InstanceResource
 from graph_olap.resources.mappings import MappingResource
 from graph_olap.resources.ops import OpsResource
 from graph_olap.resources.schema import SchemaResource
+from graph_olap.resources.users import UserResource
 
 
 class GraphOLAPClient:
@@ -141,6 +142,7 @@ class GraphOLAPClient:
         self.ops = OpsResource(self._http)
         self.admin = AdminResource(self._http)
         self.health = HealthResource(self._http)
+        self.users = UserResource(self._http)
 
     @classmethod
     def from_env(

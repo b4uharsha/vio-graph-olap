@@ -1,0 +1,52 @@
+# cert-manager Certificates -- auto-generates TLS secrets
+# Uses the self-signed issuer (self-signed-issuer.yaml)
+# Update dnsNames for your deployment domain
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: graph-olap-tls
+  labels:
+    app: control-plane
+    team: graph-olap
+spec:
+  secretName: graph-olap-tls
+  commonName: control-plane-graph-olap-platform
+  issuerRef:
+    name: graph-olap-issuer
+    kind: Issuer
+  dnsNames:
+    - control-plane-graph-olap-platform.example.com
+    - "*.graph-olap-platform.example.com"
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: documentation-tls
+  labels:
+    app: documentation
+    team: graph-olap
+spec:
+  secretName: documentation-tls
+  commonName: graphdocs-graph-olap-platform
+  issuerRef:
+    name: graph-olap-issuer
+    kind: Issuer
+  dnsNames:
+    - graphdocs-graph-olap-platform.example.com
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wrapper-proxy-tls
+  labels:
+    app: nginx-wrapper-proxy
+    team: graph-olap
+spec:
+  secretName: wrapper-proxy-tls
+  commonName: wrappers-graph-olap-platform
+  issuerRef:
+    name: graph-olap-issuer
+    kind: Issuer
+  dnsNames:
+    - wrappers-graph-olap-platform.example.com

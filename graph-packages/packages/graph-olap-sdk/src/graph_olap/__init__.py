@@ -90,6 +90,8 @@ from graph_olap.models import (
     # Snapshot,
     # SnapshotProgress,
 )
+from graph_olap.notebook_setup import NotebookContext, setup
+from graph_olap.personas import Persona
 from graph_olap.testing import NotebookTest, PersonaConfig, TestPersona
 from graph_olap.visualize import visualize
 
@@ -129,12 +131,15 @@ __all__ = [
     "Mapping",
     "MappingVersion",
     "NodeDefinition",
+    # Notebook setup
+    "NotebookContext",
     # Testing
     "NotebookTest",
     "NotFoundError",
     "OwnerInstanceCount",
     "PaginatedList",
     "PermissionDeniedError",
+    "Persona",
     "PersonaConfig",
     "QueryResult",
     "QueryTimeoutError",
@@ -153,5 +158,6 @@ __all__ = [
     "TestPersona",
     "TimeoutError",
     "ValidationError",
+    "setup",
     "visualize",
 ]

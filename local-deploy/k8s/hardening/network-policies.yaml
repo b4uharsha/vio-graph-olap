@@ -1,0 +1,76 @@
+# Network policies for graph-olap-platform namespace
+# Default deny all ingress, then allow specific traffic patterns
+
+# Default deny all ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  labels:
+    app.kubernetes.io/part-of: graph-olap-platform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+---
+# Allow control-plane ingress from ingress controller
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-control-plane-ingress
+  labels:
+    app: control-plane
+spec:
+  podSelector:
+    matchLabels:
+      app: control-plane
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8080
+
+---
+# Allow wrapper pods ingress from wrapper-proxy only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-wrapper-from-proxy
+  labels:
+    app.kubernetes.io/part-of: graph-olap-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: wrapper
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: wrapper-proxy
+      ports:
+        - port: 8080
+
+---
+# Allow intra-namespace communication for control-plane -> wrappers
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-intra-namespace
+  labels:
+    app.kubernetes.io/part-of: graph-olap-platform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - port: 8080

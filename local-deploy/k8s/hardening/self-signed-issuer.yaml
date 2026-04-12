@@ -1,0 +1,8 @@
+# Self-signed cert-manager Issuer for graph-olap-platform namespace
+
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: graph-olap-issuer
+spec:
+  selfSigned: {}

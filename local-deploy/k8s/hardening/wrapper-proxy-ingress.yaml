@@ -1,0 +1,30 @@
+# Ingress for wrapper proxy
+# Update host for your deployment domain
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wrapper-proxy
+  labels:
+    app: nginx-wrapper-proxy
+  annotations:
+    kubernetes.io/ingress.class: "gce-internal"
+    kubernetes.io/ingress.allow-http: "false"
+    kubernetes.io/ssl-redirect: "false"
+    cert-manager.io/issuer: "graph-olap-issuer"
+spec:
+  rules:
+    - host: wrappers-graph-olap-platform.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-wrapper-proxy
+                port:
+                  number: 80
+  tls:
+    - secretName: wrapper-proxy-tls
+      hosts:
+        - wrappers-graph-olap-platform.example.com

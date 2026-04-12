@@ -1,0 +1,12 @@
+# KEDA TriggerAuthentication -- GCP podIdentity for KEDA triggers.
+# Uses Workload Identity via GCP podIdentity (no secrets needed).
+
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: export-worker-keda-auth
+  labels:
+    app: export-worker
+spec:
+  podIdentity:
+    provider: gcp

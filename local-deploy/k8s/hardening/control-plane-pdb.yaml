@@ -1,0 +1,14 @@
+# PodDisruptionBudget
+# Ensures at least 1 control-plane pod stays running during node upgrades or drains.
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: control-plane-pdb
+  labels:
+    app: control-plane
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: control-plane

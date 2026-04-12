@@ -1,0 +1,56 @@
+# GCE BackendConfig -- configures health check and timeout for GCE Internal Load Balancer
+# Referenced by services via cloud.google.com/backend-config annotation
+
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: control-plane-backend-config
+  labels:
+    app: control-plane
+    team: graph-olap
+spec:
+  timeoutSec: 3600
+  healthCheck:
+    type: HTTP
+    requestPath: /health
+    port: 8080
+    checkIntervalSec: 300
+    timeoutSec: 5
+    unhealthyThreshold: 2
+    healthyThreshold: 1
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: documentation-backend-config
+  labels:
+    app: documentation
+    team: graph-olap
+spec:
+  timeoutSec: 300
+  healthCheck:
+    type: HTTP
+    requestPath: /
+    port: 8000
+    checkIntervalSec: 300
+    timeoutSec: 5
+    unhealthyThreshold: 2
+    healthyThreshold: 1
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: wrapper-proxy-backend-config
+  labels:
+    app: nginx-wrapper-proxy
+    team: graph-olap
+spec:
+  timeoutSec: 300
+  healthCheck:
+    type: HTTP
+    requestPath: /healthz
+    port: 8080
+    checkIntervalSec: 300
+    timeoutSec: 5
+    unhealthyThreshold: 2
+    healthyThreshold: 1

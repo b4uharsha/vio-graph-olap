@@ -31,6 +31,7 @@ from control_plane.routers.api import (
     # SNAPSHOT FUNCTIONALITY DISABLED - snapshots are now created implicitly
     # snapshots_router,
 )
+from control_plane.routers.api.users import router as users_router
 from control_plane.routers.internal import (
     data_sources_router as internal_data_sources_router,
 )
@@ -198,6 +199,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(ops_router, include_in_schema=False)
     app.include_router(admin_router, include_in_schema=False)
     app.include_router(export_jobs_router, include_in_schema=False)
+    app.include_router(users_router)
 
     # Internal API routes (service-to-service, hidden from docs)
     app.include_router(internal_snapshots_router, include_in_schema=False)
